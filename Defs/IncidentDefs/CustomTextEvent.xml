@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+	<IncidentDef>
+		<defName>CustomTextEvent</defName>
+		<label>custom text event</label>
+		<workerClass>RimTelligence.Source.CustomEvents.IncidentWorker_CustomTextEvent</workerClass>
+		<category>Misc</category>
+		<baseChance>0</baseChance>
+		<targetTags>
+			<li>Map_PlayerHome</li>
+		</targetTags>
+	</IncidentDef>
+</Defs>
