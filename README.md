@@ -1,5 +1,3 @@
-Based on the code you’ve provided, here is a professional **README.md** summarizing the work done.
-
 ***
 
 # RimTelligence: AI Storyteller
@@ -29,6 +27,6 @@ I will use Readme as a file to documment progress RimTelligence (Development Nam
 
 ## Installation / Setup
 1.  Clone the repository into your `RimWorld/Mods` folder.
-2.  Ensure `LlmTornado.dll` and its dependencies are in the `/Assemblies` folder.
+2.  Ensure you have installed Krafs.Rimworld.Ref, Lib.Harmony, LlmTornado and its dependencies are in the `/Assemblies` folder.
 3.  Open the solution in Visual Studio and update references to point to your local `Assembly-CSharp.dll`.
 4.  Build the project and enable **RimTelligence** in the RimWorld Mod Menu.
