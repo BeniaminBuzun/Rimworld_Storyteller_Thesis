@@ -1,7 +1,7 @@
 ﻿using RimTelligence.Source.AIStoryteller;
 using Verse;
 
-namespace RimTelligence.Source.AIStoryteller
+namespace RimTelligence.Source
 {
     public class Settings : ModSettings
     {
@@ -10,7 +10,7 @@ namespace RimTelligence.Source.AIStoryteller
 
         public StorytellerPreset SelectedPreset => Presets.All[selectedPresetIndex];
 
-        public string customStoryPrompt = "";
+        public string customStoryPrompt = "Change inside mod setting for custom prompt";
 
         public string grokApiKey = "";
 

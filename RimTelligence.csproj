@@ -42,8 +42,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Source\AIStoryteller\AIStorytellerSelectInjection.cs" />
     <Compile Include="Source\AIStoryteller\AiStorytellerMod.cs" />
-    <Compile Include="Source\AIStoryteller\Settings.cs" />
+    <Compile Include="Source\General\Settings.cs" />
     <Compile Include="Source\AIStoryteller\Patch_Page_SelectStoryteller.cs" />
     <Compile Include="Source\AIStoryteller\Presets.cs" />
     <Compile Include="Source\CustomEvents\FlavourEvent.cs" />

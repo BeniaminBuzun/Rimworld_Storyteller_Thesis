@@ -15,7 +15,7 @@ namespace RimTelligence.Source.LlmCom
     {
         private TornadoApi api = new TornadoApi(new List<ProviderAuthentication>
         {
-            new ProviderAuthentication(LLmProviders.Groq, AIStorytellerMod.settings.grokApiKey ), // idk about this isolation thing quick workaround for now some time from now do it properly should be in different namespaces probably broad namespace just for settings
+            new ProviderAuthentication(LLmProviders.Groq, AIStorytellerMod.settings.grokApiKey ),
             new ProviderAuthentication(LLmProviders.Google, "YOUR_GOOGLE_KEY")
         });
 

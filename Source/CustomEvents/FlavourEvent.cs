@@ -20,6 +20,7 @@ namespace RimTelligence.Source.CustomEvents
             );
 
             string message = response ?? "Strange transmissions were intercepted but could not be decoded. (LLM com failed)";
+            
 
             LongEventHandler.ExecuteWhenFinished(() =>
             {
