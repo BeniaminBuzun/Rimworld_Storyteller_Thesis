@@ -20,7 +20,13 @@ I will use Readme as a file to documment progress RimTelligence (Development Nam
 *   textbox for user to input his custom storyteller description
 
 ### 3. Custom event Test
-*   Asks llm for event text and displays it 
+*   Asks llm for event text and displays it
+
+# Version0.11
+
+### 1. Fixed story prompt select ui element
+
+### 2. Started on relevant documentation of decompiled source code
 
 
 ---
