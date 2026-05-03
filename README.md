@@ -29,7 +29,7 @@ I will use Readme as a file to documment progress RimTelligence (Development Nam
 ### 2. Started on relevant documentation of decompiled source code
 
 
-## V0.12
+# V0.12
 ### Procedural Event System
 - `IncidentWorker_ProceduralEvent`: full async LLM event pipeline — snapshot → narrative → prompt → parse → execute
 - `ColonySnapshotCapturer`: captures colony state (pawns, mood, health, traits, skills, hediffs, weather, wildlife, wealth, food, raid history, active conditions)
