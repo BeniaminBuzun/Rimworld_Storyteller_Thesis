@@ -1,6 +1,11 @@
-﻿using RimWorld;
-using Verse;
+﻿using Newtonsoft.Json;
+using RimTelligence.Source.DataSnapshots;
 using RimTelligence.Source.LlmCom;
+using RimWorld;
+using System;
+using System.IO;
+using Verse;
+using Verse.Noise;
 
 namespace RimTelligence.Source.CustomEvents
 {
@@ -8,7 +13,13 @@ namespace RimTelligence.Source.CustomEvents
     {
         protected override bool TryExecuteWorker(IncidentParms parms)
         {
-            FireLlmEvent();
+            //FireLlmEvent();
+            var snapshot = ColonySnapshotCapturer.Capture(Find.CurrentMap);
+            string json = JsonConvert.SerializeObject(snapshot, Formatting.Indented);
+            File.WriteAllText(@"C:\Users\Karol\Desktop\quickdump.json", json);
+            Map map = Find.CurrentMap;
+            var test = map.resourceCounter.TotalHumanEdibleNutrition;
+            Log.Message(test.ToString());
             return true;
         }
 
