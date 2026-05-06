@@ -1,0 +1,14 @@
+﻿<Defs>
+    <ThoughtDef>
+        <defName>RimTelligence_DynamicMoodDebuff</defName>
+        <thoughtClass>RimTelligence.Source.CustomEvents.Handlers.Implementations.Pawns.Debuffs.ThoughtMemoryDynamic</thoughtClass>
+        <durationDays>1</durationDays>
+        <stages>
+            <li>
+                <label>Negative Event</label>
+                <description>Something bad happened.</description>
+                <baseMoodEffect>-5</baseMoodEffect>
+            </li>
+        </stages>
+    </ThoughtDef>
+</Defs>

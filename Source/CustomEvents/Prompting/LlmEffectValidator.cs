@@ -9,15 +9,24 @@ namespace RimTelligence.Source.CustomEvents
         private static readonly HashSet<string> _requiresDefName = new HashSet<string>(
             System.StringComparer.OrdinalIgnoreCase)
         {
-            "PawnFoundItem",
-            "DropAtRandomPlaceItems",
-            "Disease",
-            "FireCondition",
             "AnimalInsanity",
             "SelfTame",
-            "SpawnPawns",
-            "SpawnJoinable",
-            "Alphabeavers",
+            "ChangeWeather",
+            "CropBlight",
+            "StartExtremeWeatherEvent",
+            "LoseItems",
+            "PawnFoundItem",
+            "ResourcePodCrash",
+            "SpawnItemsAtRandomLocation",
+            "AddExpPoints",
+            "MoodDebuff",
+            "MoodBuff",
+            "DiseasePawn",
+            "DamagePawn",
+            "LoseExpPoints",
+            "MiracleHealChronicCondition",
+            "MiracleHealDisease",
+            "MiracleHealMissingPart"
         };
 
         public static List<LlmEffect> StripInvalid(List<LlmEffect> effects)

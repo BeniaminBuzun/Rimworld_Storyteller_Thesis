@@ -1,5 +1,8 @@
-﻿using RimWorld;
+﻿using RimTelligence.Source.DataSnapshots;
+using RimWorld;
 using RimWorld.Planet;
+using System;
+using System.Linq;
 using Verse;
 
 namespace RimTelligence.Source.CustomEvents.Handlers
@@ -36,6 +39,6 @@ namespace RimTelligence.Source.CustomEvents.Handlers
             return lastBeaver != null ? new GlobalTargetInfo(lastBeaver) : GlobalTargetInfo.Invalid;
         }
 
-        public string GetSummary(LlmEffect effect) => $"  • {effect.count} alphabeaver(s) spawned";
+        public string GetSummary(LlmEffect effect) => $"{effect.count} alphabeaver(s) spawned";
     }
 }

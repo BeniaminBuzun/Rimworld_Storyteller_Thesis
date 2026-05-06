@@ -1,8 +1,10 @@
-﻿using System;
-using System.Linq;
+﻿using RimTelligence.Source.DataSnapshots;
 using RimWorld;
 using RimWorld.Planet;
+using System;
+using System.Linq;
 using Verse;
+
 
 namespace RimTelligence.Source.CustomEvents.Handlers
 {
@@ -12,7 +14,7 @@ namespace RimTelligence.Source.CustomEvents.Handlers
 
         public string PromptDescription => "- DamagePawn    : defName = DamageDef (e.g. Burn, Bullet), value = damage, targetPawn = name or \"random\"";
 
-        public string AditionalPromptInfo => "select only from these damage types (Bullet, Blunt, Cut, Stab, Scratch, Bite, Poke, Flame, Burn, Bomb, BombSuper, Stun, EMP, AcidBurn, Frostbite, Psychic, Nerve, Shadow, ToxicCloud, Smoke, Extinguish, Vaporize, SurgeryCut, ExecutionCut)";
+        public string AditionalPromptInfo => $"select only from these damage types {string.Join(", ", DataList.DamageTypeList)}";
 
         public GlobalTargetInfo Execute(LlmEffect effect, Map map)
         {

@@ -3,7 +3,9 @@ using RimTelligence.Source.DataSnapshots;
 using RimTelligence.Source.LlmCom;
 using RimWorld;
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using Verse;
 using Verse.Noise;
 
@@ -20,6 +22,28 @@ namespace RimTelligence.Source.CustomEvents
             Map map = Find.CurrentMap;
             var test = map.resourceCounter.TotalHumanEdibleNutrition;
             Log.Message(test.ToString());
+            var sb = new StringBuilder();
+
+            void Append(string label, List<string> list)
+            {
+                sb.AppendLine(label);
+                sb.AppendLine(list.Count == 0 ? "  (empty)" : string.Join(", ", list));
+                sb.AppendLine();
+            }
+
+            Append("weapons", DataList.WeaponList);
+            Append("apparel", DataList.ApparelList);
+            Append("animals", DataList.AnimalList);
+            Append("food", DataList.FoodList);
+            Append("medicine", DataList.MedicineList);
+            Append("drugs", DataList.DrugsList);
+            Append("diseases", DataList.DiseaseList);
+            Append("resources", DataList.ResourceList);
+            Append("conditions", DataList.GameConditionList);
+            Append("weathers", DataList.AllWeathersList);
+
+            Log.Message(sb.ToString());
+
             return true;
         }
 

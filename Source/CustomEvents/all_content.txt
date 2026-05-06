@@ -1,0 +1,2177 @@
+using Newtonsoft.Json;
+using RimTelligence.Source.DataSnapshots;
+using RimTelligence.Source.LlmCom;
+using RimWorld;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Text;
+using Verse;
+using Verse.Noise;
+
+namespace RimTelligence.Source.CustomEvents
+{
+    public class IncidentWorker_CustomTextEvent : IncidentWorker
+    {
+        protected override bool TryExecuteWorker(IncidentParms parms)
+        {
+            //FireLlmEvent();
+            var snapshot = ColonySnapshotCapturer.Capture(Find.CurrentMap);
+            string json = JsonConvert.SerializeObject(snapshot, Formatting.Indented);
+            File.WriteAllText(@"C:\Users\Karol\Desktop\quickdump.json", json);
+            Map map = Find.CurrentMap;
+            var test = map.resourceCounter.TotalHumanEdibleNutrition;
+            Log.Message(test.ToString());
+            var sb = new StringBuilder();
+
+            void Append(string label, List<string> list)
+            {
+                sb.AppendLine(label);
+                sb.AppendLine(list.Count == 0 ? "  (empty)" : string.Join(", ", list));
+                sb.AppendLine();
+            }
+
+            Append("weapons", DataList.WeaponList);
+            Append("apparel", DataList.ApparelList);
+            Append("animals", DataList.AnimalList);
+            Append("food", DataList.FoodList);
+            Append("medicine", DataList.MedicineList);
+            Append("drugs", DataList.DrugsList);
+            Append("diseases", DataList.DiseaseList);
+            Append("resources", DataList.ResourceList);
+            Append("conditions", DataList.GameConditionList);
+            Append("weathers", DataList.AllWeathersList);
+
+            Log.Message(sb.ToString());
+
+            return true;
+        }
+
+        private async void FireLlmEvent()
+        {
+            BasicCom com = new BasicCom();
+            string response = await com.GetLlmResponse(
+                "Generate a short, dramatic in-universe RimWorld event message in one sentence."
+            );
+
+            string message = response ?? "Strange transmissions were intercepted but could not be decoded. (LLM com failed)";
+            
+
+            LongEventHandler.ExecuteWhenFinished(() =>
+            {
+                Find.LetterStack.ReceiveLetter(
+                    "Transmission Received",
+                    message,
+                    LetterDefOf.NeutralEvent,
+                    null,
+                    null
+                );
+                Log.Message($"[RimTelligence] LLM event fired: {message}");
+            });
+        }
+    }
+}
+using System.Collections.Generic;
+
+namespace RimTelligence.Source.CustomEvents
+{
+    public class LlmCustomEvent
+    {
+        public List<LlmEffect> effects;
+        public string letterTitle;
+        public string letterText;
+    }
+}
+namespace RimTelligence.Source.CustomEvents
+{
+    public class LlmEffect
+    {
+        public string type;
+        public string defName;
+        public string defDescription;
+        public int count;
+        public float value;
+        public string targetPawn;
+    }
+}
+using System;
+using System.Linq;
+using System.Text;
+using RimWorld.Planet;
+using Verse;
+using RimTelligence.Source.CustomEvents.Handlers;
+
+namespace RimTelligence.Source.CustomEvents.Execution
+{
+    public static class LlmEffectExecutor
+    {
+        public static GlobalTargetInfo ExecuteAll(LlmCustomEvent evt, Map map)
+        {
+            if (evt?.effects == null || !evt.effects.Any())
+            {
+                ModLogger.Warning("Execute: no effects to run.");
+                return GlobalTargetInfo.Invalid;
+            }
+
+            ModLogger.Message($"Running {evt.effects.Count} effects...");
+            GlobalTargetInfo focusTarget = GlobalTargetInfo.Invalid;
+
+            foreach (var effect in evt.effects)
+            {
+                var handler = EffectHandlerRegistry.GetHandler(effect.type);
+                if (handler == null)
+                {
+                    ModLogger.Warning($"Unknown effect type requested by LLM: {effect.type}");
+                    continue;
+                }
+
+                ModLogger.Message($"Executing: {handler.EffectType} (def: {effect.defName}, count: {effect.count})");
+
+                try
+                {
+                    GlobalTargetInfo result = handler.Execute(effect, map);
+                    if (!focusTarget.IsValid && result.IsValid)
+                    {
+                        focusTarget = result;
+                    }
+                }
+                catch (Exception e)
+                {
+                    ModLogger.Error($"Effect {effect.type} failed: {e.Message}\n{e.StackTrace}");
+                }
+            }
+
+            return focusTarget;
+        }
+
+        public static string BuildSummary(LlmCustomEvent evt)
+        {
+            if (evt?.effects == null || !evt.effects.Any()) return string.Empty;
+
+            var lines = new StringBuilder();
+            lines.AppendLine("Effects:");
+
+            foreach (var effect in evt.effects)
+            {
+                var handler = EffectHandlerRegistry.GetHandler(effect.type);
+                string summaryLine = handler != null
+                    ? handler.GetSummary(effect)
+                    : $"  • Unknown Effect: {effect.type} ({effect.defName})";
+
+                lines.AppendLine(summaryLine);
+            }
+
+            return lines.ToString().TrimEnd();
+        }
+    }
+}
+using System;
+using System.Collections.Concurrent;
+using Verse;
+
+namespace RimTelligence.Source.CustomEvents.Execution
+{
+    public class RimTelligenceDispatcher : GameComponent
+    {
+        // Thread-safe queue for actions coming from the LLM
+        public static readonly ConcurrentQueue<Action> ExecutionQueue = new ConcurrentQueue<Action>();
+
+        public RimTelligenceDispatcher(Game game) { }
+
+        public override void GameComponentTick()
+        {
+            base.GameComponentTick();
+            // Process up to 5 actions per tick to avoid stuttering if multiple arrive
+            int processed = 0;
+            while (processed < 5 && ExecutionQueue.TryDequeue(out Action action))
+            {
+                try
+                {
+                    action?.Invoke();
+                }
+                catch (Exception ex)
+                {
+                    Log.Error($"[RimTelligence] Error executing queued action: {ex.Message}\n{ex.StackTrace}");
+                }
+                processed++;
+            }
+        }
+    }
+}
+using RimTelligence.Source.CustomEvents.Handlers.Implementations;
+using RimTelligence.Source.CustomEvents.Handlers.Implementations.Environment;
+using RimTelligence.Source.CustomEvents.Handlers.Implementations.ItemsRelated;
+using RimTelligence.Source.CustomEvents.Handlers.Implementations.Pawns;
+using RimTelligence.Source.CustomEvents.Handlers.Implementations.Pawns.Debuffs;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace RimTelligence.Source.CustomEvents.Handlers
+{
+    public static class EffectHandlerRegistry
+    {
+        private static readonly Dictionary<string, IEffectHandler> Handlers = new Dictionary<string, IEffectHandler>(StringComparer.OrdinalIgnoreCase);
+
+        static EffectHandlerRegistry()
+        {
+            Register(new DamagePawnHandler());
+            Register(new StartExtremeWeatherEvent());
+            Register(new AnimalInsanityHandler());
+            Register(new SelfTameHandler());
+            Register(new AlphabeaversHandler());
+            Register(new AddDiseaseHandler());
+            Register(new PawnFoundItemsHandler());
+            Register(new MiracleHealChronicConditionHandler());
+            Register(new MiracleHealDiseaseHandler());
+            Register(new MiracleHealMissingPartHandler());
+            Register(new ResourcePodCrashHandler());
+            Register(new ChangeWeatherHandler());
+            Register(new MeteoriteImpactHandler());
+            Register(new AddExpPointsHandler());
+            Register(new LoseExpPointsHandler());
+            Register(new CropBlightHandler());
+            Register(new MoodBuffHandler());
+            Register(new MoodDebuffHandler());
+            Register(new LoseItemsHandler());
+            Register(new SpawnItemsAtRandomLocationHandler());
+        }
+
+        private static void Register(IEffectHandler handler)
+        {
+            Handlers[handler.EffectType] = handler;
+        }
+
+        public static IEffectHandler GetHandler(string effectType)
+        {
+            Handlers.TryGetValue(effectType, out var handler);
+            return handler;
+        }
+
+        public static IEnumerable<IEffectHandler> GetAllHandlers() => Handlers.Values;
+    }
+}
+using RimWorld.Planet;
+using Verse;
+
+namespace RimTelligence.Source.CustomEvents.Handlers
+{
+    public interface IEffectHandler
+    {
+        string EffectType { get; }
+
+        string PromptDescription { get; }
+
+        string AditionalPromptInfo { get; }
+
+        GlobalTargetInfo Execute(LlmEffect effect, Map map);
+
+        string GetSummary(LlmEffect effect);
+    }
+}
+using RimTelligence.Source.DataSnapshots;
+using RimWorld;
+using RimWorld.Planet;
+using System;
+using System.Linq;
+using Verse;
+
+namespace RimTelligence.Source.CustomEvents.Handlers
+{
+    public class AlphabeaversHandler : IEffectHandler
+    {
+        public string EffectType => "Alphabeavers";
+        public string PromptDescription => "- Alphabeavers   : count = how many spawn";
+
+        public string AditionalPromptInfo => "";
+
+        public GlobalTargetInfo Execute(LlmEffect effect, Map map)
+        {
+            PawnKindDef beaverKind = PawnKindDef.Named("Alphabeaver");
+            if (beaverKind == null)
+            {
+                ModLogger.Warning("Alphabeavers: PawnKindDef 'Alphabeaver' not found.");
+                return GlobalTargetInfo.Invalid;
+            }
+
+            int count = effect.count > 0 ? effect.count : 3;
+            IntVec3 spawnCell = CellFinder.RandomEdgeCell(map);
+            Pawn lastBeaver = null;
+
+            for (int i = 0; i < count; i++)
+            {
+                PawnGenerationRequest request = new PawnGenerationRequest(beaverKind, null);
+                Pawn beaver = PawnGenerator.GeneratePawn(request);
+                GenSpawn.Spawn(beaver, CellFinder.RandomEdgeCell(map), map);
+                lastBeaver = beaver;
+                ModLogger.Message($"Spawned alphabeaver at {spawnCell}.");
+            }
+
+            return lastBeaver != null ? new GlobalTargetInfo(lastBeaver) : GlobalTargetInfo.Invalid;
+        }
+
+        public string GetSummary(LlmEffect effect) => $"{effect.count} alphabeaver(s) spawned";
+    }
+}
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using RimWorld;
+using RimWorld.Planet;
+using Verse;
+
+namespace RimTelligence.Source.CustomEvents.Handlers
+{
+    public class AnimalInsanityHandler : IEffectHandler
+    {
+        public string EffectType => "AnimalInsanity";
+        public string PromptDescription => "- AnimalInsanity : defName = PawnKindDef of animal, count = how many go manhunter";
+
+        public string AditionalPromptInfo => "select only animals from [WILDLIFE] list";
+
+        public GlobalTargetInfo Execute(LlmEffect effect, Map map)
+        {
+            List<Pawn> candidates = map.mapPawns.AllPawnsSpawned
+                .Where(p => p.RaceProps.Animal && !p.InMentalState)
+                .ToList();
+
+            
+            candidates = candidates.Where(p => p.kindDef.defName == effect.defName).ToList();
+            
+
+            if (!candidates.Any())
+            {
+                ModLogger.Warning($"AnimalInsanity: no valid animals found for '{effect.defName}'.");
+                return GlobalTargetInfo.Invalid;
+            }
+
+            int count = effect.count > 0 ? Math.Min(effect.count, candidates.Count) : 1;
+            candidates = candidates.InRandomOrder().Take(count).ToList();
+
+            foreach (Pawn animal in candidates)
+            {
+                animal.mindState.mentalStateHandler.TryStartMentalState(MentalStateDefOf.Manhunter, forceWake: true);
+                ModLogger.Message($"Drove {animal.LabelShort} manhunter.");
+            }
+
+            return new GlobalTargetInfo(candidates.First());
+        }
+
+        public string GetSummary(LlmEffect effect) =>
+            $"{effect.count} animal(s) {effect.defName} went manhunter";
+    }
+}
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using RimWorld;
+using RimWorld.Planet;
+using Verse;
+
+namespace RimTelligence.Source.CustomEvents.Handlers
+{
+    public class SelfTameHandler : IEffectHandler
+    {
+        public string EffectType => "SelfTame";
+        public string PromptDescription => "- SelfTame       : defName = PawnKindDef of animal, count = how many self-tame";
+
+        public string AditionalPromptInfo => "select only animals from [WILDLIFE] list";
+
+        public GlobalTargetInfo Execute(LlmEffect effect, Map map)
+        {
+            List<Pawn> candidates = map.mapPawns.AllPawnsSpawned
+                .Where(p => p.RaceProps.Animal && p.Faction == null && !p.InMentalState)
+                .ToList();
+
+            candidates = candidates.Where(p => p.kindDef.defName == effect.defName).ToList();
+            
+            if (!candidates.Any())
+            {
+                ModLogger.Warning($"SelfTame: no tameable animals found for '{effect.defName}'.");
+                return GlobalTargetInfo.Invalid;
+            }
+
+            int count = effect.count > 0 ? Math.Min(effect.count, candidates.Count) : 1;
+            candidates = candidates.InRandomOrder().Take(count).ToList();
+
+            foreach (Pawn animal in candidates)
+            {
+                animal.SetFaction(Faction.OfPlayer);
+                Messages.Message($"{animal.LabelShort} has spontaneously tamed itself!", animal, MessageTypeDefOf.PositiveEvent);
+                ModLogger.Message($"Self-tamed {animal.LabelShort}.");
+            }
+
+            return new GlobalTargetInfo(candidates.First());
+        }
+
+        public string GetSummary(LlmEffect effect) =>
+            $"{effect.count} animal(s) {effect.defName} self-tamed";
+    }
+}
+using RimTelligence.Source.DataSnapshots;
+using RimWorld;
+using RimWorld.Planet;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using Verse;
+
+namespace RimTelligence.Source.CustomEvents.Handlers.Implementations.Environment
+{
+    internal class ChangeWeatherHandler : IEffectHandler
+    {
+        public string EffectType => "ChangeWeather";
+
+        public string PromptDescription => "- ChangeWeather        : defName = WeatherDef ()";
+
+        public string AditionalPromptInfo => $"select only from these weather {string.Join(", ", DataList.AllWeathersList)}";
+
+        public GlobalTargetInfo Execute(LlmEffect effect, Map map)
+        {
+            WeatherDef def = DefDatabase<WeatherDef>.GetNamed(effect.defName, errorOnFail: false);
+            if (def == null)
+            {
+                ModLogger.Warning($"ChangeWeather: WeatherDef '{effect.defName}' not found.");
+                return GlobalTargetInfo.Invalid;
+            }
+
+            map.weatherManager.curWeather = def;
+
+            ModLogger.Message($"Sudden weather change: {def.defName}.");
+
+            return GlobalTargetInfo.Invalid;
+        }
+
+        public string GetSummary(LlmEffect effect)
+        {
+            return $"Sudden weather change: {effect.defName}.";
+        }
+    }
+}
+using RimWorld;
+using RimWorld.Planet;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using Verse;
+
+namespace RimTelligence.Source.CustomEvents.Handlers
+{
+    public class CropBlightHandler : IEffectHandler
+    {
+        public string EffectType => "CropBlight";
+
+        public string PromptDescription => "- CropBlight    : defName = plant ThingDef to blight (e.g. Plant_Corn, Plant_Rice) or \"random\", value = number of plants to blight, targetPawn is unused";
+
+        public string AditionalPromptInfo => "select defName only from harvestable_plants list.";
+
+        public GlobalTargetInfo Execute(LlmEffect effect, Map map)
+        {
+            int count = Math.Max(1, (int)effect.value);
+
+            IEnumerable<Plant> candidates = map.listerThings
+                .ThingsInGroup(ThingRequestGroup.Plant)
+                .OfType<Plant>()
+                .Where(p => p.BlightableNow);
+
+            if (!effect.defName.Equals("random", StringComparison.OrdinalIgnoreCase))
+            {
+                ThingDef cropDef = DefDatabase<ThingDef>.GetNamed(effect.defName, errorOnFail: false);
+                if (cropDef != null)
+                {
+                    candidates = candidates.Where(p => p.def == cropDef);
+                }
+                else
+                {
+                    ModLogger.Warning($"CropBlight: Unknown plant def '{effect.defName}', falling back to any eligible crop.");
+                }
+            }
+
+            List<Plant> targets = candidates.InRandomOrder().Take(count).ToList();
+
+            if (targets.Count == 0)
+            {
+                ModLogger.Warning($"CropBlight: No BlightableNow crops found for '{effect.defName}'.");
+                return GlobalTargetInfo.Invalid;
+            }
+
+            foreach (Plant plant in targets)
+            {
+                plant.CropBlighted();
+            }
+
+            string cropLabel = effect.defName.Equals("random", StringComparison.OrdinalIgnoreCase)
+                ? "random crop(s)"
+                : effect.defName;
+
+            ModLogger.Message($"CropBlight: Blighted {targets.Count} {cropLabel}.");
+
+            return new GlobalTargetInfo(targets[0].Position, map);
+        }
+
+        public string GetSummary(LlmEffect effect) =>
+            $"{effect.value} {(effect.defName.Equals("random", StringComparison.OrdinalIgnoreCase) ? "random crop(s)" : effect.defName)} blighted";
+    }
+}
+using RimTelligence.Source.DataSnapshots;
+using RimWorld;
+using RimWorld.Planet;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using UnityEngine;
+using Verse;
+
+namespace RimTelligence.Source.CustomEvents.Handlers.Implementations.Environment
+{
+    internal class MeteoriteImpactHandler : IEffectHandler
+    {
+        public string EffectType => "MeteoriteImpact";
+
+        public string PromptDescription => "- MeteoriteImpact        :";
+
+        public string AditionalPromptInfo => $"";
+
+        public GlobalTargetInfo Execute(LlmEffect effect, Map map)
+        {
+            IntVec3 cell = DropCellFinder.RandomDropSpot(map);
+
+            List<Thing> things = ThingSetMakerDefOf.Meteorite.root.Generate();
+
+            SkyfallerMaker.SpawnSkyfaller(ThingDefOf.MeteoriteIncoming, things, cell, map);
+
+            ModLogger.Message("Meteorite impact triggered.");
+
+            return new GlobalTargetInfo(cell, map);
+        }
+
+        public string GetSummary(LlmEffect effect)
+        {
+            return "Meteorite has landed somewhere.";
+        }
+    }
+}
+using RimTelligence.Source.DataSnapshots;
+using RimWorld;
+using RimWorld.Planet;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using UnityEngine;
+using Verse;
+namespace RimTelligence.Source.CustomEvents.Handlers
+{
+    public class StartExtremeWeatherEvent : IEffectHandler
+    {
+        public string EffectType => "StartExtremeWeatherEvent";
+        public string PromptDescription => "- StartExtremeWeatherEvent  : defName = GameConditionDef (e.g. HeatWave, ToxicFallout), value = duration days";
+
+        public string AditionalPromptInfo => $"select only from these conditions {string.Join(", ", DataList.GameConditionList)}";
+
+        public GlobalTargetInfo Execute(LlmEffect effect, Map map)
+        {
+            GameConditionDef def = DefDatabase<GameConditionDef>.GetNamed(effect.defName, errorOnFail: false);
+            if (def == null)
+            {
+                ModLogger.Warning($"StartExtremeWeatherEvent: GameConditionDef '{effect.defName}' not found.");
+                return GlobalTargetInfo.Invalid;
+            }
+            int duration;
+            if (effect.value > 0)
+            {
+                duration = (int)(effect.value * 60000); // num of days to ticks
+            }
+            else {
+                duration = 180000;
+            }
+            
+            GameCondition condition = GameConditionMaker.MakeCondition(def, duration);
+            map.gameConditionManager.RegisterCondition(condition);
+
+            ModLogger.Message($"Fired condition: {def.defName} for {duration} days.");
+
+            return GlobalTargetInfo.Invalid;
+        }
+
+        public string GetSummary(LlmEffect effect) =>
+            $"{effect.defName} condition triggered who knows when will it end";
+    }
+}
+using RimWorld;
+using RimWorld.Planet;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using Verse;
+
+namespace RimTelligence.Source.CustomEvents.Handlers.Implementations
+{
+    public class LoseItemsHandler : IEffectHandler
+    {
+        public string EffectType => "LoseItems";
+
+        public string PromptDescription => "- LoseItems      : defName = ThingDef (Silver, Wort, etc. ), count = amount";
+
+        public string AditionalPromptInfo => "select only from itmes from Colony resources it can affect only items that are inside colony stockpile";
+
+        public GlobalTargetInfo Execute(LlmEffect effect, Map map)
+        {
+            int leftToLose = effect.count;
+            if (leftToLose <= 0 || string.IsNullOrWhiteSpace(effect.defName)) return GlobalTargetInfo.Invalid;
+
+            foreach (Zone_Stockpile stockpile in map.zoneManager.AllZones.OfType<Zone_Stockpile>())
+            {
+                foreach (IntVec3 cell in stockpile.Cells)
+                {
+                    List<Thing> things = cell.GetThingList(map).ToList();
+                    foreach (Thing thing in things)
+                    {
+                        if (leftToLose <= 0) return GlobalTargetInfo.Invalid;
+
+                        if (string.Equals(thing.def.defName, effect.defName, StringComparison.OrdinalIgnoreCase))
+                        {
+                            int take = Math.Min(thing.stackCount, leftToLose);
+                            thing.SplitOff(take).Destroy(DestroyMode.Vanish);
+                            leftToLose -= take;
+                        }
+                    }
+                }
+            }
+            return GlobalTargetInfo.Invalid;
+        }
+
+        public string GetSummary(LlmEffect effect) =>
+            $"{effect.count} items(s) {effect.defName} lost";
+        
+    }
+}
+using RimTelligence.Source.DataSnapshots;
+using RimWorld;
+using RimWorld.Planet;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using Verse;
+
+namespace RimTelligence.Source.CustomEvents.Handlers.Implementations
+{
+    internal class PawnFoundItemsHandler : IEffectHandler
+    {
+        public string EffectType => "PawnFoundItem";
+        public string PromptDescription => "- PawnFoundItem      : defName = ThingDef (Silver, Wort, etc. ), count = amount, targetPawn = name";
+
+        public string AditionalPromptInfo => $"select only from these itmes {string.Join(", ", DataList.ResourceList)}";
+        public GlobalTargetInfo Execute(LlmEffect effect, Map map)
+        {
+            ThingDef def = DefDatabase<ThingDef>.GetNamed(effect.defName, errorOnFail: false);
+            if (def == null)
+            {
+                ModLogger.Warning($"PawnFoundItems: ThingDef '{effect.defName}' not found.");
+                return GlobalTargetInfo.Invalid;
+            }
+
+            Thing item = ThingMaker.MakeThing(def);
+            item.stackCount = Math.Min(effect.count, def.stackLimit);
+
+            Pawn pawn = map.mapPawns.FreeColonists.FirstOrDefault(p => p.Name.ToStringShort == effect.targetPawn);
+            IntVec3 dropCell = pawn.Position;
+            GenPlace.TryPlaceThing(item, dropCell, map, ThingPlaceMode.Near);
+            ModLogger.Message($"Gave {item.stackCount}x {def.defName} at {dropCell}");
+
+            return new GlobalTargetInfo(dropCell, map);
+        }
+
+        public string GetSummary(LlmEffect effect) => $"{effect.count} x {effect.defName} found by {effect.targetPawn} ";
+    }
+}
+using Mono.Security.Cryptography;
+using RimTelligence.Source.DataSnapshots;
+using RimWorld;
+using RimWorld.Planet;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using Verse;
+
+namespace RimTelligence.Source.CustomEvents.Handlers.Implementations.ItemsRelated
+{
+    internal class ResourcePodCrashHandler : IEffectHandler
+    {
+        public string EffectType => "ResourcePodCrash";
+        public string PromptDescription => "- ResourcePodCrash      : defName = ThingDef (Silver, Wort, etc. ), count = amount";
+
+        public string AditionalPromptInfo => $"select only from these itmes {string.Join(", ", DataList.ResourceList)} {string.Join(", ", DataList.FoodList)}";
+
+        public GlobalTargetInfo Execute(LlmEffect effect, Map map)
+        {
+
+            ThingDef def = DefDatabase<ThingDef>.GetNamed(effect.defName, errorOnFail: false);
+            if (def == null)
+            {
+                ModLogger.Warning($"ResourcePodCrash: ThingDef '{effect.defName}' not found.");
+                return GlobalTargetInfo.Invalid;
+            }
+
+            int numOfDropPods = Rand.RangeInclusive(1, 4);
+
+            int baseCount = effect.count / numOfDropPods;
+            int remainder = effect.count % numOfDropPods;
+
+
+
+            List<Thing> items = new List<Thing>();
+
+            for (int i =0; i<numOfDropPods; i++)
+            {
+                int thisStack = baseCount + (i < remainder ? 1 : 0);
+                int remaining = thisStack;
+
+                while (remaining > 0)
+                {
+                    Thing item = ThingMaker.MakeThing(def);
+                    int stack = Math.Min(remaining, def.stackLimit);
+                    item.stackCount = stack;
+                    items.Add(item);
+                    remaining -= stack;
+                }
+            }
+            
+            IntVec3 dropCell = DropCellFinder.RandomDropSpot(map);
+
+            DropPodUtility.DropThingsNear(dropCell, map, items);
+
+            return new GlobalTargetInfo(dropCell, map);
+
+        }
+
+        public string GetSummary(LlmEffect effect) => $"{effect.count}x {effect.defName} dropped";
+    }
+}
+using RimTelligence.Source.DataSnapshots;
+using RimWorld;
+using RimWorld.Planet;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using Verse;
+
+namespace RimTelligence.Source.CustomEvents.Handlers.Implementations.ItemsRelated
+{
+    internal class SpawnItemsAtRandomLocationHandler : IEffectHandler
+    {
+        public string EffectType => "SpawnItemsAtRandomLocation";
+        public string PromptDescription => "- SpawnItemsAtRandomLocation      : defName = ThingDef (Silver, Wort, etc. ), count = amount";
+
+        public string AditionalPromptInfo => $"select only from these itmes {string.Join(", ", DataList.ResourceList)}";
+        public GlobalTargetInfo Execute(LlmEffect effect, Map map)
+        {
+            ThingDef def = DefDatabase<ThingDef>.GetNamed(effect.defName, errorOnFail: false);
+            if (def == null)
+            {
+                ModLogger.Warning($"SpawnItemsAtRandomLocation: ThingDef '{effect.defName}' not found.");
+                return GlobalTargetInfo.Invalid;
+            }
+
+            Thing item = ThingMaker.MakeThing(def);
+            item.stackCount = Math.Min(effect.count, def.stackLimit);
+
+            IntVec3 dropCell = DropCellFinder.RandomDropSpot(map);
+            GenPlace.TryPlaceThing(item, dropCell, map, ThingPlaceMode.Near);
+            ModLogger.Message($"SpawnItemsAtRandomLocation {item.stackCount}x {def.defName} at {dropCell}");
+
+            return new GlobalTargetInfo(dropCell, map);
+        }
+
+        public string GetSummary(LlmEffect effect) => $"{effect.count}x {effect.defName} appeared on the map";
+    }
+}
+using RimTelligence.Source.DataSnapshots;
+using RimWorld;
+using RimWorld.Planet;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using Verse;
+
+namespace RimTelligence.Source.CustomEvents.Handlers.Implementations.Pawns
+{
+    internal class AddExpPointsHandler : IEffectHandler
+    {
+        public static string XpBonusName;
+        public string EffectType => "AddExpPoints";
+
+        public string PromptDescription =>
+            "- AddExpPoints : defName = skill name (Intelligence, Shooting etc.), value = 1 - 100, targetPawn = colonist name";
+        public string AditionalPromptInfo => $"select only defName from {string.Join(", ", DataList.AllSkillsList)}";
+
+        public GlobalTargetInfo Execute(LlmEffect effect, Map map)
+        {
+            Pawn target = map.mapPawns.FreeColonistsSpawned.FirstOrDefault(p =>
+                p.LabelShort.Equals(effect.targetPawn, StringComparison.OrdinalIgnoreCase));
+
+            if (target == null)
+            {
+                ModLogger.Warning($"AddExpPoints: no spawned colonist found for '{effect.targetPawn}'.");
+                return GlobalTargetInfo.Invalid;
+            }
+
+            SkillDef skillDef = DefDatabase<SkillDef>.GetNamed(effect.defName, errorOnFail: false);
+
+            if (skillDef == null)
+            {
+                ModLogger.Warning($"LoseExpPoints: SkillDef '{effect.defName}' not found.");
+                return GlobalTargetInfo.Invalid;
+            }
+
+            int expPoints = GetXpReward(target.skills.GetSkill(skillDef).Level, effect.value);
+
+
+            target.skills.Learn(skillDef, expPoints);
+
+            ModLogger.Message($"AddExpPoints: added {expPoints} XP to '{effect.targetPawn}' for skill '{effect.defName}'.");
+
+            return new GlobalTargetInfo(target);
+        }
+
+        private static int GetXpToNextLevel(int level)
+        {
+            int[] xpTable = new int[]
+            {
+                1000,2000,3000,4000,5000,
+                6000,7000,8000,9000,10000,
+                12000,14000,16000,18000,20000,
+                22000,24000,26000,28000,30000,
+                32000
+            };
+
+            return xpTable[Math.Min(level, xpTable.Length - 1)];
+        }
+
+        public static int GetXpReward(int level, float value)
+        {
+            int xpToNext = GetXpToNextLevel(level);
+
+            float factor;
+            if (value > 80)
+            {
+                factor = 0.6f;
+                SetXpBonusName("huge");
+            }
+            else if (value > 51)
+            {
+                factor = 0.3f;
+                SetXpBonusName("medium");
+            }
+
+            else
+            {
+                factor = 0.15f;
+                SetXpBonusName("small");
+            }
+            return (int)(xpToNext * factor);
+        }
+
+        public string GetSummary(LlmEffect effect) =>
+            $"{effect.targetPawn} got {XpBonusName} bonus exp points for '{effect.defName}'";
+
+        public static void SetXpBonusName(string name)
+        {
+            XpBonusName = name;
+        }
+    }
+}
+using RimTelligence.Source.CustomEvents.Handlers.Implementations.Pawns.Debuffs;
+using RimWorld;
+using RimWorld.Planet;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using Verse;
+
+namespace RimTelligence.Source.CustomEvents.Handlers
+{
+    public abstract class MoodEffectHandlerBase : IEffectHandler
+    {
+        public abstract string EffectType { get; }
+        public abstract string PromptDescription { get; }
+        public abstract string AditionalPromptInfo { get; }
+        protected abstract float MoodOffset { get; }
+
+        public GlobalTargetInfo Execute(LlmEffect effect, Map map)
+        {
+            Pawn target = map.mapPawns.FreeColonistsSpawned
+                .FirstOrDefault(p => string.Equals(p.LabelShort, effect.targetPawn, StringComparison.OrdinalIgnoreCase));
+
+            if (target == null)
+            {
+                ModLogger.Warning($"{EffectType}: No target found for '{effect.targetPawn}'.");
+                return GlobalTargetInfo.Invalid;
+            }
+
+            string uniqueKey = $"RimTelligence_{EffectType}_{Math.Abs(effect.defName?.GetHashCode() ?? 0)}_{Environment.TickCount & 0xFFFF}";
+            ThoughtDef def = GetOrCreateThoughtDef(uniqueKey, effect.defName, effect.defDescription, MoodOffset);
+
+            var memory = (ThoughtMemoryDynamic)ThoughtMaker.MakeThought(def);
+            memory.customLabel = effect.defName;
+            memory.customDescription = effect.defDescription;
+
+            target.needs?.mood?.thoughts?.memories?.TryGainMemory(memory);
+            ModLogger.Message($"{EffectType}: Applied '{effect.defName}' ({MoodOffset:+#;-#}) to {target.LabelShort}.");
+
+            return new GlobalTargetInfo(target);
+        }
+
+        public abstract string GetSummary(LlmEffect effect);
+
+        private static ThoughtDef GetOrCreateThoughtDef(string defName, string label, string description, float moodOffset)
+        {
+            ThoughtDef existing = DefDatabase<ThoughtDef>.GetNamed(defName, errorOnFail: false);
+            if (existing != null)
+                return existing;
+
+            ThoughtDef def = new ThoughtDef
+            {
+                defName = defName,
+                thoughtClass = typeof(ThoughtMemoryDynamic),
+                durationDays = 1f,
+                stackedEffectMultiplier = 1f,
+                stages = new List<ThoughtStage>
+                {
+                    new ThoughtStage
+                    {
+                        label          = label ?? defName,
+                        description    = description ?? string.Empty,
+                        baseMoodEffect = moodOffset,
+                    }
+                }
+            };
+
+            DefDatabase<ThoughtDef>.Add(def);
+            return def;
+        }
+    }
+
+    public class MoodBuffHandler : MoodEffectHandlerBase
+    {
+        public override string EffectType => "MoodBuff";
+        public override string PromptDescription => "- MoodBuff   : defName = thought title, defDescription = flavour text, targetPawn = pawn name";
+        public override string AditionalPromptInfo => "Applies a +5 mood buff with a custom title and description. Can stack — each call creates a separate memory.";
+        protected override float MoodOffset => 5f;
+
+        public override string GetSummary(LlmEffect effect) =>
+            $"Mood buff '{effect.defName}' (+5) applied to {effect.targetPawn}";
+    }
+
+    public class MoodDebuffHandler : MoodEffectHandlerBase
+    {
+        public override string EffectType => "MoodDebuff";
+        public override string PromptDescription => "- MoodDebuff : defName = thought title, defDescription = flavour text, targetPawn = pawn name";
+        public override string AditionalPromptInfo => "Applies a -5 mood debuff with a custom title and description. Can stack — each call creates a separate memory.";
+        protected override float MoodOffset => -5f;
+
+        public override string GetSummary(LlmEffect effect) =>
+            $"Mood debuff '{effect.defName}' (-5) applied to {effect.targetPawn}";
+    }
+}
+using RimTelligence.Source.DataSnapshots;
+using RimWorld;
+using RimWorld.Planet;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using UnityEngine;
+using Verse;
+
+namespace RimTelligence.Source.CustomEvents.Handlers
+{
+    public class AddDiseaseHandler : IEffectHandler
+    {
+        public string EffectType => "DiseasePawn";
+        public string PromptDescription => "- DiseasePawn        : defName = HediffDef (e.g. Malaria, Plague), targetPawn = colonist name";
+
+        private string specialSummary; // semi hack it works different everywhere
+        public string AditionalPromptInfo => $"select only from these disease {string.Join(", ", DataList.DiseaseList)}";
+
+        public GlobalTargetInfo Execute(LlmEffect effect, Map map)
+        {
+            HediffDef hediffDef = DefDatabase<HediffDef>.GetNamed(effect.defName, errorOnFail: false);
+            if (hediffDef == null)
+            {
+                ModLogger.Warning($"Disease: HediffDef '{effect.defName}' not found.");
+                return GlobalTargetInfo.Invalid;
+            }
+
+            var availablePawns = map.mapPawns.FreeColonistsSpawned;
+            List<Pawn> targets = new List<Pawn>();
+
+            Pawn named = availablePawns.FirstOrDefault(p => p.LabelShort.Equals(effect.targetPawn, StringComparison.OrdinalIgnoreCase));
+            if (named != null) targets.Add(named);
+            
+
+            if (!targets.Any())
+            {
+                ModLogger.Warning($"Disease: no spawned targets found for '{effect.targetPawn}'.");
+                return GlobalTargetInfo.Invalid;
+            }
+
+            foreach (Pawn pawn in targets)
+            {
+                Hediff existingDisease = pawn.health.hediffSet.GetFirstHediffOfDef(hediffDef);
+                
+                if (existingDisease != null)
+                {
+                    float severity = Rand.Range(0.02f, 0.1f);
+                    specialSummary = $"{pawn.LabelShort} disease {hediffDef.defName} severity increased by {severity}";
+                    existingDisease.Severity += severity;
+
+                    pawn.health.Notify_HediffChanged(existingDisease);
+                }
+                else
+                {
+                    Hediff newDisease = HediffMaker.MakeHediff(hediffDef, pawn);
+                    newDisease.Severity = 0.01f;
+                    specialSummary = $"{pawn.LabelShort} got infected with {hediffDef.defName}";
+                    pawn.health.AddHediff(newDisease);
+
+                }
+
+                ModLogger.Message(specialSummary);
+            }
+
+            return new GlobalTargetInfo(targets.First());
+        }
+
+        public string GetSummary(LlmEffect effect) =>
+            specialSummary;
+    }
+}
+using RimTelligence.Source.DataSnapshots;
+using RimWorld;
+using RimWorld.Planet;
+using System;
+using System.Linq;
+using Verse;
+
+
+namespace RimTelligence.Source.CustomEvents.Handlers
+{
+    public class DamagePawnHandler : IEffectHandler
+    {
+        public string EffectType => "DamagePawn";
+
+        public string PromptDescription => "- DamagePawn    : defName = DamageDef (e.g. Burn, Bullet), value = damage, targetPawn = name or \"random\"";
+
+        public string AditionalPromptInfo => $"select only from these damage types {string.Join(", ", DataList.DamageTypeList)}";
+
+        public GlobalTargetInfo Execute(LlmEffect effect, Map map)
+        {
+            DamageDef damageDef = DefDatabase<DamageDef>.GetNamed(effect.defName, errorOnFail: false) ?? DamageDefOf.Burn;
+
+            var allSpawnedColonists = map.mapPawns.FreeColonistsSpawned;
+            Pawn target = null;
+
+            if (effect.targetPawn.Equals("random", StringComparison.OrdinalIgnoreCase))
+            {
+                target = allSpawnedColonists.RandomElementWithFallback();
+            }
+            else
+            {
+                target = allSpawnedColonists.FirstOrDefault(p => p.LabelShort.Equals(effect.targetPawn, StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (target == null)
+            {
+                ModLogger.Warning($"DamagePawns: No target found for '{effect.targetPawn}'.");
+                return GlobalTargetInfo.Invalid;
+            }
+
+            target.TakeDamage(new DamageInfo(damageDef, effect.value));
+            ModLogger.Message($"Damaged {target.LabelShort} for {effect.value} {damageDef.defName}");
+
+            return new GlobalTargetInfo(target);
+        }
+
+        public string GetSummary(LlmEffect effect) =>
+            $"{effect.value} {effect.defName} damage dealt to {effect.targetPawn}";
+    }
+}
+using RimTelligence.Source.DataSnapshots;
+using RimWorld;
+using RimWorld.Planet;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using Verse;
+
+namespace RimTelligence.Source.CustomEvents.Handlers.Implementations.Pawns.Debuffs
+{
+    internal class LoseExpPointsHandler : IEffectHandler
+    {
+        public string EffectType => "LoseExpPoints";
+
+        public string PromptDescription =>
+            "- LoseExpPoints : defName = skill name (Intelligence, Shooting etc.), value = 1 - 100, targetPawn = colonist name";
+        public string AditionalPromptInfo => $"select only defName from {string.Join(", ", DataList.AllSkillsList)}";
+
+        public GlobalTargetInfo Execute(LlmEffect effect, Map map)
+        {
+            Pawn target = map.mapPawns.FreeColonistsSpawned.FirstOrDefault(p =>
+                p.LabelShort.Equals(effect.targetPawn, StringComparison.OrdinalIgnoreCase));
+
+            if (target == null)
+            {
+                ModLogger.Warning($"AddExpPoints: no spawned colonist found for '{effect.targetPawn}'.");
+                return GlobalTargetInfo.Invalid;
+            }
+
+            SkillDef skillDef = DefDatabase<SkillDef>.GetNamed(effect.defName, errorOnFail: false);
+
+            if (skillDef == null)
+            {
+                ModLogger.Warning($"LoseExpPoints: SkillDef '{effect.defName}' not found.");
+                return GlobalTargetInfo.Invalid;
+            }
+
+
+            int expPoints = AddExpPointsHandler.GetXpReward(target.skills.GetSkill(skillDef).Level, effect.value); // I don't like this structire but what the hell
+
+
+            target.skills.Learn(skillDef, -expPoints);
+
+            ModLogger.Message($"LoseExpPoints: lost {expPoints} XP for '{effect.targetPawn}' in skill '{effect.defName}'.");
+
+            return new GlobalTargetInfo(target);
+        }
+
+        public string GetSummary(LlmEffect effect) =>
+            $"{effect.targetPawn} lost {AddExpPointsHandler.XpBonusName} amount of exp points for '{effect.defName}'"; // turbo lazy rewrite it fully in the future xd 
+    }
+}
+using RimWorld;
+using Verse;
+
+namespace RimTelligence.Source.CustomEvents.Handlers.Implementations.Pawns.Debuffs
+{
+    public class ThoughtMemoryDynamic : Thought_Memory
+    {
+        public string customLabel;
+        public string customDescription;
+
+        public override string LabelCap => customLabel != null ? customLabel.CapitalizeFirst() : base.LabelCap;
+        public override string Description => customDescription ?? base.Description;
+
+        public override void ExposeData()
+        {
+            base.ExposeData();
+            Scribe_Values.Look(ref customLabel, "customLabel");
+            Scribe_Values.Look(ref customDescription, "customDescription");
+        }
+    }
+}
+using RimTelligence.Source.CustomEvents;
+using RimTelligence.Source.CustomEvents.Handlers;
+using RimWorld.Planet;
+using System;
+using System.Linq;
+using Verse;
+
+internal class MiracleHealChronicConditionHandler : IEffectHandler
+{
+    public string EffectType => "MiracleHealChronicCondition";
+
+    public string PromptDescription =>
+        "- MiracleHealChronicCondition : defName = HediffDef defName (e.g. Carcinoma, ChemicalDamageSevere, Asthma), " +
+        "targetPawn = colonist name";
+
+    public string AditionalPromptInfo =>
+        "Select only from the colonist's chronic_conditions list. " +
+        "Use the exact defName string provided.";
+
+    public GlobalTargetInfo Execute(LlmEffect effect, Map map)
+    {
+        Pawn target = map.mapPawns.FreeColonistsSpawned.FirstOrDefault(p =>
+            p.LabelShort.Equals(effect.targetPawn, StringComparison.OrdinalIgnoreCase));
+
+        if (target == null)
+        {
+            ModLogger.Warning($"MiracleHealChronicCondition: no spawned colonist found for '{effect.targetPawn}'.");
+            return GlobalTargetInfo.Invalid;
+        }
+
+        var chronicDefNames = target.health.hediffSet.hediffs
+            .Where(h => h.Visible && !(h is Hediff_MissingPart) && (h.IsPermanent() || h.def.chronic))
+            .Select(h => h.def.defName);
+        ModLogger.Message($"MiracleHealChronicCondition: {target.LabelShort} chronic conditions: [{string.Join(", ", chronicDefNames)}]");
+
+        HediffDef hediffDef = DefDatabase<HediffDef>.GetNamed(effect.defName, errorOnFail: false);
+        if (hediffDef == null)
+        {
+            ModLogger.Warning($"MiracleHealChronicCondition: HediffDef '{effect.defName}' not found.");
+            return GlobalTargetInfo.Invalid;
+        }
+
+        Hediff existing = target.health.hediffSet.hediffs.FirstOrDefault(h =>
+            h.def == hediffDef &&
+            !(h is Hediff_MissingPart) &&
+            (h.IsPermanent() || h.def.chronic));
+
+        if (existing == null)
+        {
+            ModLogger.Warning($"MiracleHealChronicCondition: {target.LabelShort} has no chronic condition '{effect.defName}'.");
+            return GlobalTargetInfo.Invalid;
+        }
+
+        target.health.RemoveHediff(existing);
+        ModLogger.Message($"{target.LabelShort} was miraculously cured of {hediffDef.defName}.");
+
+        return new GlobalTargetInfo(target);
+    }
+
+    public string GetSummary(LlmEffect effect) =>
+        $"Cure chronic condition '{effect.defName}' on {effect.targetPawn}";
+}
+using RimTelligence.Source.CustomEvents;
+using RimTelligence.Source.CustomEvents.Handlers;
+using RimWorld.Planet;
+using System;
+using System.Linq;
+using Verse;
+
+internal class MiracleHealDiseaseHandler : IEffectHandler
+{
+    public string EffectType => "MiracleHealDisease";
+
+    public string PromptDescription =>
+        "- MiracleHealDisease : defName = HediffDef defName (e.g. Malaria, Plague, Flu), " +
+        "targetPawn = colonist name";
+
+    public string AditionalPromptInfo =>
+        "Select only from the colonist's diseases list. " +
+        "Use the exact defName string provided.";
+
+    public GlobalTargetInfo Execute(LlmEffect effect, Map map)
+    {
+        Pawn target = map.mapPawns.FreeColonistsSpawned.FirstOrDefault(p =>
+            p.LabelShort.Equals(effect.targetPawn, StringComparison.OrdinalIgnoreCase));
+
+        if (target == null)
+        {
+            ModLogger.Warning($"MiracleHealDisease: no spawned colonist found for '{effect.targetPawn}'.");
+            return GlobalTargetInfo.Invalid;
+        }
+
+        HediffDef hediffDef = DefDatabase<HediffDef>.GetNamed(effect.defName, errorOnFail: false);
+        if (hediffDef == null)
+        {
+            ModLogger.Warning($"MiracleHealDisease: HediffDef '{effect.defName}' not found.");
+            return GlobalTargetInfo.Invalid;
+        }
+
+        Hediff existing = target.health.hediffSet.hediffs.FirstOrDefault(h =>
+            h.def == hediffDef &&
+            !(h is Hediff_MissingPart) &&
+            !h.IsPermanent() &&
+            !h.def.chronic);
+
+        if (existing == null)
+        {
+            ModLogger.Warning($"MiracleHealDisease: {target.LabelShort} has no active disease '{effect.defName}'.");
+            return GlobalTargetInfo.Invalid;
+        }
+
+        target.health.RemoveHediff(existing);
+        ModLogger.Message($"{target.LabelShort}'s {hediffDef.defName} was healed.");
+
+        return new GlobalTargetInfo(target);
+    }
+
+    public string GetSummary(LlmEffect effect) =>
+        $"Heal disease '{effect.defName}' on {effect.targetPawn}";
+}
+using RimTelligence.Source.CustomEvents;
+using RimTelligence.Source.CustomEvents.Handlers;
+using RimWorld.Planet;
+using System;
+using System.Linq;
+using Verse;
+
+internal class MiracleHealMissingPartHandler : IEffectHandler
+{
+    public string EffectType => "MiracleHealMissingPart";
+
+    public string PromptDescription =>
+        "- MiracleHealMissingPart : defName = exact body part label (e.g. left hand, right foot), " +
+        "targetPawn = colonist name";
+
+    public string AditionalPromptInfo =>
+        "Select only from the colonist's missing_body_parts list. " +
+        "Use the exact defName string provided — do not guess or abbreviate.";
+
+
+    public GlobalTargetInfo Execute(LlmEffect effect, Map map)
+    {
+        Pawn target = map.mapPawns.FreeColonistsSpawned.FirstOrDefault(p =>
+            p.LabelShort.Equals(effect.targetPawn, StringComparison.OrdinalIgnoreCase));
+
+        if (target == null)
+        {
+            ModLogger.Warning($"MiracleHealMissingPart: no spawned colonist found for '{effect.targetPawn}'.");
+            return GlobalTargetInfo.Invalid;
+        }
+
+        Hediff_MissingPart missingPart = target.health.hediffSet.hediffs
+            .OfType<Hediff_MissingPart>()
+            .FirstOrDefault(h =>
+                h.Part != null &&
+                h.Part.LabelCap.ToString().Equals(effect.defName, StringComparison.OrdinalIgnoreCase));
+
+        if (missingPart == null)
+        {
+            ModLogger.Warning($"MiracleHealMissingPart: {target.LabelShort} has no missing part '{effect.defName}'.");
+            return GlobalTargetInfo.Invalid;
+        }
+
+        target.health.RestorePart(missingPart.Part);
+        ModLogger.Message($"{target.LabelShort} had their {missingPart.Part.LabelCap} restored.");
+
+        return new GlobalTargetInfo(target);
+    }
+
+    public string GetSummary(LlmEffect effect) =>
+        $"Restore missing part '{effect.defName}' on {effect.targetPawn}";
+}
+using System.Collections.Generic;
+using System.Linq;
+
+namespace RimTelligence.Source.CustomEvents
+{
+    public static class LlmEffectValidator
+    {
+        // Types where an empty defName makes execution meaningless or will throw.
+        private static readonly HashSet<string> _requiresDefName = new HashSet<string>(
+            System.StringComparer.OrdinalIgnoreCase)
+        {
+            "AnimalInsanity",
+            "SelfTame",
+            "ChangeWeather",
+            "CropBlight",
+            "StartExtremeWeatherEvent",
+            "LoseItems",
+            "PawnFoundItem",
+            "ResourcePodCrash",
+            "SpawnItemsAtRandomLocation",
+            "AddExpPoints",
+            "MoodDebuff",
+            "MoodBuff",
+            "DiseasePawn",
+            "DamagePawn",
+            "LoseExpPoints",
+            "MiracleHealChronicCondition",
+            "MiracleHealDisease",
+            "MiracleHealMissingPart"
+        };
+
+        public static List<LlmEffect> StripInvalid(List<LlmEffect> effects)
+        {
+            if (effects == null) return new List<LlmEffect>();
+
+            var valid = new List<LlmEffect>();
+
+            foreach (var e in effects)
+            {
+                string reason = GetRejectionReason(e);
+                if (reason != null)
+                {
+                    ModLogger.Warning($"[Validator] Dropping effect type='{e.type}' defName='{e.defName}': {reason}");
+                    continue;
+                }
+                valid.Add(e);
+            }
+
+            return valid;
+        }
+
+        private static string GetRejectionReason(LlmEffect e)
+        {
+            if (string.IsNullOrWhiteSpace(e.type))
+                return "type is blank";
+
+            // Unknown type — handler won't exist, executor already warns but we drop early
+            if (!Handlers.EffectHandlerRegistry.GetAllHandlers()
+                    .Any(h => string.Equals(h.EffectType, e.type, System.StringComparison.OrdinalIgnoreCase)))
+                return $"unknown effect type '{e.type}'";
+
+            // Required defName missing
+            if (_requiresDefName.Contains(e.type) && string.IsNullOrWhiteSpace(e.defName))
+                return $"type '{e.type}' requires a defName but got empty string";
+
+            // Pure filler: nothing meaningful was set
+            bool noCount = e.count <= 0;
+            bool noValue = e.value <= 0;
+            bool noTarget = string.IsNullOrWhiteSpace(e.targetPawn);
+            bool noDefName = string.IsNullOrWhiteSpace(e.defName);
+
+            if (noCount && noValue && noTarget && noDefName)
+                return "all fields are zero/empty — pure filler";
+
+            return null;
+        }
+    }
+}
+using RimTelligence.Source.CustomEvents.Handlers;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+
+namespace RimTelligence.Source.CustomEvents.Prompting
+{
+    public static class PromptGenerator
+    {
+        private static readonly Random _random = new Random();
+        private static int _eventCount = 0;
+
+        private static readonly (string name, string voice, string sign)[] _tones = new[]
+        {
+            ("Dry Chronicler",    "Understated, slightly cynical. Good things are temporary and rare; bad things happen all the time. Prefer irony.", "Record the facts. Spare the feelings."),
+            ("Absurdist",         "Reality glitches. Physics misbehaves. The universe is an improv troupe that hates the audience. Events are surreal and nonsensical.", "Make it weird. Make it true."),
+            ("Anarchic Trickster","A capricious saboteur narrating their own prank. Even gifts come with hidden costs or humiliating twists.", "The punchline is always suffering."),
+            ("Reluctant Optimist","Unexpectedly hopeful. Find silver linings. Frame disasters as growth opportunities.", "Something good is always trying to happen."),
+            ("Bored Deity",       "Capricious, ancient, condescending. Colonists are 'mortals'. Events are the whims of a bored god who has seen everything before.", "These creatures amuse me. For now."),
+            ("Ufologist",         "Every event has a convoluted alien explanation. Conspiracies are mundane; mundanity is suspicious.", "They were always here."),
+        };
+
+        // Effect types that target the world, not a specific pawn.
+        // Used to build the "WORLD EVENTS" section of the prompt.
+        private static readonly HashSet<string> _worldEffectTypes = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "StartExtremeWeatherEvent",
+            "ChangeWeather",
+            "MeteoriteImpact",
+            "CropBlight",
+            "ResourcePodCrash",
+            "Alphabeavers",
+            "AnimalInsanity",
+            "SelfTame",
+            "LoseItems",
+        };
+
+        public static string BuildSystemPrompt(string snapshotNarrative)
+        {
+            var tone = _tones[_random.Next(_tones.Length)];
+            int numEffects = _random.Next(1, 4);
+            int maxSentences = numEffects * 3;
+            _eventCount++;
+            bool preferWorldEvent = (_eventCount % 4 == 0);
+
+            var sb = new StringBuilder();
+
+            //Identity
+            sb.AppendLine("You are a RimWorld storyteller.");
+            sb.AppendLine($"Your voice: {tone.name} — {tone.voice}");
+            sb.AppendLine($"Your guiding principle: \"{tone.sign}\"");
+            sb.AppendLine("Roleplay a little describe things in voice and vocalbulary that suits your tone");
+            sb.AppendLine();
+            sb.AppendLine("Output ONLY a valid JSON object. No markdown fences, no preamble, nothing else.");
+            sb.AppendLine();
+
+            //Every 4 pawn events one world event 
+            if (preferWorldEvent)
+            {
+                sb.AppendLine("EVENT FOCUS FOR THIS CALL: WORLD EVENT");
+                sb.AppendLine("Write a story about something that happens to the COLONY or ENVIRONMENT, not to one specific pawn.");
+                sb.AppendLine("Good angles: a weather shift, a crop disaster, animals behaving strangely, a resource drop, a meteorite.");
+                sb.AppendLine("Colonists may appear as witnesses or bystanders, but they are not the subject.");
+                sb.AppendLine("Prefer effects from the WORLD EFFECTS section below.");
+            }
+            else
+            {
+                sb.AppendLine("EVENT FOCUS FOR THIS CALL: PAWN EVENT");
+                sb.AppendLine("Write a story centred on one or two specific colonists.");
+                sb.AppendLine("Ground it in their current [ACTION], traits, health, or mood.");
+                sb.AppendLine("Prefer effects from the PAWN EFFECTS section below, though world effects are allowed if the story calls for them.");
+            }
+            sb.AppendLine();
+
+            // ── Creative mandate ───────────────────────────────────────────────
+            sb.AppendLine("MANDATE:");
+            sb.AppendLine("- Events are things that HAPPENED, not patch notes or status reports.");
+            sb.AppendLine($"- Write at most {maxSentences} short punchy sentences.");
+            sb.AppendLine("- Ground every sentence in the colony snapshot.");
+            sb.AppendLine("- If a colonist is the subject, the event must interrupt or involve their [ACTION].");
+            sb.AppendLine("- Traits describe how a pawn REACTS, not what they are currently doing.");
+            sb.AppendLine("- Avoid repeating any title from [RECENT EVENTS].");
+            sb.AppendLine();
+
+            // ── Effect rules ───────────────────────────────────────────────────
+            sb.AppendLine("EFFECT RULES:");
+            sb.AppendLine("- Each effect must correspond to something explicitly stated in your letterText.");
+            sb.AppendLine("- type must be one of the allowed types below (exact spelling, case-insensitive).");
+            sb.AppendLine("- defName must be from the 'Allowed values' list for that type — if you cannot find a valid one, omit the whole effect.");
+            sb.AppendLine("- targetPawn must be an exact colonist name from the snapshot, \"random\", or \"\" if unused.");
+            sb.AppendLine("- count > 0 when the type uses count; value > 0 when the type uses value.");
+            sb.AppendLine("- Drop any effect where count=0, value=0, targetPawn=\"\", and defName=\"\" (pure filler).");
+            sb.AppendLine();
+
+            // ── Output format ──────────────────────────────────────────────────
+            sb.AppendLine("OUTPUT FORMAT:");
+            sb.AppendLine("{");
+            sb.AppendLine("  \"effects\": [ /* derived from letterText only; may be [] */ ]");
+            sb.AppendLine("  \"letterTitle\": \"short punchy headline\",");
+            sb.AppendLine("  \"letterText\": \"the story — every effect must appear here explicitly\",");
+            sb.AppendLine("}");
+            sb.AppendLine();
+
+            // ── Examples ──────────────────────────────────────────────────────
+            sb.AppendLine("EXAMPLES:");
+            sb.AppendLine();
+            sb.AppendLine("// World event example:");
+            sb.AppendLine("{");
+            sb.AppendLine("  \"effects\": [");
+            sb.AppendLine("    { \"type\": \"CropBlight\", \"defName\": \"Plant_Rice\", \"count\": 0, \"value\": 12, \"targetPawn\": \"\" }");
+            sb.AppendLine("  ]");
+            sb.AppendLine("  \"letterTitle\": \"Blight in the North Fields\",");
+            sb.AppendLine("  \"letterText\": \"The rice crop in the north fields has turned black overnight. No one saw it happen. The colonists noticed at dawn — half the harvest, gone.\",");
+            sb.AppendLine("}");
+            sb.AppendLine();
+            sb.AppendLine("// Pawn event example (two matching effects):");
+            sb.AppendLine("{");
+            sb.AppendLine("  \"effects\": [");
+            sb.AppendLine("    { \"type\": \"PawnFoundItem\",  \"defName\": \"MedicineIndustrial\", \"count\": 10, \"value\": 0, \"targetPawn\": \"Vasquez\" },");
+            sb.AppendLine("    { \"type\": \"AnimalInsanity\", \"defName\": \"Muffalo\",            \"count\": 1,  \"value\": 0, \"targetPawn\": \"\" }");
+            sb.AppendLine("  ]");
+            sb.AppendLine("  \"letterTitle\": \"Cache and Consequences\",");
+            sb.AppendLine("  \"letterText\": \"Vasquez was hauling slag when a hidden supply crate cracked open under her boot, spilling industrial medicine across the floor. The commotion spooked a nearby muffalo, which promptly decided Vasquez had started it.\",");
+            sb.AppendLine("}");
+            sb.AppendLine();
+
+            // ── Effect types, split into world vs pawn ─────────────────────────
+            // Splitting the list makes it visually obvious which bucket to draw
+            // from when the focus steering says "prefer world effects".
+            var allHandlers = EffectHandlerRegistry.GetAllHandlers().ToList();
+            var worldHandlers = allHandlers.Where(h => _worldEffectTypes.Contains(h.EffectType)).ToList();
+            var pawnHandlers = allHandlers.Where(h => !_worldEffectTypes.Contains(h.EffectType)).ToList();
+
+            sb.AppendLine("WORLD EFFECTS (colony/environment — no specific pawn required):");
+            foreach (var h in worldHandlers)
+            {
+                string line = $"  {h.PromptDescription}";
+                if (!string.IsNullOrWhiteSpace(h.AditionalPromptInfo))
+                    line += $"  — Allowed values: {h.AditionalPromptInfo}";
+                sb.AppendLine(line);
+            }
+            sb.AppendLine();
+
+            sb.AppendLine("PAWN EFFECTS (target a specific colonist):");
+            foreach (var h in pawnHandlers)
+            {
+                string line = $"  {h.PromptDescription}";
+                if (!string.IsNullOrWhiteSpace(h.AditionalPromptInfo))
+                    line += $"  — Allowed values: {h.AditionalPromptInfo}";
+                sb.AppendLine(line);
+            }
+            sb.AppendLine();
+
+            // ── Colony state ───────────────────────────────────────────────────
+            sb.AppendLine("COLONY STATE (your story seed):");
+            sb.AppendLine(snapshotNarrative);
+            sb.AppendLine();
+
+            sb.AppendLine("Return ONLY the JSON object.");
+
+            return sb.ToString();
+        }
+    }
+}
+using RimTelligence.Source.DataSnapshots;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+
+namespace RimTelligence.Source.CustomEvents.Prompting
+{
+   public static class SnapshotNarrator
+    {
+        private static readonly Random _rng = new Random();
+
+        private const int MaxResourceEntries = 10;
+        private const int SpotlightCount = 2;   
+        private const int BriefCount = 999;
+
+        public static string Narrate(ColonySnapshot s)
+        {
+            var sb = new StringBuilder();
+
+            sb.Append($"Colony \"{s.colonyName}\", day {s.day}");
+            sb.Append($" — {s.season?.ToLower() ?? "unknown season"}, {s.biome?.ToLower() ?? "hostile biome"}.");
+            sb.Append($" Outside: {DescribeTemperature(s.temperature)}, {s.currentWeather?.ToLower() ?? "unclear weather"}.");
+            sb.AppendLine();
+
+
+            if (s.colonists != null && s.colonists.Count > 0)
+            {
+                var names = s.colonists.Select(p => p.name).Where(n => !string.IsNullOrWhiteSpace(n)).ToList();
+                sb.AppendLine($"Colonists ({s.colonistCount} total, exact names for targetPawn): {string.Join(", ", names)}.");
+                sb.AppendLine();
+
+                var ordered = s.colonists.OrderByDescending(InterestScore).ToList();
+                var spotlight = ordered.Take(SpotlightCount).ToList();
+                var brief = ordered.Skip(SpotlightCount).ToList();
+
+                sb.AppendLine("Key colonists (full detail):");
+                foreach (var p in spotlight)
+                    sb.AppendLine("  " + DescribePawnFull(p));
+
+                if (brief.Count > 0)
+                {
+                    sb.AppendLine("Other colonists (brief):");
+                    foreach (var p in brief)
+                        sb.AppendLine("  " + DescribePawnBrief(p));
+                }
+                sb.AppendLine();
+            }
+
+            sb.AppendLine(DescribeFood(s.totalNutrition, s.colonistCount));
+            sb.AppendLine(DescribeWealth(s.wealthTotal));
+            sb.AppendLine(DescribeRaidPressure(s.daysSinceLastRaid));
+
+            if (s.activeConditions != null && s.activeConditions.Count > 0)
+                sb.AppendLine($"Active conditions: {string.Join(", ", s.activeConditions)}.");
+
+            if (s.wildAnimals != null && s.wildAnimals.Count > 0)
+            {
+                var sample = s.wildAnimals
+                    .OrderByDescending(kv => kv.Value)
+                    .Take(6)
+                    .Select(kv => $"{kv.Value}x {kv.Key}")
+                    .ToList();
+                sb.AppendLine($"Wildlife nearby: {string.Join(", ", sample)}.");
+            }
+
+            if (s.cultivatedPlants != null && s.cultivatedPlants.Count > 0)
+            {
+                var crops = s.cultivatedPlants
+                    .Select(kv => $"{kv.Value}x {kv.Key}")
+                    .ToList();
+                sb.AppendLine($"Crops: {string.Join(", ", crops)}.");
+            }
+
+            if (s.resources?.allResources != null && s.resources.allResources.Count > 0)
+            {
+                var topResources = s.resources.allResources
+                    .OrderByDescending(kv => kv.Value)
+                    .Take(MaxResourceEntries)
+                    .Select(kv => $"{kv.Key}: {kv.Value}");
+                string suffix = s.resources.allResources.Count > MaxResourceEntries
+                    ? $" (+ {s.resources.allResources.Count - MaxResourceEntries} more)"
+                    : "";
+                sb.AppendLine($"Resources: {string.Join(", ", topResources)}{suffix}.");
+            }
+
+            if (s.recentEventTitles != null && s.recentEventTitles.Count > 0)
+                sb.AppendLine($"[RECENT EVENTS — do not repeat]: {string.Join("; ", s.recentEventTitles)}.");
+
+            return sb.ToString().Trim();
+        }
+
+        private static float InterestScore(PawnSnapshot p)
+        {
+            float score = 0f;
+            if (p.health?.is_downed == true) score += 10f;
+            if (p.health?.diseases?.Count > 0) score += 5f;
+            if (p.health?.injuries?.Count > 0) score += 3f;
+            if (p.health?.missing_body_parts?.Count > 0) score += 4f;
+            if (p.mood < 0.3f) score += 4f;
+            else if (p.mood < 0.5f) score += 2f;
+            if (p.traits?.Count > 0) score += 1f;
+            return score;
+        }
+
+        private static string DescribePawnFull(PawnSnapshot p)
+        {
+            var sb = new StringBuilder();
+            sb.Append($"{p.name} (age {p.age})");
+
+            if (!string.IsNullOrWhiteSpace(p.current_action))
+                sb.Append($" [ACTION: {p.current_action.ToLower()}]");
+
+            if (p.queued_actions?.Count > 0)
+                sb.Append($" [QUEUE: {string.Join(" → ", p.queued_actions).ToLower()}]");
+
+            sb.Append($" [MOOD: {DescribeMood(p.mood)}]");
+
+            if (p.health != null)
+            {
+                sb.Append($" [HEALTH: {p.health.overall_health:P0}");
+                if (p.health.is_downed) sb.Append(", DOWNED");
+                if (p.health.pain_level > 0.3f) sb.Append($", pain {p.health.pain_level:P0}");
+                if (p.health.injuries?.Count > 0) sb.Append($", injuries: {string.Join(", ", p.health.injuries)}");
+                if (p.health.diseases?.Count > 0) sb.Append($", diseases: {string.Join(", ", p.health.diseases)}");
+                if (p.health.missing_body_parts?.Count > 0) sb.Append($", missing: {string.Join(", ", p.health.missing_body_parts)}");
+                if (p.health.implants?.Count > 0) sb.Append($", implants: {string.Join(", ", p.health.implants)}");
+                if (p.health.chronic_conditions?.Count > 0) sb.Append($", chronic: {string.Join(", ", p.health.chronic_conditions)}");
+                sb.Append("]");
+            }
+
+            if (p.traits?.Count > 0)
+                sb.Append($" [TRAITS: {string.Join(", ", p.traits)}]");
+
+            // Background only in full detail
+            if (!string.IsNullOrWhiteSpace(p.childhood) || !string.IsNullOrWhiteSpace(p.adulthood))
+                sb.Append($" [PAST: {p.childhood}/{p.adulthood}]");
+
+            if (p.skills?.Count > 0)
+                sb.Append($" [SKILLS: {string.Join(", ", p.skills)}]");
+
+            return sb.ToString();
+        }
+
+        private static string DescribePawnBrief(PawnSnapshot p)
+        {
+            var sb = new StringBuilder();
+            sb.Append($"{p.name}");
+
+            if (!string.IsNullOrWhiteSpace(p.current_action))
+                sb.Append($" [ACTION: {p.current_action.ToLower()}]");
+
+            sb.Append($" [MOOD: {DescribeMood(p.mood)}]");
+
+            if (p.health?.is_downed == true) sb.Append(" [DOWNED]");
+            if (p.health?.diseases?.Count > 0) sb.Append($" [SICK: {string.Join(", ", p.health.diseases)}]");
+            if (p.traits?.Count > 0) sb.Append($" [TRAITS: {string.Join(", ", p.traits)}]");
+
+            return sb.ToString();
+        }
+
+
+        private static string DescribeMood(float mood)
+        {
+            if (mood < 0.25f) return $"{mood:P0} (breaking)";
+            if (mood < 0.45f) return $"{mood:P0} (miserable)";
+            if (mood < 0.65f) return $"{mood:P0} (stable)";
+            if (mood < 0.80f) return $"{mood:P0} (good)";
+            return $"{mood:P0} (euphoric)";
+        }
+
+        private static string DescribeFood(float nutrition, int colonistCount)
+        {
+            if (colonistCount <= 0) return "Food situation unknown.";
+            float daysLeft = nutrition / Math.Max(colonistCount * 1.6f, 1f);
+            if (daysLeft < 2) return "The colony is starving. Meals are rationed to crumbs.";
+            if (daysLeft < 5) return "Food is dangerously low — hunger is a constant companion.";
+            if (daysLeft < 12) return "Provisions are modest; nobody starving, nobody comfortable.";
+            if (daysLeft < 25) return "Food stocks are adequate.";
+            return "The pantry is embarrassingly full. Abundance breeds complacency.";
+        }
+
+        private static string DescribeWealth(float wealth)
+        {
+            if (wealth < 15000) return "The colony is dirt poor — scavenged furniture and desperate hope.";
+            if (wealth < 40000) return "Scraping by: enough to survive, little to spare.";
+            if (wealth < 100000) return "A modest, functional colony — not impressive, but standing.";
+            if (wealth < 250000) return "The colony has accumulated real wealth. Comfortable, almost.";
+            return "Grotesquely wealthy by rimworld standards. A tempting target.";
+        }
+
+        private static string DescribeRaidPressure(int daysSince)
+        {
+            if (daysSince < 0) return "Raiders have not come yet — but they will.";
+            if (daysSince == 0) return "Raiders struck today. The blood is still fresh.";
+            if (daysSince < 4) return "The last raid was only days ago. Wounds haven't closed.";
+            if (daysSince < 12) return "It has been quiet since the last raid. Suspiciously quiet.";
+            if (daysSince < 25) return "Weeks without violence. The colonists are getting restless.";
+            return "It has been a very long time since the last raid. Something must be coming.";
+        }
+
+        private static string DescribeTemperature(float celsius)
+        {
+            if (celsius < -30) return "lethally cold";
+            if (celsius < -10) return "bitterly freezing";
+            if (celsius < 5) return "cold";
+            if (celsius < 18) return "cool";
+            if (celsius < 28) return "pleasant";
+            if (celsius < 38) return "sweltering";
+            return "dangerously hot";
+        }
+    }
+}
+using System;
+using Newtonsoft.Json;
+using RimWorld;
+using RimWorld.Planet;
+using Verse;
+using RimTelligence.Source.DataSnapshots;
+using RimTelligence.Source.LlmCom;
+using RimTelligence.Source.CustomEvents.Execution;
+using RimTelligence.Source.CustomEvents.Prompting;
+
+namespace RimTelligence.Source.CustomEvents.Workers
+{
+    public class IncidentWorker_ProceduralEvent : IncidentWorker
+    {
+        protected override bool TryExecuteWorker(IncidentParms parms)
+        {
+            if (!(parms.target is Map map))
+            {
+                ModLogger.Error("TryExecuteWorker: parms.target is not a Map.");
+                return false;
+            }
+
+            ModLogger.Message("ProceduralEvent triggered, capturing snapshot...");
+            FireLlmEventAsync(map);
+            return true;
+        }
+
+        private async void FireLlmEventAsync(Map map)
+        {
+            // 1. Data Collection
+            ColonySnapshot snapshot = ColonySnapshotCapturer.Capture(map);
+            string snapshotJson = JsonConvert.SerializeObject(snapshot, Formatting.Indented);
+
+            string snapshotNarrative = SnapshotNarrator.Narrate(snapshot);
+
+            // 2. Prompt Generation
+            string prompt = PromptGenerator.BuildSystemPrompt(snapshotNarrative);
+            ModLogger.Message($"Prompt generated: {prompt}");
+            ModLogger.Message($"Sending prompt to LLM ({prompt.Length} chars)");
+
+            // 3. External API Call
+            BasicCom com = new BasicCom();
+            string response;
+            try
+            {
+                response = await com.GetLlmResponse(prompt);
+            }
+            catch (Exception e)
+            {
+                ModLogger.Error($"LLM call failed: {e.Message}");
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(response))
+            {
+                ModLogger.Error("LLM returned empty response.");
+                return;
+            }
+            ModLogger.Message($"LLM response received: {response}");
+
+            // 4. Data Parsing & Sanitization
+            string cleanedJson = response.Replace("```json", "").Replace("```", "").Trim();
+            LlmCustomEvent evt;
+
+            try
+            {
+                evt = JsonConvert.DeserializeObject<LlmCustomEvent>(cleanedJson);
+            }
+            catch (Exception e)
+            {
+                ModLogger.Error($"JSON parse failed: {e.Message}\nResponse was:\n{cleanedJson}");
+                return;
+            }
+
+            if (evt == null)
+            {
+                ModLogger.Error($"JSON deserialized to null.\nResponse was:\n{cleanedJson}");
+                return;
+            }
+
+            // 4b. Strip effects the LLM emitted incorrectly (missing defName, all-zero, unknown type)
+            evt.effects = LlmEffectValidator.StripInvalid(evt.effects);
+
+
+
+            // 5. Game Thread Execution
+            RimTelligenceDispatcher.ExecutionQueue.Enqueue(() =>
+            {
+                GlobalTargetInfo target = LlmEffectExecutor.ExecuteAll(evt, map);
+
+                string summary = LlmEffectExecutor.BuildSummary(evt);
+                string fullText = $"{evt.letterText ?? "Something happened."}\n\n{summary}";
+
+                Find.LetterStack.ReceiveLetter(
+                    evt.letterTitle ?? "Strange Event",
+                    fullText,
+                    LetterDefOf.ThreatSmall,
+                    target.IsValid ? new LookTargets(target) : null
+                );
+            });
+        }
+    }
+}
+using Newtonsoft.Json;
+using RimTelligence.Source.CustomEvents.Execution;
+using RimTelligence.Source.CustomEvents.Prompting;
+using RimTelligence.Source.DataSnapshots;
+using RimTelligence.Source.LlmCom;
+using RimWorld;
+using RimWorld.Planet;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using Verse;
+
+// rewrite later nad DebugActions too 
+namespace RimTelligence.Source.CustomEvents.Workers
+{
+    public class IncidentWorker_Test : IncidentWorker
+    {
+        public void FireLlmEventAsync(Map map, string eventJson )
+        {
+            LlmCustomEvent evt;
+
+            evt = JsonConvert.DeserializeObject<LlmCustomEvent>(eventJson);
+
+            // 5. Game Thread Execution
+            LongEventHandler.ExecuteWhenFinished(() =>
+            {
+                GlobalTargetInfo target = LlmEffectExecutor.ExecuteAll(evt, map);
+
+                string summary = LlmEffectExecutor.BuildSummary(evt);
+                string fullText = $"{evt.letterText ?? "Something happened."}\n\n{summary}";
+
+                Find.LetterStack.ReceiveLetter(
+                    evt.letterTitle ?? "Strange Event",
+                    fullText,
+                    LetterDefOf.ThreatSmall,
+                    target.IsValid ? new LookTargets(target) : null
+                );
+            });
+        }
+    }
+    
+}
+using LudeonTK;
+using Newtonsoft.Json;
+using RimTelligence.Source.CustomEvents;
+using RimTelligence.Source.CustomEvents.Handlers;
+using RimTelligence.Source.CustomEvents.Workers;
+using RimTelligence.Source.DataSnapshots;
+using RimWorld;
+using System.Collections.Generic;
+using System.Linq;
+using UnityEngine;
+using Verse;
+
+// this file is to big rewrite it in the future
+namespace RimTelligence.Source.Debug
+{
+    public static class RimTelligenceDebugActions
+    {
+        [DebugAction("RimTelligence", "Test Effect Handler", allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void TestEffectHandler()
+        {
+            Map map = Find.CurrentMap;
+            List<DebugMenuOption> options = new List<DebugMenuOption>();
+
+            foreach (var handler in EffectHandlerRegistry.GetAllHandlers())
+            {
+                var capturedHandler = handler;
+                options.Add(new DebugMenuOption(
+                    capturedHandler.EffectType,
+                    DebugMenuOptionMode.Action,
+                    () => OpenParamDialog(capturedHandler, map)
+                ));
+            }
+
+            Find.WindowStack.Add(new Dialog_DebugOptionListLister(options));
+        }
+
+        private static void OpenParamDialog(IEffectHandler handler, Map map)
+        {
+            string colonistName = map.mapPawns.FreeColonists.FirstOrDefault()?.Name.ToStringShort ?? "";
+
+            LlmEffect effect = new LlmEffect
+            {
+                type = handler.EffectType,
+                defName = "Silver",
+                count = 10,
+                value = 10f,
+                targetPawn = colonistName
+            };
+
+            Find.WindowStack.Add(new Dialog_EffectTest(effect, map));
+        }
+    }
+
+    public class Dialog_EffectTest : Window
+    {
+        private readonly Map map;
+        private readonly LlmEffect effect;
+
+        private string defNameBuf;
+        private string defDescriptionBuf;
+        private string pawnBuf;
+        private string countBuf;
+        private string valueBuf;
+
+        private Vector2 pawnScroll;
+        private Vector2 defScroll;
+
+        private const float ButtonHeight = 30f;
+        private const float ScrollSectionHeight = 150f;
+
+        public override Vector2 InitialSize => new Vector2(480f, 620f);
+
+        public Dialog_EffectTest(LlmEffect effect, Map map)
+        {
+            this.effect = effect;
+            this.map = map;
+
+            defNameBuf = effect.defName;
+            defDescriptionBuf = effect.defDescription;
+            pawnBuf = effect.targetPawn;
+            countBuf = effect.count.ToString();
+            valueBuf = effect.value.ToString();
+
+            doCloseButton = true;
+            closeOnClickedOutside = true;
+        }
+
+        public override void DoWindowContents(Rect inRect)
+        {
+            Listing_Standard ui = new Listing_Standard();
+            ui.Begin(inRect);
+
+            ui.Label($"Handler: {effect.type}");
+            ui.GapLine();
+
+            var handler = EffectHandlerRegistry.GetHandler(effect.type);
+            if (handler != null)
+            {
+                ui.Label($"Hint: {handler.PromptDescription}");
+                ui.Gap();
+            }
+
+            defNameBuf = ui.TextEntryLabeled("defName:    ", defNameBuf);
+            defDescriptionBuf = ui.TextEntryLabeled("defDescription: ", defDescriptionBuf);
+            pawnBuf = ui.TextEntryLabeled("targetPawn: ", pawnBuf);
+            ui.TextFieldNumericLabeled("count: ", ref effect.count, ref countBuf, 0f, 10000f);
+            ui.TextFieldNumericLabeled("value: ", ref effect.value, ref valueBuf, 0f, 10000f);
+
+            ui.GapLine();
+
+            // ── pawn quick-fill ──────────────────────────────────────────────
+            ui.Label("Quick-fill pawn:");
+            DrawScrollableButtons(
+                ui, inRect,
+                map.mapPawns.FreeColonists.Select(p => p.Name.ToStringShort).ToList(),
+                ref pawnScroll,
+                val => pawnBuf = val
+            );
+
+            // ── def quick-fill ───────────────────────────────────────────────
+            List<string> defList = GetDefList(effect.type);
+            if (defList != null)
+            {
+                ui.GapLine();
+                ui.Label($"Quick-fill ({effect.type}):");
+                DrawScrollableButtons(
+                    ui, inRect,
+                    defList,
+                    ref defScroll,
+                    val => defNameBuf = val
+                );
+            }
+
+            ui.Gap();
+
+            if (ui.ButtonText("Fire Effect"))
+                FireEffect();
+
+            ui.End();
+        }
+
+        private void DrawScrollableButtons(
+            Listing_Standard ui,
+            Rect inRect,
+            List<string> items,
+            ref Vector2 scroll,
+            System.Action<string> onSelect)
+        {
+            if (items == null || items.Count == 0)
+            {
+                ui.Label("  (none)");
+                return;
+            }
+
+            float totalHeight = items.Count * ButtonHeight;
+            float viewHeight = Mathf.Min(totalHeight, ScrollSectionHeight);
+            float innerWidth = inRect.width - 20f;
+
+            Rect outerRect = ui.GetRect(viewHeight);
+            Rect innerRect = new Rect(0f, 0f, innerWidth, totalHeight);
+
+            Widgets.BeginScrollView(outerRect, ref scroll, innerRect);
+
+            float y = 0f;
+            foreach (string item in items)
+            {
+                Rect btnRect = new Rect(0f, y, innerWidth * 0.6f, ButtonHeight - 2f);
+                if (Widgets.ButtonText(btnRect, item))
+                    onSelect(item);
+                y += ButtonHeight;
+            }
+
+            Widgets.EndScrollView();
+            ui.Gap(4f);
+        }
+
+        private static List<string> GetDefList(string effectType)
+        {
+            switch (effectType)
+            {
+                case "AnimalInsanity": return DataList.AnimalList;
+                case "DiseasePawn": return DataList.DiseaseList;
+                case "MiracleHeal": return DataList.DiseaseList;
+                case "PawnFoundItem": return DataList.ResourceList;
+                case "Damage": return DataList.DamageTypeList;
+                case "ChangeWeather": return DataList.AllWeathersList;
+                case "GameCondition": return DataList.GameConditionList;
+                case "AddExpPoints": return DataList.AllSkillsList;
+                case "LoseExpPoints": return DataList.AllSkillsList;
+                default: return null;
+            }
+        }
+
+        private void FireEffect()
+        {
+            effect.defName = defNameBuf;
+            effect.defDescription = defDescriptionBuf;
+            effect.targetPawn = pawnBuf;
+
+            LlmCustomEvent evt = new LlmCustomEvent
+            {
+                letterTitle = $"Test: {effect.type}",
+                letterText = $"Debug fire of {effect.type}.",
+                effects = new List<LlmEffect> { effect }
+            };
+
+            string testJson = JsonConvert.SerializeObject(evt);
+            Log.Message($"[RimTelligence] Firing: {testJson}");
+
+            IncidentWorker_Test worker = new IncidentWorker_Test();
+            worker.FireLlmEventAsync(map, testJson);
+
+            Close();
+        }
+    }
+}
