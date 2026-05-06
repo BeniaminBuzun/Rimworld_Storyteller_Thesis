@@ -12,7 +12,7 @@ namespace RimTelligence.Source.CustomEvents.Handlers
         public string EffectType => "SelfTame";
         public string PromptDescription => "- SelfTame       : defName = PawnKindDef of animal, count = how many self-tame";
 
-        public string AditionalPromptInfo => "select only animals from wildAnimals list";
+        public string AditionalPromptInfo => "select only animals from [WILDLIFE] list";
 
         public GlobalTargetInfo Execute(LlmEffect effect, Map map)
         {

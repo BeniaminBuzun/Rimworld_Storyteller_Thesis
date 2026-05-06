@@ -34,7 +34,8 @@ namespace RimTelligence.Source.CustomEvents.Workers
             string snapshotNarrative = SnapshotNarrator.Narrate(snapshot);
 
             // 2. Prompt Generation
-            string prompt = PromptGenerator.BuildSystemPrompt(snapshotJson, snapshotNarrative);
+            string prompt = PromptGenerator.BuildSystemPrompt(snapshotNarrative);
+            ModLogger.Message($"Prompt generated: {prompt}");
             ModLogger.Message($"Sending prompt to LLM ({prompt.Length} chars)");
 
             // 3. External API Call
@@ -55,6 +56,7 @@ namespace RimTelligence.Source.CustomEvents.Workers
                 ModLogger.Error("LLM returned empty response.");
                 return;
             }
+            ModLogger.Message($"LLM response received: {response}");
 
             // 4. Data Parsing & Sanitization
             string cleanedJson = response.Replace("```json", "").Replace("```", "").Trim();
@@ -82,7 +84,7 @@ namespace RimTelligence.Source.CustomEvents.Workers
 
 
             // 5. Game Thread Execution
-            LongEventHandler.ExecuteWhenFinished(() =>
+            RimTelligenceDispatcher.ExecutionQueue.Enqueue(() =>
             {
                 GlobalTargetInfo target = LlmEffectExecutor.ExecuteAll(evt, map);
 

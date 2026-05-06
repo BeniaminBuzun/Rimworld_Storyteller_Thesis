@@ -29,7 +29,7 @@ I will use Readme as a file to documment progress RimTelligence (Development Nam
 ### 2. Started on relevant documentation of decompiled source code
 
 
-# V0.12
+# Version0.12
 ### Procedural Event System
 - `IncidentWorker_ProceduralEvent`: full async LLM event pipeline — snapshot → narrative → prompt → parse → execute
 - `ColonySnapshotCapturer`: captures colony state (pawns, mood, health, traits, skills, hediffs, weather, wildlife, wealth, food, raid history, active conditions)
@@ -46,6 +46,32 @@ I will use Readme as a file to documment progress RimTelligence (Development Nam
 - `LlmEffectValidator`: strips malformed effects before execution — catches blank types, missing required defNames, all-zero filler, unknown handlers
 
 ---
+
+# Version 0.13
+
+### Expanded Effect Handler Library
+- Added 11 new effect handlers bringing the total to 20 active types
+- New world effects: `ChangeWeather`, `MeteoriteImpact`, `CropBlight`, `ResourcePodCrash`, `SpawnItemsAtRandomLocation`, `LoseItems`
+- New pawn effects: `MiracleHealDisease`, `MiracleHealChronicCondition`, `MiracleHealMissingPart`, `AddExpPoints`, `LoseExpPoints`, `MoodBuff`, `MoodDebuff`
+- Deleted handlers that was to broken for game balance or didn't make any meaningful story effect : `StartFire`, `SpawnJoinable etc`
+### Prompt System Improvements
+- `PromptGenerator` now categorises effects into **World** vs **Pawn** buckets with steering logic — every 4th event is forced to be a world/environment event
+- Added concrete JSON examples directly into the system prompt to reduce LLM formatting errors
+
+### Dispatcher & Threading
+- `RimTelligenceDispatcher`: new `GameComponent` that processes a thread-safe queue of LLM-triggered actions on the game thread, replacing `LongEventHandler` calls and preventing threading issues
+
+### Debug Tooling
+- `Dialog_EffectTest`: in-game debug dialog for manually firing any effect handler with custom parameters, quick-fill buttons for pawns and valid def names
+- `RimTelligenceDebugActions`: dev menu integration under *RimTelligence* category
+
+### Dynamic Mood Thoughts
+- `ThoughtMemoryDynamic`: custom `Thought_Memory` subclass allowing LLM-generated mood buffs and debuffs with arbitrary labels and descriptions, fully save-game compatible
+
+### Colony Snapshot Enchancements
+- `ColonySnapshotCapturer` now includes detailed pawn health info (hediffs, missing parts), skill levels, and recent mood history for richer narrative context
+- now properly captures previus events but only their names llm still have problems with repeating similar events but I tested with with short span between and in real game they shouldnt occur so often
+
 
 ## Installation / Setup
 1.  Clone the repository into your `RimWorld/Mods` folder.

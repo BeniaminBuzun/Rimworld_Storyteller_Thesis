@@ -1,28 +1,32 @@
-﻿using RimWorld;
+﻿using RimTelligence.Source.DataSnapshots;
+using RimWorld;
 using RimWorld.Planet;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using UnityEngine;
 using Verse;
-
 namespace RimTelligence.Source.CustomEvents.Handlers
 {
-    public class FireConditionHandler : IEffectHandler
+    public class StartExtremeWeatherEvent : IEffectHandler
     {
-        public string EffectType => "FireCondition";
-        public string PromptDescription => "- FireCondition  : defName = GameConditionDef (e.g. HeatWave, ToxicFallout), value = duration days";
+        public string EffectType => "StartExtremeWeatherEvent";
+        public string PromptDescription => "- StartExtremeWeatherEvent  : defName = GameConditionDef (e.g. HeatWave, ToxicFallout), value = duration days";
 
-        public string AditionalPromptInfo => "select only from these taking into consideration colony state (SolarFlare Eclipse PsychicDrone PsychicSoothe ToxicFallout VolcanicWinter HeatWave ColdSnap Flashstorm ClimateCycle Planetkiller Aurora PsychicDroner)";
+        public string AditionalPromptInfo => $"select only from these conditions {string.Join(", ", DataList.GameConditionList)}";
 
         public GlobalTargetInfo Execute(LlmEffect effect, Map map)
         {
             GameConditionDef def = DefDatabase<GameConditionDef>.GetNamed(effect.defName, errorOnFail: false);
             if (def == null)
             {
-                ModLogger.Warning($"FireCondition: GameConditionDef '{effect.defName}' not found.");
+                ModLogger.Warning($"StartExtremeWeatherEvent: GameConditionDef '{effect.defName}' not found.");
                 return GlobalTargetInfo.Invalid;
             }
             int duration;
             if (effect.value > 0)
             {
-                duration = (int)effect.value * 60000;
+                duration = (int)(effect.value * 60000); // num of days to ticks
             }
             else {
                 duration = 180000;
