@@ -9,15 +9,21 @@ namespace RimTelligence.Source.CustomEvents.Handlers
 {
     public class CropBlightHandler : IEffectHandler
     {
-        public string EffectType => "CropBlight";
+        public string EffectName => "CropBlight";
 
-        public string PromptDescription => "- CropBlight    : defName = plant ThingDef to blight (e.g. Plant_Corn, Plant_Rice) or \"random\", value = number of plants to blight, targetPawn is unused";
+        public string NarrativeDescription => $"An event where colony plants are affected by blight.";
 
-        public string AditionalPromptInfo => "select defName only from harvestable_plants list.";
+        public string PromptStructure => "- type = CropBlight:\r\n    defName = \"ThingDef name\" (string) or random\r\n    count = integer (number of animals)\r\n    defDescription = \"\"\r\n    value = NONE\r\n    targetPawn = \"\"";
 
-        public GlobalTargetInfo Execute(LlmEffect effect, Map map)
+        public string AditionalPromptStructureInfo => "select defName only from harvestable_plants list."; // may probably not work I don't know is this list still exist it should but test
+
+        public float BaseWeight => 5f;
+
+        public EventAlignment Alignment => EventAlignment.Bad;
+
+        public GlobalTargetInfo Execute(GameEffect effect, Map map)
         {
-            int count = Math.Max(1, (int)effect.value);
+            int count = Math.Max(1, effect.count);
 
             IEnumerable<Plant> candidates = map.listerThings
                 .ThingsInGroup(ThingRequestGroup.Plant)
@@ -59,7 +65,7 @@ namespace RimTelligence.Source.CustomEvents.Handlers
             return new GlobalTargetInfo(targets[0].Position, map);
         }
 
-        public string GetSummary(LlmEffect effect) =>
-            $"{effect.value} {(effect.defName.Equals("random", StringComparison.OrdinalIgnoreCase) ? "random crop(s)" : effect.defName)} blighted";
+        public string GetSummary(GameEffect effect) =>
+            $"{effect.count} {(effect.defName.Equals("random", StringComparison.OrdinalIgnoreCase) ? "random crop(s)" : effect.defName)} blighted";
     }
 }

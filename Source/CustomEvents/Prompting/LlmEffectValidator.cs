@@ -29,11 +29,11 @@ namespace RimTelligence.Source.CustomEvents
             "MiracleHealMissingPart"
         };
 
-        public static List<LlmEffect> StripInvalid(List<LlmEffect> effects)
+        public static List<GameEffect> StripInvalid(List<GameEffect> effects)
         {
-            if (effects == null) return new List<LlmEffect>();
+            if (effects == null) return new List<GameEffect>();
 
-            var valid = new List<LlmEffect>();
+            var valid = new List<GameEffect>();
 
             foreach (var e in effects)
             {
@@ -49,14 +49,14 @@ namespace RimTelligence.Source.CustomEvents
             return valid;
         }
 
-        private static string GetRejectionReason(LlmEffect e)
+        private static string GetRejectionReason(GameEffect e)
         {
             if (string.IsNullOrWhiteSpace(e.type))
                 return "type is blank";
 
             // Unknown type — handler won't exist, executor already warns but we drop early
             if (!Handlers.EffectHandlerRegistry.GetAllHandlers()
-                    .Any(h => string.Equals(h.EffectType, e.type, System.StringComparison.OrdinalIgnoreCase)))
+                    .Any(h => string.Equals(h.EffectName, e.type, System.StringComparison.OrdinalIgnoreCase)))
                 return $"unknown effect type '{e.type}'";
 
             // Required defName missing
@@ -69,7 +69,7 @@ namespace RimTelligence.Source.CustomEvents
             bool noTarget = string.IsNullOrWhiteSpace(e.targetPawn);
             bool noDefName = string.IsNullOrWhiteSpace(e.defName);
 
-            if (noCount && noValue && noTarget && noDefName)
+            if (noCount && noValue && noTarget && noDefName && e.defName != "MeteoriteImpact")
                 return "all fields are zero/empty — pure filler";
 
             return null;

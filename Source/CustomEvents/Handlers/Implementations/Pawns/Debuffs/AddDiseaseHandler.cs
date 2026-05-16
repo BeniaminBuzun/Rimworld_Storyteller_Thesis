@@ -1,72 +1,74 @@
-﻿using RimTelligence.Source.DataSnapshots;
+using RimTelligence.Source.DataSnapshots;
 using RimWorld;
 using RimWorld.Planet;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
 using Verse;
 
 namespace RimTelligence.Source.CustomEvents.Handlers
 {
     public class AddDiseaseHandler : IEffectHandler
     {
-        public string EffectType => "DiseasePawn";
-        public string PromptDescription => "- DiseasePawn        : defName = HediffDef (e.g. Malaria, Plague), targetPawn = colonist name";
+        public string EffectName => "DiseasePawn";
 
-        private string specialSummary; // semi hack it works different everywhere
-        public string AditionalPromptInfo => $"select only from these disease {string.Join(", ", DataList.DiseaseList)}";
+        public string NarrativeDescription => "An event where a specific colonist contracts a disease.";
 
-        public GlobalTargetInfo Execute(LlmEffect effect, Map map)
+        public string PromptStructure =>
+            "- type = DiseasePawn:\r\n" +
+            "    defName = \"HediffDef name\" (e.g. Malaria, Plague, Flu)\r\n" +
+            "    count = 0\r\n" +
+            "    defDescription = \"\"\r\n" +
+            "    value = NONE\r\n" +
+            "    targetPawn = \"colonist name\"";
+
+        public string AditionalPromptStructureInfo =>
+            $"select only from  {string.Join(", ", GameObjectsCapturer.DiseaseList.Select(m => $"{m.DefName}: {m.Description}"))}";
+
+        public float BaseWeight => 3f;
+
+        public EventAlignment Alignment => EventAlignment.Bad;
+
+        private string specialSummary;
+
+        public GlobalTargetInfo Execute(GameEffect effect, Map map)
         {
             HediffDef hediffDef = DefDatabase<HediffDef>.GetNamed(effect.defName, errorOnFail: false);
             if (hediffDef == null)
             {
-                ModLogger.Warning($"Disease: HediffDef '{effect.defName}' not found.");
+                ModLogger.Warning($"DiseasePawn: HediffDef '{effect.defName}' not found.");
                 return GlobalTargetInfo.Invalid;
             }
 
-            var availablePawns = map.mapPawns.FreeColonistsSpawned;
-            List<Pawn> targets = new List<Pawn>();
+            Pawn target = map.mapPawns.FreeColonistsSpawned
+                .FirstOrDefault(p => p.LabelShort.Equals(effect.targetPawn, StringComparison.OrdinalIgnoreCase));
 
-            Pawn named = availablePawns.FirstOrDefault(p => p.LabelShort.Equals(effect.targetPawn, StringComparison.OrdinalIgnoreCase));
-            if (named != null) targets.Add(named);
-            
-
-            if (!targets.Any())
+            if (target == null)
             {
-                ModLogger.Warning($"Disease: no spawned targets found for '{effect.targetPawn}'.");
+                ModLogger.Warning($"DiseasePawn: no spawned colonist found for '{effect.targetPawn}'.");
                 return GlobalTargetInfo.Invalid;
             }
 
-            foreach (Pawn pawn in targets)
+            Hediff existing = target.health.hediffSet.GetFirstHediffOfDef(hediffDef);
+            if (existing != null)
             {
-                Hediff existingDisease = pawn.health.hediffSet.GetFirstHediffOfDef(hediffDef);
-                
-                if (existingDisease != null)
-                {
-                    float severity = Rand.Range(0.02f, 0.1f);
-                    specialSummary = $"{pawn.LabelShort} disease {hediffDef.defName} severity increased by {severity}";
-                    existingDisease.Severity += severity;
-
-                    pawn.health.Notify_HediffChanged(existingDisease);
-                }
-                else
-                {
-                    Hediff newDisease = HediffMaker.MakeHediff(hediffDef, pawn);
-                    newDisease.Severity = 0.01f;
-                    specialSummary = $"{pawn.LabelShort} got infected with {hediffDef.defName}";
-                    pawn.health.AddHediff(newDisease);
-
-                }
-
-                ModLogger.Message(specialSummary);
+                float severity = Rand.Range(0.02f, 0.1f);
+                existing.Severity += severity;
+                target.health.Notify_HediffChanged(existing);
+                specialSummary = $"{target.LabelShort}'s {hediffDef.defName} severity increased by {severity:F2}";
+            }
+            else
+            {
+                Hediff newDisease = HediffMaker.MakeHediff(hediffDef, target);
+                newDisease.Severity = 0.01f;
+                target.health.AddHediff(newDisease);
+                specialSummary = $"{target.LabelShort} contracted {hediffDef.defName}";
             }
 
-            return new GlobalTargetInfo(targets.First());
+            ModLogger.Message($"DiseasePawn: {specialSummary}.");
+            return new GlobalTargetInfo(target);
         }
 
-        public string GetSummary(LlmEffect effect) =>
-            specialSummary;
+        public string GetSummary(GameEffect effect) => specialSummary;
     }
 }

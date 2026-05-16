@@ -15,14 +15,21 @@ namespace RimTelligence.Source.DataSnapshots
         public int colonistCount;
         public List<PawnSnapshot> colonists;
 
+        // other inhibitants
+        public int colonyAnimalCount;
+        public List<string> colonyAnimals;
+        // add information about prisoners, slaves, visitors
+
         // threats & story
         public float wealthTotal;
         public float wealthItems;
         public float wealthBuildings;
         public float wealthPawns;
+        public string currentTechLevel;
         public int daysSinceLastRaid;
         public List<string> activeConditions;
         public float totalNutrition;
+        public bool isUnderAttck; // does not work for now 
 
         // environment
         public string currentWeather;
@@ -33,7 +40,13 @@ namespace RimTelligence.Source.DataSnapshots
         // resources
         public ResourceSnapshot resources;
 
-        public List<string> recentEventTitles;
+        // world & diplomacy 
+        public Dictionary<string, int> factionRelations;
+        public List<string> activeQuests;
+
+        //events
+        public List<EventSnapshot> recentEvents;
+
     }
 
     public class PawnSnapshot
@@ -41,13 +54,33 @@ namespace RimTelligence.Source.DataSnapshots
         public string name;
         public string current_action;
         public List<string> queued_actions;
+        public string current_location;
+        public bool is_drafted;
+        public string primary_weapon;
         public int age;
-        public float mood;       // 0–1
-        public HealthSnapshot health;     // 0–1
+        public HealthSnapshot health;
         public List<string> traits;
         public string childhood;
         public string adulthood;
         public List<string> skills;
+        public PawnRelationsSnapshot relations;
+        public PawnNeedsSnapshot needs;
+    }
+
+    public class PawnNeedsSnapshot 
+    {
+        public float mood;       // 0–1
+        public string mental_state;          // "Wandering", "Berserk", "Tantrum" null is normal
+        public float food_level;             // 0-1
+        public float rest_level;             // 0-1
+        public float recreation_level;       // 0-1
+    }
+
+    public class  PawnRelationsSnapshot
+    {
+        public List<string> lovers;
+        public List<string> rivals;
+        public string bonded_animal;
     }
 
     public class HealthSnapshot 
@@ -66,6 +99,13 @@ namespace RimTelligence.Source.DataSnapshots
     public class ResourceSnapshot
     {
         public Dictionary<string, int> allResources;
+    }
+
+    public class EventSnapshot
+    {
+        public string title;
+        public string description;
+
     }
 }
 

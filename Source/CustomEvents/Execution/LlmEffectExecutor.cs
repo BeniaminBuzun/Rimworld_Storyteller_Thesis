@@ -29,7 +29,7 @@ namespace RimTelligence.Source.CustomEvents.Execution
                     continue;
                 }
 
-                ModLogger.Message($"Executing: {handler.EffectType} (def: {effect.defName}, count: {effect.count})");
+                ModLogger.Message($"Executing: {handler.EffectName} (def: {effect.defName}, count: {effect.count})");
 
                 try
                 {

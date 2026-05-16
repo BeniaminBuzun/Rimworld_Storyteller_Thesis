@@ -13,13 +13,19 @@ namespace RimTelligence.Source.CustomEvents.Handlers.Implementations.Environment
 {
     internal class MeteoriteImpactHandler : IEffectHandler
     {
-        public string EffectType => "MeteoriteImpact";
+        public string EffectName => "MeteoriteImpact";
 
-        public string PromptDescription => "- MeteoriteImpact        :";
+        public string NarrativeDescription => $"An event where a meteorite impacts the map.";
 
-        public string AditionalPromptInfo => $"";
+        public string PromptStructure => "- type = MeteoriteImpact:\r\n    defName =\"\" \r\n    count = 10\r\n    defDescription = \"\"\r\n    value = NONE\r\n    targetPawn = \"\"";
 
-        public GlobalTargetInfo Execute(LlmEffect effect, Map map)
+        public string AditionalPromptStructureInfo => $"";
+
+        public float BaseWeight => 5f;
+
+        public EventAlignment Alignment => EventAlignment.Neutral;
+
+        public GlobalTargetInfo Execute(GameEffect effect, Map map)
         {
             IntVec3 cell = DropCellFinder.RandomDropSpot(map);
 
@@ -32,7 +38,7 @@ namespace RimTelligence.Source.CustomEvents.Handlers.Implementations.Environment
             return new GlobalTargetInfo(cell, map);
         }
 
-        public string GetSummary(LlmEffect effect)
+        public string GetSummary(GameEffect effect)
         {
             return "Meteorite has landed somewhere.";
         }

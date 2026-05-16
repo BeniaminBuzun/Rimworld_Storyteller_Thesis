@@ -72,6 +72,10 @@ I will use Readme as a file to documment progress RimTelligence (Development Nam
 - `ColonySnapshotCapturer` now includes detailed pawn health info (hediffs, missing parts), skill levels, and recent mood history for richer narrative context
 - now properly captures previus events but only their names llm still have problems with repeating similar events but I tested with with short span between and in real game they shouldnt occur so often
 
+# Version 0.14
+
+- work in progress
+
 
 ## Installation / Setup
 1.  Clone the repository into your `RimWorld/Mods` folder.

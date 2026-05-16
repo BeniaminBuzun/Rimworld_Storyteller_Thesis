@@ -4,18 +4,28 @@ using RimWorld.Planet;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using UnityEngine;
 using Verse;
 namespace RimTelligence.Source.CustomEvents.Handlers
 {
     public class StartExtremeWeatherEvent : IEffectHandler
     {
-        public string EffectType => "StartExtremeWeatherEvent";
-        public string PromptDescription => "- StartExtremeWeatherEvent  : defName = GameConditionDef (e.g. HeatWave, ToxicFallout), value = duration days";
+        public string EffectName => "StartExtremeWeatherEvent";
 
-        public string AditionalPromptInfo => $"select only from these conditions {string.Join(", ", DataList.GameConditionList)}";
+        public string NarrativeDescription => $"An event where an extreame weather condition starts.";
 
-        public GlobalTargetInfo Execute(LlmEffect effect, Map map)
+
+        public string PromptStructure => "- type = StartExtremeWeatherEvent:\r\n    defName =GameConditionDef \r\n    count = duration days (int)\r\n    defDescription = \"\"\r\n    value = NONE\r\n    targetPawn = \"\"";
+
+        public string AditionalPromptStructureInfo =>
+            $"select only from {string.Join(", ", GameObjectsCapturer.GameConditionList.Select(m => $"{m.DefName}: {m.Description}"))}";
+
+        public float BaseWeight => 3f;
+
+        public EventAlignment Alignment => EventAlignment.Bad;
+
+        public GlobalTargetInfo Execute(GameEffect effect, Map map)
         {
             GameConditionDef def = DefDatabase<GameConditionDef>.GetNamed(effect.defName, errorOnFail: false);
             if (def == null)
@@ -24,14 +34,9 @@ namespace RimTelligence.Source.CustomEvents.Handlers
                 return GlobalTargetInfo.Invalid;
             }
             int duration;
-            if (effect.value > 0)
-            {
-                duration = (int)(effect.value * 60000); // num of days to ticks
-            }
-            else {
-                duration = 180000;
-            }
-            
+
+            duration = (int)(effect.count * 60000); // num of days to ticks
+                
             GameCondition condition = GameConditionMaker.MakeCondition(def, duration);
             map.gameConditionManager.RegisterCondition(condition);
 
@@ -40,7 +45,7 @@ namespace RimTelligence.Source.CustomEvents.Handlers
             return GlobalTargetInfo.Invalid;
         }
 
-        public string GetSummary(LlmEffect effect) =>
-            $"{effect.defName} condition triggered who knows when will it end";
+        public string GetSummary(GameEffect effect) =>
+            $"{effect.defName} condition triggered for {effect.count} days.";
     }
 }
