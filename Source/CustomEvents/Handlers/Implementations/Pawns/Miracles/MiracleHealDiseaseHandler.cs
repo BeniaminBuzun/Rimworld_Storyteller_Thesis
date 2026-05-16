@@ -7,17 +7,26 @@ using Verse;
 
 internal class MiracleHealDiseaseHandler : IEffectHandler
 {
-    public string EffectType => "MiracleHealDisease";
+    public string EffectName => "MiracleHealDisease";
 
-    public string PromptDescription =>
-        "- MiracleHealDisease : defName = HediffDef defName (e.g. Malaria, Plague, Flu), " +
-        "targetPawn = colonist name";
+    public string NarrativeDescription => "A miraculous event where a specific colonist is instantly cured of a disease.";
 
-    public string AditionalPromptInfo =>
-        "Select only from the colonist's diseases list. " +
-        "Use the exact defName string provided.";
+    public string PromptStructure =>
+        "- type = MiracleHealDisease:\r\n" +
+        "    defName = \"HediffDef name\" (e.g. Malaria, Plague, Flu)\r\n" +
+        "    count = 0\r\n" +
+        "    defDescription = \"\"\r\n" +
+        "    value = NONE\r\n" +
+        "    targetPawn = \"colonist name\"";
 
-    public GlobalTargetInfo Execute(LlmEffect effect, Map map)
+    public string AditionalPromptStructureInfo =>
+        "Select only from the colonist's diseases list. Use the exact defName string provided.";
+
+    public float BaseWeight => 3f;
+
+    public EventAlignment Alignment => EventAlignment.Good;
+
+    public GlobalTargetInfo Execute(GameEffect effect, Map map)
     {
         Pawn target = map.mapPawns.FreeColonistsSpawned.FirstOrDefault(p =>
             p.LabelShort.Equals(effect.targetPawn, StringComparison.OrdinalIgnoreCase));
@@ -48,11 +57,11 @@ internal class MiracleHealDiseaseHandler : IEffectHandler
         }
 
         target.health.RemoveHediff(existing);
-        ModLogger.Message($"{target.LabelShort}'s {hediffDef.defName} was healed.");
-
+        ModLogger.Message($"MiracleHealDisease: {target.LabelShort}'s {hediffDef.defName} was healed.");
         return new GlobalTargetInfo(target);
     }
 
-    public string GetSummary(LlmEffect effect) =>
-        $"Heal disease '{effect.defName}' on {effect.targetPawn}";
+    public string GetSummary(GameEffect effect) =>
+        $"Disease '{effect.defName}' healed on {effect.targetPawn}";
 }
+

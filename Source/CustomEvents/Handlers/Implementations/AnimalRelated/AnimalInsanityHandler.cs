@@ -9,12 +9,19 @@ namespace RimTelligence.Source.CustomEvents.Handlers
 {
     public class AnimalInsanityHandler : IEffectHandler
     {
-        public string EffectType => "AnimalInsanity";
-        public string PromptDescription => "- AnimalInsanity : defName = PawnKindDef of animal, count = how many go manhunter";
+        public string EffectName => "AnimalInsanity";
 
-        public string AditionalPromptInfo => "select only animals from [WILDLIFE] list";
+        public string NarrativeDescription => $"An event where an animal goes manhunter and attacks colonists.";
 
-        public GlobalTargetInfo Execute(LlmEffect effect, Map map)
+        public string PromptStructure => "- type = AnimalInsanity:\r\n    defName = \"PawnKindDef name\" (string)\r\n    count = integer (number of animals)\r\n    defDescription = \"\"\r\n    value = NONE\r\n    targetPawn = \"\"";
+
+        public string AditionalPromptStructureInfo => "select only animals from [WILDLIFE] list";
+
+        public float BaseWeight => 6f;
+
+        public EventAlignment Alignment => EventAlignment.Bad;
+
+        public GlobalTargetInfo Execute(GameEffect effect, Map map)
         {
             List<Pawn> candidates = map.mapPawns.AllPawnsSpawned
                 .Where(p => p.RaceProps.Animal && !p.InMentalState)
@@ -42,7 +49,7 @@ namespace RimTelligence.Source.CustomEvents.Handlers
             return new GlobalTargetInfo(candidates.First());
         }
 
-        public string GetSummary(LlmEffect effect) =>
+        public string GetSummary(GameEffect effect) =>
             $"{effect.count} animal(s) {effect.defName} went manhunter";
     }
 }

@@ -7,17 +7,26 @@ using Verse;
 
 internal class MiracleHealChronicConditionHandler : IEffectHandler
 {
-    public string EffectType => "MiracleHealChronicCondition";
+    public string EffectName => "MiracleHealChronicCondition";
 
-    public string PromptDescription =>
-        "- MiracleHealChronicCondition : defName = HediffDef defName (e.g. Carcinoma, ChemicalDamageSevere, Asthma), " +
-        "targetPawn = colonist name";
+    public string NarrativeDescription => "A miraculous event where a specific colonist is instantly cured of a permanent or chronic health condition.";
 
-    public string AditionalPromptInfo =>
-        "Select only from the colonist's chronic_conditions list. " +
-        "Use the exact defName string provided.";
+    public string PromptStructure =>
+        "- type = MiracleHealChronicCondition:\r\n" +
+        "    defName = \"HediffDef name\" (e.g. Carcinoma, ChemicalDamageSevere, Asthma)\r\n" +
+        "    count = 0\r\n" +
+        "    defDescription = \"\"\r\n" +
+        "    value = NONE\r\n" +
+        "    targetPawn = \"colonist name\"";
 
-    public GlobalTargetInfo Execute(LlmEffect effect, Map map)
+    public string AditionalPromptStructureInfo =>
+        "Select only from the colonist's chronic_conditions list. Use the exact defName string provided.";
+
+    public float BaseWeight => 3f;
+
+    public EventAlignment Alignment => EventAlignment.Good;
+
+    public GlobalTargetInfo Execute(GameEffect effect, Map map)
     {
         Pawn target = map.mapPawns.FreeColonistsSpawned.FirstOrDefault(p =>
             p.LabelShort.Equals(effect.targetPawn, StringComparison.OrdinalIgnoreCase));
@@ -52,11 +61,10 @@ internal class MiracleHealChronicConditionHandler : IEffectHandler
         }
 
         target.health.RemoveHediff(existing);
-        ModLogger.Message($"{target.LabelShort} was miraculously cured of {hediffDef.defName}.");
-
+        ModLogger.Message($"MiracleHealChronicCondition: {target.LabelShort} was cured of {hediffDef.defName}.");
         return new GlobalTargetInfo(target);
     }
 
-    public string GetSummary(LlmEffect effect) =>
-        $"Cure chronic condition '{effect.defName}' on {effect.targetPawn}";
+    public string GetSummary(GameEffect effect) =>
+        $"Chronic condition '{effect.defName}' cured on {effect.targetPawn}";
 }

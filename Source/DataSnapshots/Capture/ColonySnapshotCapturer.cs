@@ -51,10 +51,63 @@ namespace RimTelligence.Source.DataSnapshots
                     .ToDictionary(g => g.Key, g => g.Count()),
 
                 resources = CaptureResources(map),
-                recentEventTitles = GetLastEvents(),
+                recentEvents = GetLastEvents(),
+                currentTechLevel = Faction.OfPlayer.def.techLevel.ToString(),
+                colonyAnimalCount = map.mapPawns.SpawnedColonyAnimals.Count,
+                colonyAnimals = CaptureColonyAnimals(map),
+
+                // world & diplomacy 
+                factionRelations = CaptureFactionRelations(),
+                activeQuests = CaptureActiveQuests(),
+                isUnderAttck = map.attackTargetsCache.TargetsHostileToColony.Count > 0
 
             };
         }
+
+        private static List<string> CaptureColonyAnimals(Map map)
+        {
+            try
+            {
+                return map.mapPawns.SpawnedColonyAnimals
+                    .GroupBy(a => a.def.LabelCap.ToString())
+                    .Select(g => $"{g.Key} x{g.Count()}")
+                    .ToList();
+            }
+            catch (Exception) { return new List<string>(); }
+        }
+
+        private static Dictionary<string, int> CaptureFactionRelations()
+        {
+            var relations = new Dictionary<string, int>();
+            try
+            {
+                foreach (Faction f in Find.FactionManager.AllFactionsVisible)
+                {
+                    if (f.IsPlayer || f.Hidden || f.defeated) continue;
+                    relations[f.Name] = f.GoodwillWith(Faction.OfPlayer);
+                }
+            }
+            catch (Exception) { }
+            return relations;
+        }
+
+        private static List<string> CaptureActiveQuests()
+        {
+            var quests = new List<string>();
+            try
+            {
+                foreach (Quest q in Find.QuestManager.QuestsListForReading)
+                {
+                    if (q.State == QuestState.Ongoing)
+                    {
+                        quests.Add(q.name);
+                    }
+                }
+            }
+            catch (Exception) { }
+            return quests;
+        }
+
 
         //Raid history
         private static int CaptureDaysSinceLastRaid(Map map)
@@ -91,10 +144,9 @@ namespace RimTelligence.Source.DataSnapshots
             };
         }
 
-
-    private static List<string> GetLastEvents()
+        private static List<EventSnapshot> GetLastEvents()
         {
-            var titles = new List<string>();
+            var events = new List<EventSnapshot>();
             try
             {
                 var archivables = Find.Archive.ArchivablesListForReading;
@@ -103,8 +155,20 @@ namespace RimTelligence.Source.DataSnapshots
                 {
                     if (archivables[i] is Letter letter)
                     {
-                        titles.Add(letter.Label);
-                        if (titles.Count >= 15) break;
+                        string description = "";
+
+                        if (letter is ChoiceLetter choiceLetter)
+                        {
+                            description = choiceLetter.Text.Resolve();
+                        }
+                        
+                        events.Add(new EventSnapshot
+                        {
+                            title = letter.Label,
+                            description = description.StripTags()
+                        });
+                        // limit to last 5
+                        if (events.Count >= 5) break;
                     }
                 }
             }
@@ -112,7 +176,7 @@ namespace RimTelligence.Source.DataSnapshots
             {
                 ModLogger.Error($"Failed to fetch recent events: {ex.Message}");
             }
-            return titles;
+            return events;
         }
     }
 }

@@ -18,7 +18,7 @@ namespace RimTelligence.Source.CustomEvents
             //FireLlmEvent();
             var snapshot = ColonySnapshotCapturer.Capture(Find.CurrentMap);
             string json = JsonConvert.SerializeObject(snapshot, Formatting.Indented);
-            File.WriteAllText(@"C:\Users\Karol\Desktop\quickdump.json", json);
+            //File.WriteAllText(@"C:\Users\Karol\Desktop\quickdump.json", json);
             Map map = Find.CurrentMap;
             var test = map.resourceCounter.TotalHumanEdibleNutrition;
             Log.Message(test.ToString());
@@ -30,17 +30,6 @@ namespace RimTelligence.Source.CustomEvents
                 sb.AppendLine(list.Count == 0 ? "  (empty)" : string.Join(", ", list));
                 sb.AppendLine();
             }
-
-            Append("weapons", DataList.WeaponList);
-            Append("apparel", DataList.ApparelList);
-            Append("animals", DataList.AnimalList);
-            Append("food", DataList.FoodList);
-            Append("medicine", DataList.MedicineList);
-            Append("drugs", DataList.DrugsList);
-            Append("diseases", DataList.DiseaseList);
-            Append("resources", DataList.ResourceList);
-            Append("conditions", DataList.GameConditionList);
-            Append("weathers", DataList.AllWeathersList);
 
             Log.Message(sb.ToString());
 

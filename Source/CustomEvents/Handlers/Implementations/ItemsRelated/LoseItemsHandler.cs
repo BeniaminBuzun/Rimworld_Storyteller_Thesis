@@ -1,50 +1,80 @@
 ﻿using RimWorld;
 using RimWorld.Planet;
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using UnityEngine;
 using Verse;
 
-namespace RimTelligence.Source.CustomEvents.Handlers.Implementations
+namespace RimTelligence.Source.CustomEvents.Handlers.Implementations.ItemsRelated
 {
-    public class LoseItemsHandler : IEffectHandler
+    public class LoseItemsHandler : GenericItemHandler
     {
-        public string EffectType => "LoseItems";
+        private readonly string _effectType;
+        private readonly string _desc;
+        private readonly float _baseWeight;
+        private readonly EventAlignment _alignment;
 
-        public string PromptDescription => "- LoseItems      : defName = ThingDef (Silver, Wort, etc. ), count = amount";
-
-        public string AditionalPromptInfo => "select only from itmes from Colony resources it can affect only items that are inside colony stockpile";
-
-        public GlobalTargetInfo Execute(LlmEffect effect, Map map)
+        public LoseItemsHandler(string effectType, string desc, float baseWeight, EventAlignment alignment)
         {
-            int leftToLose = effect.count;
-            if (leftToLose <= 0 || string.IsNullOrWhiteSpace(effect.defName)) return GlobalTargetInfo.Invalid;
+            _effectType = effectType;
+            _desc = desc;
+            _baseWeight = baseWeight;
+            _alignment = alignment;
+        }
+
+        public override string EffectName => _effectType;
+
+        public override float BaseWeight => _baseWeight;
+        public override EventAlignment Alignment => _alignment;
+
+        public override string NarrativeDescription => $"An event where the {_desc}.";
+
+        public override string PromptStructure =>
+            $"- type = {_effectType}:\r\n" +
+            $"    defName = \"ThingDef name\" (string) — {_desc}\r\n" +
+            $"    count = 0\r\n" +
+            $"    defDescription = \"\"\r\n" +
+            $"    value = LOW | MEDIUM | HIGH\r\n" +
+            $"    targetPawn = \"\"";
+
+        public override GlobalTargetInfo Execute(GameEffect effect, Map map)
+        {
+            if (string.IsNullOrWhiteSpace(effect.defName))
+                return GlobalTargetInfo.Invalid;
+
+            ThingDef def = ValidateDef(effect);
+            if (def == null) return GlobalTargetInfo.Invalid;
+
+            int toRemove = WealthBasedQuantityResolver.Resolve(def, effect.value, map, fallbackCount: effect.count);
+            int leftToLose = toRemove;
 
             foreach (Zone_Stockpile stockpile in map.zoneManager.AllZones.OfType<Zone_Stockpile>())
             {
                 foreach (IntVec3 cell in stockpile.Cells)
                 {
-                    List<Thing> things = cell.GetThingList(map).ToList();
-                    foreach (Thing thing in things)
-                    {
-                        if (leftToLose <= 0) return GlobalTargetInfo.Invalid;
+                    if (leftToLose <= 0) break;
 
-                        if (string.Equals(thing.def.defName, effect.defName, StringComparison.OrdinalIgnoreCase))
-                        {
-                            int take = Math.Min(thing.stackCount, leftToLose);
-                            thing.SplitOff(take).Destroy(DestroyMode.Vanish);
-                            leftToLose -= take;
-                        }
+                    foreach (Thing thing in cell.GetThingList(map).ToList())
+                    {
+                        if (leftToLose <= 0) break;
+                        if (!string.Equals(thing.def.defName, effect.defName,
+                                StringComparison.OrdinalIgnoreCase)) continue;
+
+                        int take = Math.Min(thing.stackCount, leftToLose);
+                        thing.SplitOff(take).Destroy(DestroyMode.Vanish);
+                        leftToLose -= take;
                     }
                 }
             }
+
+            int removed = toRemove - leftToLose;
+            ModLogger.Message($"{EffectName}: removed {removed}x {effect.defName} " +
+                              $"(value={effect.value}, requested={toRemove})");
+
             return GlobalTargetInfo.Invalid;
         }
 
-        public string GetSummary(LlmEffect effect) =>
-            $"{effect.count} items(s) {effect.defName} lost";
-        
+        public override string GetSummary(GameEffect effect) =>
+            $"{effect.defName} lost ({effect.value})";
     }
 }

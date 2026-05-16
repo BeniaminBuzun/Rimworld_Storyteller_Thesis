@@ -1,50 +1,67 @@
-﻿using RimTelligence.Source.DataSnapshots;
+using RimTelligence.Source.DataSnapshots;
 using RimWorld;
 using RimWorld.Planet;
 using System;
 using System.Linq;
 using Verse;
 
-
 namespace RimTelligence.Source.CustomEvents.Handlers
 {
     public class DamagePawnHandler : IEffectHandler
     {
-        public string EffectType => "DamagePawn";
+        public string EffectName => "DamagePawn";
 
-        public string PromptDescription => "- DamagePawn    : defName = DamageDef (e.g. Burn, Bullet), value = damage, targetPawn = name or \"random\"";
+        public string NarrativeDescription => "An event where a specific colonist takes damage.";
 
-        public string AditionalPromptInfo => $"select only from these damage types {string.Join(", ", DataList.DamageTypeList)}";
+        public string PromptStructure =>
+            "- type = DamagePawn:\r\n" +
+            "    defName = \"DamageDef name\" (e.g. Burn, Bullet, Blunt)\r\n" +
+            "    count = 0\r\n" +
+            "    defDescription = \"\"\r\n" +
+            "    value = LOW | MEDIUM | HIGH\r\n" +
+            "    targetPawn = \"colonist name or 'random'\"";
 
-        public GlobalTargetInfo Execute(LlmEffect effect, Map map)
+        public string AditionalPromptStructureInfo =>
+            $"select only from {string.Join(", ", GameObjectsCapturer.DamageTypeList.Select(m => $"{m.DefName}: {m.Description}"))}";
+
+        public float BaseWeight => 8f;
+
+        public EventAlignment Alignment => EventAlignment.Bad;
+
+        public GlobalTargetInfo Execute(GameEffect effect, Map map)
         {
             DamageDef damageDef = DefDatabase<DamageDef>.GetNamed(effect.defName, errorOnFail: false) ?? DamageDefOf.Burn;
 
             var allSpawnedColonists = map.mapPawns.FreeColonistsSpawned;
-            Pawn target = null;
-
-            if (effect.targetPawn.Equals("random", StringComparison.OrdinalIgnoreCase))
-            {
-                target = allSpawnedColonists.RandomElementWithFallback();
-            }
-            else
-            {
-                target = allSpawnedColonists.FirstOrDefault(p => p.LabelShort.Equals(effect.targetPawn, StringComparison.OrdinalIgnoreCase));
-            }
+            Pawn target = effect.targetPawn.Equals("random", StringComparison.OrdinalIgnoreCase)
+                ? allSpawnedColonists.RandomElementWithFallback()
+                : allSpawnedColonists.FirstOrDefault(p =>
+                    p.LabelShort.Equals(effect.targetPawn, StringComparison.OrdinalIgnoreCase));
 
             if (target == null)
             {
-                ModLogger.Warning($"DamagePawns: No target found for '{effect.targetPawn}'.");
+                ModLogger.Warning($"DamagePawn: no target found for '{effect.targetPawn}'.");
                 return GlobalTargetInfo.Invalid;
             }
 
-            target.TakeDamage(new DamageInfo(damageDef, effect.value));
-            ModLogger.Message($"Damaged {target.LabelShort} for {effect.value} {damageDef.defName}");
+            float damageAmount = ResolveDamage(effect.value);
+            target.TakeDamage(new DamageInfo(damageDef, damageAmount));
 
+            ModLogger.Message($"DamagePawn: dealt {damageAmount} {damageDef.defName} to {target.LabelShort} (value={effect.value}).");
             return new GlobalTargetInfo(target);
         }
 
-        public string GetSummary(LlmEffect effect) =>
-            $"{effect.value} {effect.defName} damage dealt to {effect.targetPawn}";
+        private static float ResolveDamage(SeverityTypes value)
+        {
+            switch (value)
+            {
+                case SeverityTypes.High:   return 30f;
+                case SeverityTypes.Medium: return 15f;
+                default:               return 5f;  // Low or None
+            }
+        }
+
+        public string GetSummary(GameEffect effect) =>
+            $"{effect.defName} damage ({effect.value}) dealt to {effect.targetPawn}";
     }
 }

@@ -7,18 +7,26 @@ using Verse;
 
 internal class MiracleHealMissingPartHandler : IEffectHandler
 {
-    public string EffectType => "MiracleHealMissingPart";
+    public string EffectName => "MiracleHealMissingPart";
 
-    public string PromptDescription =>
-        "- MiracleHealMissingPart : defName = exact body part label (e.g. left hand, right foot), " +
-        "targetPawn = colonist name";
+    public string NarrativeDescription => "A miraculous event where a specific colonist regrows a missing body part.";
 
-    public string AditionalPromptInfo =>
-        "Select only from the colonist's missing_body_parts list. " +
-        "Use the exact defName string provided — do not guess or abbreviate.";
+    public string PromptStructure =>
+        "- type = MiracleHealMissingPart:\r\n" +
+        "    defName = \"body part label\" (e.g. left hand, right foot)\r\n" +
+        "    count = 0\r\n" +
+        "    defDescription = \"\"\r\n" +
+        "    value = NONE\r\n" +
+        "    targetPawn = \"colonist name\"";
 
+    public string AditionalPromptStructureInfo =>
+        "Select only from the colonist's missing_body_parts list. Use the exact label string provided — do not guess or abbreviate.";
 
-    public GlobalTargetInfo Execute(LlmEffect effect, Map map)
+    public float BaseWeight => 3f;
+
+    public EventAlignment Alignment => EventAlignment.Good;
+
+    public GlobalTargetInfo Execute(GameEffect effect, Map map)
     {
         Pawn target = map.mapPawns.FreeColonistsSpawned.FirstOrDefault(p =>
             p.LabelShort.Equals(effect.targetPawn, StringComparison.OrdinalIgnoreCase));
@@ -42,11 +50,11 @@ internal class MiracleHealMissingPartHandler : IEffectHandler
         }
 
         target.health.RestorePart(missingPart.Part);
-        ModLogger.Message($"{target.LabelShort} had their {missingPart.Part.LabelCap} restored.");
-
+        ModLogger.Message($"MiracleHealMissingPart: {target.LabelShort}'s {missingPart.Part.LabelCap} was restored.");
         return new GlobalTargetInfo(target);
     }
 
-    public string GetSummary(LlmEffect effect) =>
-        $"Restore missing part '{effect.defName}' on {effect.targetPawn}";
+    public string GetSummary(GameEffect effect) =>
+        $"Missing part '{effect.defName}' restored on {effect.targetPawn}";
 }
+

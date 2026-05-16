@@ -4,7 +4,7 @@ namespace RimTelligence.Source.CustomEvents
 {
     public class LlmCustomEvent
     {
-        public List<LlmEffect> effects;
+        public List<GameEffect> effects;
         public string letterTitle;
         public string letterText;
     }
