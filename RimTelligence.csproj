@@ -43,8 +43,9 @@
   <ItemGroup>
     <Content Include="Defs\CustomEventsDefs\MoodDefs\MoodDebuff.xml" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Source\AIStoryteller\AIStorytellerSelectInjection.cs" />
-    <Compile Include="Source\AIStoryteller\AiStorytellerMod.cs" />
+    <Compile Include="Source\AIStoryteller\AIStorytellerMod.cs" />
+    <Compile Include="Source\AIStoryteller\StorytellerCompProperties_AI.cs" />
+    <Compile Include="Source\AIStoryteller\StorytellerComp_AI.cs" />
     <Compile Include="Source\CustomEvents\DTO\LlmCustomEvent.cs" />
     <Compile Include="Source\CustomEvents\DTO\GameEffect.cs" />
     <Compile Include="Source\CustomEvents\EventSelector\DrawMode.cs" />
@@ -104,11 +105,10 @@
     <Compile Include="Source\DataSnapshots\Model\GameObjectMeta.cs" />
     <Compile Include="Source\General\ModLogger.cs" />
     <Compile Include="Source\General\Settings.cs" />
-    <Compile Include="Source\AIStoryteller\Patch_Page_SelectStoryteller.cs" />
+    <Compile Include="Source\AIStoryteller\HarmonyPatches.cs" />
     <Compile Include="Source\AIStoryteller\Presets.cs" />
     <Compile Include="Source\CustomEvents\FlavourEvent.cs" />
     <Compile Include="Source\LlmCom\BasicCom.cs" />
-    <Compile Include="Source\QuickTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Krafs.Rimworld.Ref">

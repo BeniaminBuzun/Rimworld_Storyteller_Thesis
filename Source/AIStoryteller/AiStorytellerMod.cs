@@ -1,15 +1,24 @@
 ﻿using UnityEngine;
 using Verse;
+using HarmonyLib;
+
+using RimTelligence.Source.CustomEvents;
 
 namespace RimTelligence.Source.AIStoryteller
 {
     public class AIStorytellerMod : Mod
     {
-        public static Settings settings;
+        public static Settings Settings { get; private set; }
+        private static Harmony harmony;
 
         public AIStorytellerMod(ModContentPack content) : base(content)
         {
-            settings = GetSettings<Settings>();
+            Settings = GetSettings<Settings>();
+
+            harmony = new Harmony("com.rimtelligence.aistoryteller");
+            harmony.PatchAll();
+
+            ModLogger.Message("Harmony patches applied.");
         }
 
         public override void DoSettingsWindowContents(Rect inRect)
@@ -19,7 +28,7 @@ namespace RimTelligence.Source.AIStoryteller
 
 
             listing.Label("Grok API Key:");
-            settings.grokApiKey = listing.TextEntry(settings.grokApiKey);
+            Settings.grokApiKey = listing.TextEntry(Settings.grokApiKey);
 
             listing.Gap(5f);
             listing.GapLine(); 
@@ -30,11 +39,11 @@ namespace RimTelligence.Source.AIStoryteller
             listing.Gap(6f);
 
             Rect textRect = listing.GetRect(160f);
-            settings.customStoryPrompt = Widgets.TextArea(textRect, settings.customStoryPrompt);
+            Settings.customStoryPrompt = Widgets.TextArea(textRect, Settings.customStoryPrompt);
 
             listing.Gap(10f);
             if (listing.ButtonText("Clear"))
-                settings.customStoryPrompt = "";
+                Settings.customStoryPrompt = "";
 
             listing.End();
         }

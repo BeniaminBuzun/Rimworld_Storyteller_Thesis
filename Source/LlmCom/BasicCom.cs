@@ -1,13 +1,15 @@
-﻿using LlmTornado;
+﻿using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+
+using LlmTornado;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.Code;
-using RimTelligence.Source.AIStoryteller;
-using RimWorld;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using Verse;
+
+using RimTelligence.Source.AIStoryteller;
+
 
 namespace RimTelligence.Source.LlmCom
 {
@@ -15,7 +17,7 @@ namespace RimTelligence.Source.LlmCom
     {
         private TornadoApi api = new TornadoApi(new List<ProviderAuthentication>
         {
-            new ProviderAuthentication(LLmProviders.Groq, AIStorytellerMod.settings.grokApiKey ),
+            new ProviderAuthentication(LLmProviders.Groq, AIStorytellerMod.Settings.grokApiKey ),
             new ProviderAuthentication(LLmProviders.Google, "YOUR_GOOGLE_KEY")
         });
 
