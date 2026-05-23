@@ -1,13 +1,23 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<!-- delete unnecessary from this file template for now it is stolen from different mod -->
+
 <Defs>
+	
 	<StorytellerDef ParentName="BaseStoryteller">
+		
+		<!--Basic metadata about the storyteller-->
 		<defName>AI_AIStoryteller</defName>
 		<label>AI Storyteller</label>
 		<description>temp</description>
+		
+		<!--Custom storyteller portrait shown in the storyteller selection menu-->
 		<portraitLarge>Placeholder</portraitLarge>
 		<portraitTiny>PlaceholderTiny</portraitTiny>
+		
 		<listOrder>100</listOrder>
+		
+		<!-- Not needed for now, but will consider this later
+			 - it is about progression curve
+		
 		<populationIntentFactorFromPopCurve Inherit="False">
 			<points>
 				<li>0,  8.0</li>
@@ -18,16 +28,24 @@
 				<li>40, -1.0</li>
 			</points>
 		</populationIntentFactorFromPopCurve>
+		
 		<populationIntentFactorFromPopAdaptDaysCurve Inherit="False">
 			<points>
 				<li>( 0, 0)</li>
 				<li>(20, 1.00)</li>
 			</points>
 		</populationIntentFactorFromPopAdaptDaysCurve>
+		
+		-->
+		
+		<!--Storyteller component behavior -->
 		<comps>
-			<!-- Intro -->
+			
+			<!-- Excluding other comps so we can focus on
+				 the llm incidents only
+			
 			<li Class="StorytellerCompProperties_ClassicIntro"/>
-			<!-- Home threats -->
+			
 			<li Class="StorytellerCompProperties_OnOffCycle">
 				<category>ThreatBig</category>
 				<minDaysPassed>11.0</minDaysPassed>
@@ -40,6 +58,7 @@
 					<li>Map_RaidBeacon</li>
 				</disallowedTargetTags>
 			</li>
+			
 			<li Class="StorytellerCompProperties_ThreatsGenerator">
 				<allowedTargetTags>
 					<li>Map_RaidBeacon</li>
@@ -53,6 +72,7 @@
 					<minThreatPoints>500</minThreatPoints>
 				</parms>
 			</li>
+			
 			<li Class="StorytellerCompProperties_OnOffCycle">
 				<category>ThreatSmall</category>
 				<minDaysPassed>11.0</minDaysPassed>
@@ -66,7 +86,7 @@
 					</points>
 				</acceptPercentFactorPerThreatPointsCurve>
 			</li>
-			<!-- Home misc incidents-->
+			
 			<li Class="StorytellerCompProperties_CategoryMTB">
 				<category>Misc</category>
 				<allowedTargetTags>
@@ -75,16 +95,19 @@
 				<minDaysPassed>2</minDaysPassed>
 				<mtbDays>1.2</mtbDays>
 			</li>
+			
 			<li Class="StorytellerCompProperties_ShipChunkDrop"/>
+			
 			<li Class="StorytellerCompProperties_Disease">
 				<category>DiseaseHuman</category>
 				<minDaysPassed>9</minDaysPassed>
 			</li>
+			
 			<li Class="StorytellerCompProperties_Disease">
 				<category>DiseaseAnimal</category>
 				<minDaysPassed>9</minDaysPassed>
 			</li>
-			<!-- Ally/neutral interaction -->
+			
 			<li Class="StorytellerCompProperties_FactionInteraction">
 				<incident>RaidFriendly</incident>
 				<baseIncidentsPerYear>15</baseIncidentsPerYear>
@@ -92,6 +115,7 @@
 				<fullAlliesOnly>true</fullAlliesOnly>
 				<minDanger>High</minDanger>
 			</li>
+			
 			<li Class="StorytellerCompProperties_FactionInteraction">
 				<incident>TraderCaravanArrival</incident>
 				<minDaysPassed>2</minDaysPassed>
@@ -101,6 +125,7 @@
 					<li>Map_PlayerHome</li>
 				</allowedTargetTags>
 			</li>
+			
 			<li Class="StorytellerCompProperties_FactionInteraction">
 				<incident>VisitorGroup</incident>
 				<minDaysPassed>1</minDaysPassed>
@@ -110,6 +135,7 @@
 					<li>Map_PlayerHome</li>
 				</allowedTargetTags>
 			</li>
+			
 			<li Class="StorytellerCompProperties_FactionInteraction">
 				<incident>TravelerGroup</incident>
 				<minDaysPassed>1</minDaysPassed>
@@ -119,7 +145,7 @@
 					<li>Map_PlayerHome</li>
 				</allowedTargetTags>
 			</li>
-			<!-- Caravan / temp map -->
+			
 			<li Class="StorytellerCompProperties_CategoryIndividualMTBByBiome">
 				<category>Misc</category>
 				<allowedTargetTags>
@@ -127,6 +153,7 @@
 					<li>Map_TempIncident</li>
 				</allowedTargetTags>
 			</li>
+			
 			<li Class="StorytellerCompProperties_CategoryIndividualMTBByBiome">
 				<category>ThreatSmall</category>
 				<applyCaravanVisibility>true</applyCaravanVisibility>
@@ -135,6 +162,7 @@
 					<li>Map_TempIncident</li>
 				</allowedTargetTags>
 			</li>
+			
 			<li Class="StorytellerCompProperties_CategoryIndividualMTBByBiome">
 				<category>ThreatBig</category>
 				<applyCaravanVisibility>true</applyCaravanVisibility>
@@ -143,7 +171,7 @@
 					<li>Map_TempIncident</li>
 				</allowedTargetTags>
 			</li>
-			<!-- Quests - non-Royalty -->
+			
 			<li Class="StorytellerCompProperties_RandomQuest">
 				<category>GiveQuest</category>
 				<allowedTargetTags>
@@ -162,7 +190,7 @@
 					<li>Ludeon.RimWorld.Royalty</li>
 				</disableIfAnyModActive>
 			</li>
-			<!-- Quests - Royalty -->
+			
 			<li Class="StorytellerCompProperties_RandomQuest">
 				<category>GiveQuest</category>
 				<allowedTargetTags>
@@ -181,7 +209,7 @@
 					<li>Ludeon.RimWorld.Royalty</li>
 				</enableIfAnyModActive>
 			</li>
-			<!-- World misc incidents-->
+			
 			<li Class="StorytellerCompProperties_CategoryMTB">
 				<category>Misc</category>
 				<allowedTargetTags>
@@ -190,19 +218,24 @@
 				<minDaysPassed>7</minDaysPassed>
 				<mtbDays>7</mtbDays>
 			</li>
-			<!-- Orbital trader -->
+			
 			<li Class="StorytellerCompProperties_OnOffCycle">
 				<incident>OrbitalTraderArrival</incident>
 				<onDays>14</onDays>
 				<offDays>4</offDays>
 				<numIncidentsRange>3</numIncidentsRange>
 			</li>
-			<!-- Triggered -->
-			<li Class="StorytellerCompProperties_Triggered">
-				<incident>VSE_ManInTheCoatJoin</incident>
-				<delayTicks>180</delayTicks>
+
+			-->
+			
+			<li Class="RimTelligence.Source.AIStoryteller.StorytellerCompProperties_AI">
+				<category>Misc</category>
+				<minDaysPassed>0</minDaysPassed>
+				<incidentChance>0.1</incidentChance>
 			</li>
+			
 		</comps>
+		
 	</StorytellerDef>
 
 </Defs> 

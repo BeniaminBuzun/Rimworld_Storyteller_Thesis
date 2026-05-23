@@ -17,8 +17,8 @@ namespace RimTelligence.Source.AIStoryteller
                     new StorytellerPreset("Chaos", "You are an unpredictable RimWorld storyteller. Fire random events constantly, mix positive and negative wildly. Nothing should feel safe or expected.")
                 };
 
-                if (AIStorytellerMod.settings != null)
-                    presets.Add(new StorytellerPreset("User Prompt", AIStorytellerMod.settings.customStoryPrompt));
+                if (AIStorytellerMod.Settings != null)
+                    presets.Add(new StorytellerPreset("User Prompt", AIStorytellerMod.Settings.customStoryPrompt));
 
                 return presets;
             }
