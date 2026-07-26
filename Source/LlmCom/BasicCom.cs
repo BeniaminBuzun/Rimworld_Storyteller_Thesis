@@ -25,7 +25,7 @@ namespace RimTelligence.Source.LlmCom
         {
             try
             {
-                Conversation chat = api.Chat.CreateConversation(ChatModel.Groq.Meta.Llama4Scout);
+                Conversation chat = api.Chat.CreateConversation(ChatModel.Groq.Meta.Llama3370BVersatile);
                 chat.AppendUserInput(prompt);
                 string response = await chat.GetResponse();
                 return response;

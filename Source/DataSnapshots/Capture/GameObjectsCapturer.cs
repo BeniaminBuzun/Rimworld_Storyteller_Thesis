@@ -1,4 +1,6 @@
-﻿using RimTelligence.Source.DataSnapshots.Model;
+﻿using RimTelligence.Source.CustomEvents;
+using RimTelligence.Source.DataSnapshots.Model;
+using RimTelligence.Source.Memory;
 using RimWorld;
 using System;
 using System.Collections.Generic;
@@ -51,9 +53,12 @@ namespace RimTelligence.Source.DataSnapshots
         public static List<GameObjectMeta> AllWeathersList = new List<GameObjectMeta>();
         public static List<GameObjectMeta> AllSkillsList = new List<GameObjectMeta>();
 
+        public static readonly IEmbeddingProvider EmbeddingProvider = new OnnxEmbeddingProvider(); // [TODO] change to private after testing
+
         static GameObjectsCapturer()
         {
             PopulateItems();
+            //PopulateVectorStore();
             //DataExporter.ExportAll(); uncomment for file saved on desktop 
         }
         //  Helpers 
@@ -216,6 +221,68 @@ namespace RimTelligence.Source.DataSnapshots
             foreach (SkillDef s in DefDatabase<SkillDef>.AllDefs) AllSkillsList.Add(MetaFromDef(s));
 
             foreach (var list in allLists) SortByDefName(list);
+        }
+
+        public static void PopulateVectorStore() // [TODO] consider moving to a separate class for clarity
+        {
+            var store = new StaticRagStore(RagBootstrap.DbPath);
+            store.ClearAll(); // defs are static per session — rebuild fresh every launch
+
+            var categorized = new (string category, List<GameObjectMeta> list)[]
+            {
+                ("WeaponsTribal", WeaponsTribal),
+                ("WeaponsIndustrial", WeaponsIndustrial),
+                ("WeaponsSpacer", WeaponsSpacer),
+                ("WeaponsArchotech", WeaponsArchotech),
+                ("WeaponsUltra", WeaponsUltra),
+                ("WeaponsOther", WeaponsOther),
+
+                ("Food_Meals", Food_Meals),
+                ("Food_RawPlant", Food_RawPlant),
+                ("Food_RawMeat", Food_RawMeat),
+                ("Food_RawSpecial", Food_RawSpecial),
+                ("Food_AnimalFeed", Food_AnimalFeed),
+                ("Food_AnimalProducts", Food_AnimalProducts),
+                ("Animal_Corpses", Animal_Corpses),
+
+                ("Resources_Metals", Resources_Metals),
+                ("Resources_Stone", Resources_Stone),
+                ("Resources_Textile_Leathers", Resources_Textile_Leathers),
+                ("Resources_Textile_Fabrics", Resources_Textile_Fabrics),
+                ("Resources_Textile_Wools", Resources_Textile_Wools),
+                ("Resources_Chemical_Raw", Resources_Chemical_Raw),
+                ("Resources_Components", Resources_Components),
+                ("Apparel_Clothing", Apparel_Clothing),
+
+                ("MedicineList", MedicineList),
+                ("DrugsList", DrugsList),
+                ("AnimalList", AnimalList),
+
+                ("DiseaseList", DiseaseList),
+                ("DamageTypeList", DamageTypeList),
+                ("GameConditionList", GameConditionList),
+                ("AllWeathersList", AllWeathersList),
+                ("AllSkillsList", AllSkillsList),
+            };
+
+            int total = 0;
+            foreach (var (category, list) in categorized)
+            {
+                foreach (var item in list)
+                {
+                    string text = string.IsNullOrEmpty(item.Description)
+                        ? item.Label
+                        : item.Label + ": " + item.Description;
+
+                    string metadataJson = $"{{\"marketValue\":{item.MarketValue.ToString(System.Globalization.CultureInfo.InvariantCulture)},\"techLevel\":\"{item.TechLevel}\"}}";
+
+                    float[] embedding = EmbeddingProvider.Embed(text);
+                    store.AddChunk(category, item.DefName, text, embedding);
+                    total++;
+                }
+            }
+
+            ModLogger.Message("Static vector store populated with " + total + " entries.");
         }
     }
 }

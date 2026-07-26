@@ -3,6 +3,7 @@ using Verse;
 using HarmonyLib;
 
 using RimTelligence.Source.CustomEvents;
+using RimTelligence.Source.DataSnapshots;
 
 namespace RimTelligence.Source.AIStoryteller
 {
@@ -44,6 +45,9 @@ namespace RimTelligence.Source.AIStoryteller
             listing.Gap(10f);
             if (listing.ButtonText("Clear"))
                 Settings.customStoryPrompt = "";
+
+            if (listing.ButtonText("Generate Embeddings"))
+                GameObjectsCapturer.PopulateVectorStore();
 
             listing.End();
         }

@@ -6,6 +6,7 @@ using RimTelligence.Source.CustomEvents.Handlers.Implementations.ItemsRelated;
 using RimTelligence.Source.CustomEvents.Workers;
 using RimTelligence.Source.CustomEvents.Workers.RimTelligence.Source.Debug;
 using RimTelligence.Source.DataSnapshots;
+using RimTelligence.Source.Memory;
 using RimWorld;
 using System.Collections.Generic;
 using System.Linq;
@@ -35,6 +36,12 @@ namespace RimTelligence.Source.Debug
             Find.WindowStack.Add(new Dialog_DebugOptionListLister(options));
         }
 
+        [DebugAction("RimTelligence", "Test RAG Query", allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void TestRagQuery()
+        {
+            Find.WindowStack.Add(new Dialog_RagQuery());
+        }
+
         [DebugAction("RimTelligence", "Open Event History Debug", allowedGameStates = AllowedGameStates.PlayingOnMap)]
         private static void OpenEventDebugWindow()
         {
@@ -55,6 +62,94 @@ namespace RimTelligence.Source.Debug
             };
 
             Find.WindowStack.Add(new Dialog_EffectTest(effect, map));
+        }
+    }
+
+    public class Dialog_RagQuery : Window
+    {
+        private string queryBuf = "";
+        private int topK = 5;
+        private string topKBuf = "5";
+        private List<RagResult> lastResults = new List<RagResult>();
+        private Vector2 resultsScroll;
+
+        public override Vector2 InitialSize => new Vector2(600f, 500f);
+
+        public Dialog_RagQuery()
+        {
+            doCloseButton = true;
+            closeOnClickedOutside = true;
+            absorbInputAroundWindow = true;
+        }
+
+        public override void DoWindowContents(Rect inRect)
+        {
+            Listing_Standard ui = new Listing_Standard();
+            ui.Begin(inRect);
+
+            Text.Font = GameFont.Medium;
+            ui.Label("RAG Query Test");
+            Text.Font = GameFont.Small;
+            ui.GapLine();
+
+            ui.Label("Query text:");
+            queryBuf = ui.TextEntry(queryBuf);
+
+            ui.Gap(6f);
+            ui.TextFieldNumericLabeled("topK: ", ref topK, ref topKBuf, 1f, 20f);
+
+            ui.Gap(10f);
+            GUI.color = Color.green;
+            if (ui.ButtonText("Run Query"))
+            {
+                RunQuery();
+            }
+            GUI.color = Color.white;
+
+            ui.GapLine();
+            ui.Label($"Results ({lastResults.Count}):");
+
+            Rect outRect = ui.GetRect(250f);
+            Rect viewRect = new Rect(0f, 0f, outRect.width - 16f, lastResults.Count * 60f);
+
+            Widgets.BeginScrollView(outRect, ref resultsScroll, viewRect);
+            float y = 0f;
+            foreach (var r in lastResults)
+            {
+                Rect rowRect = new Rect(0f, y, viewRect.width, 56f);
+                Widgets.DrawMenuSection(rowRect);
+
+                Rect scoreLabel = new Rect(rowRect.x + 4f, rowRect.y + 2f, rowRect.width - 8f, 18f);
+                Widgets.Label(scoreLabel, $"[{r.Score:F3}] ({r.Source})");
+
+                Rect textLabel = new Rect(rowRect.x + 4f, rowRect.y + 20f, rowRect.width - 8f, 34f);
+                Text.Font = GameFont.Tiny;
+                Widgets.Label(textLabel, r.Text);
+                Text.Font = GameFont.Small;
+
+                y += 60f;
+            }
+            Widgets.EndScrollView();
+
+            ui.End();
+        }
+
+        private void RunQuery()
+        {
+            if (string.IsNullOrWhiteSpace(queryBuf))
+            {
+                Log.Message("[RimTelligence] Empty query, skipped.");
+                return;
+            }
+
+            float[] embedding = GameObjectsCapturer.EmbeddingProvider.Embed(queryBuf);
+            var store = new StaticRagStore(RagBootstrap.DbPath);
+            lastResults = store.Query(embedding, topK: topK);
+            resultsScroll = Vector2.zero;
+
+            Log.Message($"[RimTelligence] Query: \"{queryBuf}\" — {lastResults.Count} results:");
+            foreach (var r in lastResults)
+                Log.Message($"  [{r.Score:F3}] ({r.Source}) {r.Text}");
         }
     }
 
