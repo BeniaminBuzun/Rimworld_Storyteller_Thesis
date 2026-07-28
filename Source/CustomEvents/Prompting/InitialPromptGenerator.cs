@@ -1,4 +1,5 @@
 ﻿using RimTelligence.Source.CustomEvents.Handlers;
+using RimTelligence.Source.CustomEvents.Prompting;
 using RimTelligence.Source.DataSnapshots;
 using System;
 using System.Collections.Generic;
@@ -24,7 +25,7 @@ namespace RimTelligence.Source.CustomEvents
             "AnimalInsanity", "SelfTame", "SpawnAnimals"
         };
 
-        public static string BuildSystemPrompt(string briefSnapshotNarrative, ColonySnapshot snapshot = null)
+        public static string BuildSystemPrompt(string briefSnapshotNarrative, ColonySnapshot snapshot = null, RagQueryResult ragContext = null)
         {
             int numEffects = _random.Next(1, 5);
             _eventCount++;
@@ -106,6 +107,8 @@ namespace RimTelligence.Source.CustomEvents
             sb.AppendLine("COLONY STATE (Brief Overview):");
             sb.AppendLine(briefSnapshotNarrative);
             sb.AppendLine();
+
+            AppendRagContext(sb, ragContext);
 
             sb.AppendLine("Return ONLY the JSON object.");
 
@@ -254,6 +257,19 @@ namespace RimTelligence.Source.CustomEvents
                 sb.AppendLine("MYSTERY BOX: Something utterly unexplainable happens. An event that raises questions, not answers.");
                 sb.AppendLine();
             }
+        }
+
+        private static void AppendRagContext(StringBuilder sb, RagQueryResult ragContext)
+        {
+            if (ragContext == null || !ragContext.HasResults)
+                return;
+
+            sb.AppendLine("RELEVANT CONTEXT (past events / lore relevant to this moment):");
+            foreach (var r in ragContext.StaticResults)
+                sb.AppendLine($"- [Static] {r.Source} (Score: {r.Score:F2}): {r.Text}");
+            foreach (var r in ragContext.DynamicResults)
+                sb.AppendLine($"- [Dynamic] {r.Source} (Score: {r.Score:F2}): {r.Text}");
+            sb.AppendLine();
         }
     }
 }

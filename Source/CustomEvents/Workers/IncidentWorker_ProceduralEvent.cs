@@ -1,14 +1,17 @@
 ﻿using Newtonsoft.Json;
+using RimTelligence.Source.AIStoryteller;
 using RimTelligence.Source.CustomEvents.EventSelector;
 using RimTelligence.Source.CustomEvents.Execution;
 using RimTelligence.Source.CustomEvents.Prompting;
 using RimTelligence.Source.DataSnapshots;
 using RimTelligence.Source.LlmCom;
+using RimTelligence.Source.Memory;
 using RimWorld;
 using RimWorld.Planet;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
 using Verse;
 
 namespace RimTelligence.Source.CustomEvents.Workers
@@ -21,6 +24,30 @@ namespace RimTelligence.Source.CustomEvents.Workers
 
     public class IncidentWorker_ProceduralEvent : IncidentWorker
     {
+        private static RagContextProvider _ragProvider;
+        private static bool _ragProviderInitialized;
+
+        private static RagContextProvider GetOrCreateRagProvider()
+        {
+            if (!_ragProviderInitialized)
+            {
+                try
+                {
+                    _ragProvider = new RagContextProvider(new OnnxEmbeddingProvider());
+                }
+                catch (Exception e)
+                {
+                    ModLogger.Error($"[RAG] Failed to initialize OnnxEmbeddingProvider, falling back to stub: {e.Message}");
+                    _ragProvider = new RagContextProvider(new StubEmbeddingProvider());
+                }
+
+                var s = AIStorytellerMod.Settings;
+                _ragProvider.Configure(s.ragMaxResultsPerStore, s.ragMinSimilarity);
+                _ragProviderInitialized = true;
+            }
+            return _ragProvider;
+        }
+
         protected override bool TryExecuteWorker(IncidentParms parms)
         {
             if (!(parms.target is Map map))
@@ -98,14 +125,34 @@ namespace RimTelligence.Source.CustomEvents.Workers
 
 
             // ====================================================================
-            // STEP 2: STORY & PARAMETER GENERATION (Detailed Prompt)
+            // RAG CONTEXT QUERY
             // ====================================================================
 
             string fullNarrative = SnapshotNarrator.Narrate(snapshot);
+            RagQueryResult ragContext = null;
+            if (AIStorytellerMod.Settings.ragEnabled)
+            {
+                try
+                {
+                    ragContext = await GetOrCreateRagProvider().QueryAsync(fullNarrative);
+                    if (ragContext.HasResults)
+                        ModLogger.Message($"[RAG] Context loaded: {ragContext.StaticResults.Count} static + {ragContext.DynamicResults.Count} dynamic results");
+                }
+                catch (Exception e)
+                {
+                    ModLogger.Warning($"[RAG] Query failed (non-fatal): {e.Message}");
+                }
+            }
+
+            // ====================================================================
+            // STEP 2: STORY & PARAMETER GENERATION (Detailed Prompt)
+            // ====================================================================
+
             string step2Prompt = ProperPromptGenerator.BuildSystemPrompt(
-                    SnapshotNarrator.Narrate(snapshot),
+                    fullNarrative,
                     chosenEvents,
-                    snapshot);
+                    snapshot,
+                    ragContext);
 
             ModLogger.Message($"[Step 2] Prompt generated ({step2Prompt.Length} chars)");
             //TryWriteFile(@"C:\Users\Karol\Desktop\prompt_step2.txt", step2Prompt);

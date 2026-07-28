@@ -111,6 +111,8 @@
     <Compile Include="Source\CustomEvents\Handlers\Implementations\Pawns\Miracles\MiracleHealMissingPartHandler.cs" />
     <Compile Include="Source\CustomEvents\EventSelector\HeuristicEventSelector.cs" />
     <Compile Include="Source\CustomEvents\Prompting\InitialPromptGenerator.cs" />
+    <Compile Include="Source\CustomEvents\Prompting\RagContextProvider.cs" />
+    <Compile Include="Source\CustomEvents\Prompting\RagQueryResult.cs" />
     <Compile Include="Source\CustomEvents\Prompting\SnapshotNarrator.cs" />
     <Compile Include="Source\CustomEvents\Prompting\LlmEffectValidator.cs" />
     <Compile Include="Source\CustomEvents\Prompting\ProperPromptGenerator.cs" />

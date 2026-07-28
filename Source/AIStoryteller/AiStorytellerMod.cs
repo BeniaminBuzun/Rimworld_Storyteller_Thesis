@@ -49,6 +49,17 @@ namespace RimTelligence.Source.AIStoryteller
             if (listing.ButtonText("Generate Embeddings"))
                 GameObjectsCapturer.PopulateVectorStore();
 
+            listing.Gap(10f);
+            listing.GapLine();
+            listing.Gap(10f);
+            listing.Label("RAG Context Settings:");
+
+            listing.CheckboxLabeled("Enable RAG context", ref Settings.ragEnabled);
+            Settings.ragMaxResultsPerStore = (int)listing.SliderLabeled(
+                $"Max results per store: {Settings.ragMaxResultsPerStore}", Settings.ragMaxResultsPerStore, 1f, 20f);
+            Settings.ragMinSimilarity = listing.SliderLabeled(
+                $"Min similarity: {Settings.ragMinSimilarity:F2}", Settings.ragMinSimilarity, 0f, 1f);
+
             listing.End();
         }
 

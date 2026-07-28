@@ -1,5 +1,6 @@
 ﻿using RimTelligence.Source.CustomEvents.Handlers;
 using RimTelligence.Source.DataSnapshots;
+using RimTelligence.Source.Memory;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -49,7 +50,8 @@ namespace RimTelligence.Source.CustomEvents.Prompting
         public static string BuildSystemPrompt(
             string fullSnapshotNarrative,
             List<SelectedEventIntent> chosenEvents,
-            ColonySnapshot snapshot = null)
+            ColonySnapshot snapshot = null,
+            RagQueryResult ragContext = null)
         {
             var tone = _tones[_random.Next(_tones.Length)];
 
@@ -145,8 +147,23 @@ namespace RimTelligence.Source.CustomEvents.Prompting
             sb.AppendLine(fullSnapshotNarrative);
             sb.AppendLine();
 
+            AppendRagContext(sb, ragContext);
+
             sb.AppendLine("Return ONLY the JSON object.");
             return sb.ToString();
+        }
+
+        private static void AppendRagContext(StringBuilder sb, RagQueryResult ragContext)
+        {
+            if (ragContext == null || !ragContext.HasResults)
+                return;
+
+            sb.AppendLine("RELEVANT CONTEXT (past events / lore relevant to this moment):");
+            foreach (var r in ragContext.StaticResults)
+                sb.AppendLine($"- [Static] {r.Source} (Score: {r.Score:F2}): {r.Text}");
+            foreach (var r in ragContext.DynamicResults)
+                sb.AppendLine($"- [Dynamic] {r.Source} (Score: {r.Score:F2}): {r.Text}");
+            sb.AppendLine();
         }
 
         private static void AppendStoryContextPrompts(StringBuilder sb, ColonySnapshot s)
