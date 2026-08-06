@@ -1,13 +1,13 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using RimTelligence.Source.CustomEvents.EventSelector.DTO;
-using RimTelligence.Source.CustomEvents.EventSelector.Modifiers;
-using RimTelligence.Source.CustomEvents.Handlers;
-using RimTelligence.Source.DataSnapshots;
+using RimTelligence.CustomEvents.EventSelector;
+using RimTelligence.CustomEvents.EventSelector.Modifiers;
+using RimTelligence.CustomEvents.Handlers;
+using RimTelligence.DataSnapshots;
 using Verse;
 
-namespace RimTelligence.Source.CustomEvents.EventSelector
+namespace RimTelligence.CustomEvents.EventSelector
 {
     public static class HeuristicEventSelector
     {
@@ -20,11 +20,11 @@ namespace RimTelligence.Source.CustomEvents.EventSelector
 
             //Build base pool from registry
             var pool = EffectHandlerRegistry.GetAllHandlers()
-                .Select(h => new EventEntry(h.EffectName, h.BaseWeight, h.Alignment))
+                .Select(handler => new EventEntry(handler.EffectName, handler.BaseWeight, handler.Alignment))
                 .ToList();
 
             //Strip ineligible entries
-            pool = pool.Where(e => EventEligibility.IsEligible(e.Type, snapshot)).ToList();
+            pool = pool.Where(entry => EventEligibility.IsEligible(entry.Type, snapshot)).ToList();
 
             //    Apply alignment filter                        
             pool = FilterByMode(pool, mode);
@@ -33,7 +33,7 @@ namespace RimTelligence.Source.CustomEvents.EventSelector
             {
                 ModLogger.Warning("[Selector] Pool empty after filtering, falling back to full pool.");
                 pool = EffectHandlerRegistry.GetAllHandlers()
-                    .Select(h => new EventEntry(h.EffectName, h.BaseWeight, h.Alignment))
+                    .Select(handler => new EventEntry(handler.EffectName, handler.BaseWeight, handler.Alignment))
                     .ToList();
             }
 
@@ -61,14 +61,14 @@ namespace RimTelligence.Source.CustomEvents.EventSelector
             }
 
             // Strip anything that ended up at zero weight
-            pool = pool.Where(e => e.Weight > 0f).ToList();
+            pool = pool.Where(entry => entry.Weight > 0f).ToList();
 
             //  Draw 
             int count = DrawCount(mode);
             var drawn = new List<EventEntry>();
             var usedFamilies = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-            for (int i = 0; i < count && pool.Count > 0; i++)
+            for (int index = 0; index < count && pool.Count > 0; index++)
             {
                 EventEntry pick = WeightedDraw(pool);
                 if (pick == null) break;
@@ -76,7 +76,7 @@ namespace RimTelligence.Source.CustomEvents.EventSelector
                 drawn.Add(pick);
 
                 // Remove exact type from pool (no duplicates)
-                pool.RemoveAll(e => e.Type == pick.Type);
+                pool.RemoveAll(entry => entry.Type == pick.Type);
 
                 // Family cap: after drawing one from a family, 
                 // halve all remaining entries in that family
@@ -84,26 +84,26 @@ namespace RimTelligence.Source.CustomEvents.EventSelector
                 if (usedFamilies.Contains(pick.Family))
                 {
                     // Second draw from same family: very heavy penalty
-                    foreach (var e in pool.Where(e => e.Family == pick.Family))
-                        e.Weight *= 0.1f;
+                    foreach (var entry in pool.Where(entry => entry.Family == pick.Family))
+                        entry.Weight *= 0.1f;
                 }
                 else
                 {
                     // First time seeing this family: mild penalty on siblings
-                    foreach (var e in pool.Where(e => e.Family == pick.Family))
-                        e.Weight *= 0.3f;
+                    foreach (var entry in pool.Where(entry => entry.Family == pick.Family))
+                        entry.Weight *= 0.3f;
                 }
                 usedFamilies.Add(pick.Family);
             }
 
             var result = drawn
-                .Select(e => new SelectedEventIntent { type = e.Type })
+                .Select(entry => new SelectedEventIntent { type = entry.Type })
                 .ToList();
 
             // Record for history
             history?.Record(result);
 
-            ModLogger.Message($"[Selector] Final draw ({mode}): {string.Join(", ", result.Select(e => e.type))}");
+            ModLogger.Message($"[Selector] Final draw ({mode}): {string.Join(", ", result.Select(entry => entry.type))}");
             return result;
         }
 
@@ -114,9 +114,9 @@ namespace RimTelligence.Source.CustomEvents.EventSelector
             switch (mode)
             {
                 case DrawMode.BadStreak:
-                    return pool.Where(e => e.Alignment != EventAlignment.Good).ToList();
+                    return pool.Where(entry => entry.Alignment != EventAlignment.Good).ToList();
                 case DrawMode.GoodStreak:
-                    return pool.Where(e => e.Alignment != EventAlignment.Bad).ToList();
+                    return pool.Where(entry => entry.Alignment != EventAlignment.Bad).ToList();
                 default: // Weighted, PureRandom
                     return pool;
             }
@@ -148,17 +148,17 @@ namespace RimTelligence.Source.CustomEvents.EventSelector
             int total = weights.Sum();
             int roll = Rand.Range(0, total);
             int cursor = 0;
-            for (int i = 0; i < weights.Length; i++)
+            for (int index = 0; index < weights.Length; index++)
             {
-                cursor += weights[i];
-                if (roll < cursor) return i + 1;
+                cursor += weights[index];
+                if (roll < cursor) return index + 1;
             }
             return 1;
         }
 
         private static EventEntry WeightedDraw(List<EventEntry> pool)
         {
-            float total = pool.Sum(e => e.Weight);
+            float total = pool.Sum(entry => entry.Weight);
             if (total <= 0f) return null;
 
             float roll = Rand.Value * total;

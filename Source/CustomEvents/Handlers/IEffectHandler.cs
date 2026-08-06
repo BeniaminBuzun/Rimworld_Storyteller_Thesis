@@ -1,7 +1,7 @@
-﻿using RimWorld.Planet;
+using RimWorld.Planet;
 using Verse;
 
-namespace RimTelligence.Source.CustomEvents.Handlers
+namespace RimTelligence.CustomEvents.Handlers
 {
     public interface IEffectHandler
     {

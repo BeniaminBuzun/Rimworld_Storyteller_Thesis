@@ -1,4 +1,4 @@
-﻿using RimTelligence.Source.CustomEvents;
+using RimTelligence.CustomEvents;
 using System;
 using System.Data.SQLite;
 using System.IO;
@@ -6,7 +6,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using Verse;
 
-namespace RimTelligence
+namespace RimTelligence.Memory
 {
     [StaticConstructorOnStartup]
     public static class RagBootstrap

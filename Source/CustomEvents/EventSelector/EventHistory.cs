@@ -1,10 +1,10 @@
-﻿using RimTelligence.Source.CustomEvents.Handlers;
+using RimTelligence.CustomEvents.Handlers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using Verse;
 
-namespace RimTelligence.Source.CustomEvents.EventSelector
+namespace RimTelligence.CustomEvents.EventSelector
 {
     public class EventHistory : GameComponent
     {
@@ -25,9 +25,9 @@ namespace RimTelligence.Source.CustomEvents.EventSelector
             get
             {
                 int count = 0;
-                for (int i = _recentAlignments.Count - 1; i >= 0; i--)
+                for (int index = _recentAlignments.Count - 1; index >= 0; index--)
                 {
-                    if (_recentAlignments[i] == EventAlignment.Bad) count++;
+                    if (_recentAlignments[index] == EventAlignment.Bad) count++;
                     else break;
                 }
                 return count;
@@ -40,9 +40,9 @@ namespace RimTelligence.Source.CustomEvents.EventSelector
             get
             {
                 int count = 0;
-                for (int i = _recentAlignments.Count - 1; i >= 0; i--)
+                for (int index = _recentAlignments.Count - 1; index >= 0; index--)
                 {
-                    if (_recentAlignments[i] == EventAlignment.Good) count++;
+                    if (_recentAlignments[index] == EventAlignment.Good) count++;
                     else break;
                 }
                 return count;
@@ -65,15 +65,15 @@ namespace RimTelligence.Source.CustomEvents.EventSelector
         {
             // find the most recent type in this family
             float worst = 0f;
-            for (int i = 0; i < _recentTypes.Count; i++)
+            for (int index = 0; index < _recentTypes.Count; index++)
             {
-                string t = _recentTypes[i];
-                string f = t.Contains('_') ? t.Split('_')[0] : t;
-                if (string.Equals(f, family, StringComparison.OrdinalIgnoreCase))
+                string type = _recentTypes[index];
+                string typeFamily = type.Contains('_') ? type.Split('_')[0] : type;
+                if (string.Equals(typeFamily, family, StringComparison.OrdinalIgnoreCase))
                 {
-                    int stepsAgo = _recentTypes.Count - 1 - i;
-                    float p = Math.Max(0f, 1f - (float)stepsAgo / TypeWindow);
-                    if (p > worst) worst = p;
+                    int stepsAgo = _recentTypes.Count - 1 - index;
+                    float penalty = Math.Max(0f, 1f - (float)stepsAgo / TypeWindow);
+                    if (penalty > worst) worst = penalty;
                 }
             }
             return worst;
@@ -81,15 +81,15 @@ namespace RimTelligence.Source.CustomEvents.EventSelector
 
         public void Record(List<SelectedEventIntent> events)
         {
-            foreach (var e in events)
+            foreach (var evt in events)
             {
-                _recentTypes.Add(e.type);
+                _recentTypes.Add(evt.type);
                 if (_recentTypes.Count > TypeWindow)
                     _recentTypes.RemoveAt(0);
             }
 
-            bool hasBad = events.Any(e => GetAlignment(e.type) == EventAlignment.Bad);
-            bool hasGood = events.Any(e => GetAlignment(e.type) == EventAlignment.Good);
+            bool hasBad = events.Any(evt => GetAlignment(evt.type) == EventAlignment.Bad);
+            bool hasGood = events.Any(evt => GetAlignment(evt.type) == EventAlignment.Good);
 
             EventAlignment batchAlign =
                 hasBad ? EventAlignment.Bad :

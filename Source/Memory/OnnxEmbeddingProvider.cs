@@ -1,14 +1,14 @@
-﻿using Microsoft.ML.OnnxRuntime;
+using Microsoft.ML.OnnxRuntime;
 using Microsoft.ML.OnnxRuntime.Tensors;
-using RimTelligence.Source.CustomEvents;
-using RimTelligence.Source.Memory;
+using RimTelligence.CustomEvents;
+using RimTelligence.Memory;
 using System;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using Verse;
 
-namespace RimTelligence
+namespace RimTelligence.Memory
 {
     public class OnnxEmbeddingProvider : IEmbeddingProvider, IDisposable
     {
@@ -22,8 +22,8 @@ namespace RimTelligence
 
             string assembliesDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             string modRoot = Path.GetFullPath(Path.Combine(assembliesDir, ".."));
-            string modelPath = Path.Combine(modRoot, "Source", "Models", "model.onnx");
-            string vocabPath = Path.Combine(modRoot, "Source", "Models", "vocab.txt");
+            string modelPath = Path.Combine(modRoot, "Source", "Memory", "Models", "model.onnx");
+            string vocabPath = Path.Combine(modRoot, "Source", "Memory", "Models", "vocab.txt");
 
             if (!File.Exists(modelPath)) throw new FileNotFoundException("ONNX model not found", modelPath);
             if (!File.Exists(vocabPath)) throw new FileNotFoundException("vocab.txt not found", vocabPath);
@@ -53,7 +53,7 @@ namespace RimTelligence
 
             using (var results = session.Run(inputs))
             {
-                var lastHiddenState = results.First(r => r.Name == "last_hidden_state")
+                var lastHiddenState = results.First(result => result.Name == "last_hidden_state")
                     .AsTensor<float>();
                 return MeanPoolAndNormalize(lastHiddenState, attentionMask, seqLen);
             }
@@ -64,22 +64,22 @@ namespace RimTelligence
             var pooled = new float[EmbeddingDim];
             float maskSum = 0f;
 
-            for (int t = 0; t < seqLen; t++)
+            for (int tokenIndex = 0; tokenIndex < seqLen; tokenIndex++)
             {
-                if (attentionMask[t] == 0) continue;
+                if (attentionMask[tokenIndex] == 0) continue;
                 maskSum += 1f;
-                for (int d = 0; d < EmbeddingDim; d++)
-                    pooled[d] += hidden[0, t, d];
+                for (int dimIndex = 0; dimIndex < EmbeddingDim; dimIndex++)
+                    pooled[dimIndex] += hidden[0, tokenIndex, dimIndex];
             }
 
             if (maskSum > 0)
-                for (int d = 0; d < EmbeddingDim; d++)
-                    pooled[d] /= maskSum;
+                for (int dimIndex = 0; dimIndex < EmbeddingDim; dimIndex++)
+                    pooled[dimIndex] /= maskSum;
 
-            float norm = (float)Math.Sqrt(pooled.Sum(x => x * x));
+            float norm = (float)Math.Sqrt(pooled.Sum(value => value * value));
             if (norm > 1e-8f)
-                for (int d = 0; d < EmbeddingDim; d++)
-                    pooled[d] /= norm;
+                for (int dimIndex = 0; dimIndex < EmbeddingDim; dimIndex++)
+                    pooled[dimIndex] /= norm;
 
             return pooled;
         }

@@ -1,11 +1,11 @@
-﻿using RimTelligence.Source.CustomEvents;
+using RimTelligence.CustomEvents;
 using System;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using Verse;
 
-namespace RimTelligence
+namespace RimTelligence.Memory
 {
     public static class OnnxBootstrap
     {

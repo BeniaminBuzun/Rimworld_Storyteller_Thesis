@@ -1,11 +1,11 @@
-﻿using RimTelligence.Source.DataSnapshots;
+using RimTelligence.DataSnapshots;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace RimTelligence.Source.CustomEvents.EventSelector
+namespace RimTelligence.CustomEvents.EventSelector.Modifiers
 {
     public interface IEventModifier
     {

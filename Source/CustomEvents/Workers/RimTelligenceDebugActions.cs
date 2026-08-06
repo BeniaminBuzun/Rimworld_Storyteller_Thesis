@@ -1,19 +1,18 @@
-﻿using LudeonTK;
+using LudeonTK;
 using Newtonsoft.Json;
-using RimTelligence.Source.CustomEvents;
-using RimTelligence.Source.CustomEvents.Handlers;
-using RimTelligence.Source.CustomEvents.Handlers.Implementations.ItemsRelated;
-using RimTelligence.Source.CustomEvents.Workers;
-using RimTelligence.Source.CustomEvents.Workers.RimTelligence.Source.Debug;
-using RimTelligence.Source.DataSnapshots;
-using RimTelligence.Source.Memory;
+using RimTelligence.CustomEvents;
+using RimTelligence.CustomEvents.Handlers;
+using RimTelligence.CustomEvents.Handlers.Item;
+using RimTelligence.CustomEvents.Workers;
+using RimTelligence.DataSnapshots;
+using RimTelligence.Memory;
 using RimWorld;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using Verse;
 
-namespace RimTelligence.Source.Debug
+namespace RimTelligence.CustomEvents.Workers
 {
     public static class RimTelligenceDebugActions
     {
@@ -113,21 +112,21 @@ namespace RimTelligence.Source.Debug
             Rect viewRect = new Rect(0f, 0f, outRect.width - 16f, lastResults.Count * 60f);
 
             Widgets.BeginScrollView(outRect, ref resultsScroll, viewRect);
-            float y = 0f;
-            foreach (var r in lastResults)
+            float yPosition = 0f;
+            foreach (var result in lastResults)
             {
-                Rect rowRect = new Rect(0f, y, viewRect.width, 56f);
+                Rect rowRect = new Rect(0f, yPosition, viewRect.width, 56f);
                 Widgets.DrawMenuSection(rowRect);
 
                 Rect scoreLabel = new Rect(rowRect.x + 4f, rowRect.y + 2f, rowRect.width - 8f, 18f);
-                Widgets.Label(scoreLabel, $"[{r.Score:F3}] ({r.Source})");
+                Widgets.Label(scoreLabel, $"[{result.Score:F3}] ({result.Source})");
 
                 Rect textLabel = new Rect(rowRect.x + 4f, rowRect.y + 20f, rowRect.width - 8f, 34f);
                 Text.Font = GameFont.Tiny;
-                Widgets.Label(textLabel, r.Text);
+                Widgets.Label(textLabel, result.Text);
                 Text.Font = GameFont.Small;
 
-                y += 60f;
+                yPosition += 60f;
             }
             Widgets.EndScrollView();
 
@@ -148,8 +147,8 @@ namespace RimTelligence.Source.Debug
             resultsScroll = Vector2.zero;
 
             Log.Message($"[RimTelligence] Query: \"{queryBuf}\" — {lastResults.Count} results:");
-            foreach (var r in lastResults)
-                Log.Message($"  [{r.Score:F3}] ({r.Source}) {r.Text}");
+            foreach (var result in lastResults)
+                Log.Message($"  [{result.Score:F3}] ({result.Source}) {result.Text}");
         }
     }
 
@@ -237,7 +236,7 @@ namespace RimTelligence.Source.Debug
             ui.Label("Quick-fill targetPawn:");
             DrawScrollableButtons(
                 ui,
-                map.mapPawns.FreeColonists.Select(p => p.Name.ToStringShort).ToList(),
+                map.mapPawns.FreeColonists.Select(pawn => pawn.Name.ToStringShort).ToList(),
                 ref pawnScroll,
                 val => pawnBuf = val
             );
@@ -278,16 +277,16 @@ namespace RimTelligence.Source.Debug
             Widgets.EndScrollView();
         }
 
-        private void DrawValueButton(Rect row, int index, float btnW, SeverityTypes v, string label)
+        private void DrawValueButton(Rect row, int index, float btnW, SeverityTypes severity, string label)
         {
-            Rect r = new Rect(row.x + index * btnW, row.y, btnW - 2f, row.height);
+            Rect buttonRect = new Rect(row.x + index * btnW, row.y, btnW - 2f, row.height);
 
-            bool active = effect.value == v;
+            bool active = effect.value == severity;
             if (active)
-                Widgets.DrawBoxSolid(r, new Color(0.3f, 0.6f, 0.3f, 0.4f));
+                Widgets.DrawBoxSolid(buttonRect, new Color(0.3f, 0.6f, 0.3f, 0.4f));
 
-            if (Widgets.ButtonText(r, label))
-                effect.value = v;
+            if (Widgets.ButtonText(buttonRect, label))
+                effect.value = severity;
         }
 
         private void DrawScrollableButtons(
@@ -312,13 +311,13 @@ namespace RimTelligence.Source.Debug
             Rect innerRect = new Rect(0f, 0f, outerRect.width - 20f, totalHeight);
 
             Widgets.BeginScrollView(outerRect, ref scroll, innerRect);
-            float y = 0f;
+            float yPosition = 0f;
             foreach (string item in items)
             {
-                Rect btnRect = new Rect(5f, y, innerRect.width - 5f, ButtonHeight - 2f);
+                Rect btnRect = new Rect(5f, yPosition, innerRect.width - 5f, ButtonHeight - 2f);
                 if (Widgets.ButtonText(btnRect, item))
                     onSelect(item);
-                y += ButtonHeight;
+                yPosition += ButtonHeight;
             }
             Widgets.EndScrollView();
             ui.Gap(4f);
@@ -338,26 +337,26 @@ namespace RimTelligence.Source.Debug
                     return EventItemMapping.GetAllowedDefs(effectType);
 
                 case "DiseasePawn":
-                    return GameObjectsCapturer.DiseaseList.Select(m => m.DefName).ToList();
+                    return GameObjectsCapturer.DiseaseList.Select(def => def.DefName).ToList();
 
                 case "DamagePawn":
-                    return GameObjectsCapturer.DamageTypeList.Select(m => m.DefName).ToList();
+                    return GameObjectsCapturer.DamageTypeList.Select(def => def.DefName).ToList();
 
                 case "AddExpPoints":
                 case "LoseExpPoints":
-                    return GameObjectsCapturer.AllSkillsList.Select(m => m.DefName).ToList();
+                    return GameObjectsCapturer.AllSkillsList.Select(def => def.DefName).ToList();
 
                 case "MiracleHealDisease":
-                    return GameObjectsCapturer.DiseaseList.Select(m => m.DefName).ToList();
+                    return GameObjectsCapturer.DiseaseList.Select(def => def.DefName).ToList();
 
                 case "ChangeWeather":
-                    return GameObjectsCapturer.AllWeathersList.Select(m => m.DefName).ToList();
+                    return GameObjectsCapturer.AllWeathersList.Select(def => def.DefName).ToList();
 
                 case "GameCondition":
-                    return GameObjectsCapturer.GameConditionList.Select(m => m.DefName).ToList();
+                    return GameObjectsCapturer.GameConditionList.Select(def => def.DefName).ToList();
 
                 case "AnimalInsanity":
-                    return GameObjectsCapturer.AnimalList.Select(m => m.DefName).ToList();
+                    return GameObjectsCapturer.AnimalList.Select(def => def.DefName).ToList();
 
                 default:
                     return null;

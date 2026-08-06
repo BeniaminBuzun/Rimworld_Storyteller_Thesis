@@ -1,10 +1,10 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
 
-namespace RimTelligence
+namespace RimTelligence.Memory
 {
     public class BertTokenizer
     {
@@ -19,8 +19,8 @@ namespace RimTelligence
         {
             vocab = new Dictionary<string, int>();
             var lines = File.ReadAllLines(vocabPath);
-            for (int i = 0; i < lines.Length; i++)
-                vocab[lines[i]] = i;
+            for (int lineIndex = 0; lineIndex < lines.Length; lineIndex++)
+                vocab[lines[lineIndex]] = lineIndex;
         }
 
         public (long[] inputIds, long[] attentionMask, long[] tokenTypeIds) Tokenize(string text)
@@ -35,19 +35,19 @@ namespace RimTelligence
             var attentionMask = new long[MaxSeqLen];
             var tokenTypeIds = new long[MaxSeqLen];
 
-            for (int i = 0; i < MaxSeqLen; i++)
+            for (int position = 0; position < MaxSeqLen; position++)
             {
-                if (i < len)
+                if (position < len)
                 {
-                    inputIds[i] = vocab.TryGetValue(tokens[i], out int id) ? id : vocab[UnkToken];
-                    attentionMask[i] = 1;
+                    inputIds[position] = vocab.TryGetValue(tokens[position], out int id) ? id : vocab[UnkToken];
+                    attentionMask[position] = 1;
                 }
                 else
                 {
-                    inputIds[i] = vocab[PadToken];
-                    attentionMask[i] = 0;
+                    inputIds[position] = vocab[PadToken];
+                    attentionMask[position] = 0;
                 }
-                tokenTypeIds[i] = 0;
+                tokenTypeIds[position] = 0;
             }
 
             return (inputIds, attentionMask, tokenTypeIds);
@@ -57,11 +57,11 @@ namespace RimTelligence
         {
             text = text.ToLowerInvariant();
             var sb = new StringBuilder();
-            foreach (char c in text)
+            foreach (char character in text)
             {
-                if (char.IsWhiteSpace(c)) sb.Append(' ');
-                else if (char.IsPunctuation(c) || char.IsSymbol(c)) { sb.Append(' '); sb.Append(c); sb.Append(' '); }
-                else sb.Append(c);
+                if (char.IsWhiteSpace(character)) sb.Append(' ');
+                else if (char.IsPunctuation(character) || char.IsSymbol(character)) { sb.Append(' '); sb.Append(character); sb.Append(' '); }
+                else sb.Append(character);
             }
             return sb.ToString().Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).ToList();
         }

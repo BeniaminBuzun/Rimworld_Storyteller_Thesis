@@ -1,11 +1,11 @@
-﻿using UnityEngine;
+using UnityEngine;
 using Verse;
 using HarmonyLib;
 
-using RimTelligence.Source.CustomEvents;
-using RimTelligence.Source.DataSnapshots;
+using RimTelligence.CustomEvents;
+using RimTelligence.DataSnapshots;
 
-namespace RimTelligence.Source.AIStoryteller
+namespace RimTelligence.AIStoryteller
 {
     public class AIStorytellerMod : Mod
     {
@@ -27,14 +27,12 @@ namespace RimTelligence.Source.AIStoryteller
             Listing_Standard listing = new Listing_Standard();
             listing.Begin(inRect);
 
-
             listing.Label("Grok API Key:");
             Settings.grokApiKey = listing.TextEntry(Settings.grokApiKey);
 
             listing.Gap(5f);
             listing.GapLine(); 
             listing.Gap(10f);
-
 
             listing.Label("Story prompt:");
             listing.Gap(6f);

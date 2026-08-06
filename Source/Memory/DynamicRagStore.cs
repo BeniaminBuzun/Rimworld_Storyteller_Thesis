@@ -1,11 +1,11 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Data.SQLite;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace RimTelligence.Source.Memory
+namespace RimTelligence.Memory
 {
     public class DynamicRagStore
     {
@@ -54,7 +54,7 @@ namespace RimTelligence.Source.Memory
                     }
                 }
             }
-            return results.OrderByDescending(r => r.Score).Take(topK).ToList();
+            return results.OrderByDescending(result => result.Score).Take(topK).ToList();
         }
 
         // Optional: prune old memories so the table doesn't grow forever

@@ -1,9 +1,9 @@
-using RimTelligence.Source.Memory;
+using RimTelligence.Memory;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace RimTelligence.Source.CustomEvents.Prompting
+namespace RimTelligence.CustomEvents.Prompting
 {
     public class RagContextProvider
     {
@@ -38,9 +38,9 @@ namespace RimTelligence.Source.CustomEvents.Prompting
                 var staticStore = new StaticRagStore(RagBootstrap.DbPath);
                 staticResults = staticStore.Query(queryEmbedding, topK: _topK);
             }
-            catch (Exception e)
+            catch (Exception exception)
             {
-                ModLogger.Warning($"[RAG] Static store query failed, continuing with dynamic only: {e.Message}");
+                ModLogger.Warning($"[RAG] Static store query failed, continuing with dynamic only: {exception.Message}");
             }
 
             try
@@ -48,15 +48,15 @@ namespace RimTelligence.Source.CustomEvents.Prompting
                 var dynamicStore = new DynamicRagStore(RagBootstrap.DbPath);
                 dynamicResults = dynamicStore.Query(queryEmbedding, topK: _topK);
             }
-            catch (Exception e)
+            catch (Exception exception)
             {
-                ModLogger.Warning($"[RAG] Dynamic store query failed, continuing with static only: {e.Message}");
+                ModLogger.Warning($"[RAG] Dynamic store query failed, continuing with static only: {exception.Message}");
             }
 
             var result = new RagQueryResult
             {
-                StaticResults = staticResults.Where(r => r.Score >= _threshold).ToList(),
-                DynamicResults = dynamicResults.Where(r => r.Score >= _threshold).ToList()
+                StaticResults = staticResults.Where(ragResult => ragResult.Score >= _threshold).ToList(),
+                DynamicResults = dynamicResults.Where(ragResult => ragResult.Score >= _threshold).ToList()
             };
 
             CheckTokenBudget(result);
@@ -66,8 +66,8 @@ namespace RimTelligence.Source.CustomEvents.Prompting
         private void CheckTokenBudget(RagQueryResult result)
         {
             int totalChars = 0;
-            foreach (var r in result.StaticResults) totalChars += r.Text?.Length ?? 0;
-            foreach (var r in result.DynamicResults) totalChars += r.Text?.Length ?? 0;
+            foreach (var ragResult in result.StaticResults) totalChars += ragResult.Text?.Length ?? 0;
+            foreach (var ragResult in result.DynamicResults) totalChars += ragResult.Text?.Length ?? 0;
 
             if (totalChars > TokenBudgetChars)
                 ModLogger.Warning($"[RAG] Token budget exceeded: ~{totalChars / 4} estimated tokens ({totalChars} chars, limit {TokenBudgetChars / 4})");

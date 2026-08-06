@@ -23,5 +23,14 @@ obj/
 .DS_Store
 Thumbs.db
 
+# NuGet
+packages/
+*.nupkg
+
+# Runtime data (regenerated per session)
+[Dd]ata/*.db
+[Dd]ata/*.db-shm
+[Dd]ata/*.db-wal
+
 /[Aa]ssets/[Aa]ssetBundles/
 /[Aa]ssets/[Aa]ssetBundles.meta

@@ -1,0 +1,251 @@
+{
+  "categories": [
+    {
+      "id": "WeaponsTribal",
+      "label": "Tribal Weapons",
+      "sortOrder": 1,
+      "variants": {
+        "pod": { "description": "tribal weapons fell from orbit", "weight": 3.0, "alignment": "Good" },
+        "found": { "description": "pawn found a tribal weapon", "weight": 3.5, "alignment": "Good" },
+        "lose": { "description": "tribal weapon lost", "weight": 3.0, "alignment": "Bad" }
+      }
+    },
+    {
+      "id": "WeaponsIndustrial",
+      "label": "Industrial Weapons",
+      "sortOrder": 2,
+      "variants": {
+        "pod": { "description": "industrial weapons pod crash", "weight": 0.5, "alignment": "Good" },
+        "found": { "description": "pawn found an industrial weapon", "weight": 0.5, "alignment": "Good" },
+        "lose": { "description": "industrial weapon lost", "weight": 2.5, "alignment": "Bad" }
+      }
+    },
+    {
+      "id": "WeaponsSpacer",
+      "label": "Spacer Weapons",
+      "sortOrder": 3,
+      "variants": {
+        "pod": { "description": "spacer-tech weapons pod crash", "weight": 0.25, "alignment": "Good" },
+        "found": { "description": "pawn found a spacer weapon", "weight": 0.25, "alignment": "Good" },
+        "lose": { "description": "spacer weapon lost", "weight": 1.5, "alignment": "Bad" }
+      }
+    },
+    {
+      "id": "WeaponsArchotech",
+      "label": "Archotech Weapons",
+      "sortOrder": 4,
+      "variants": {
+        "pod": { "description": "archotech weapon pod crash", "weight": 0.10, "alignment": "Good" },
+        "found": { "description": "pawn found an archotech weapon", "weight": 0.1, "alignment": "Good" }
+      }
+    },
+    {
+      "id": "WeaponsUltra",
+      "label": "Ultra-Tech Weapons",
+      "sortOrder": 5,
+      "variants": {
+        "pod": { "description": "ultra-tech weapon pod crash", "weight": 0.05, "alignment": "Good" },
+        "found": { "description": "pawn found an ultra-tech weapon", "weight": 0.05, "alignment": "Good" }
+      }
+    },
+    {
+      "id": "WeaponsOther",
+      "label": "Exotic Weapons",
+      "sortOrder": 6,
+      "variants": {
+        "pod": { "description": "exotic weapon pod crash", "weight": 0.05, "alignment": "Good" }
+      }
+    },
+    {
+      "id": "Food_Meals",
+      "label": "Prepared Meals",
+      "sortOrder": 7,
+      "variants": {
+        "pod": { "description": "prepared meals dropped from orbit", "weight": 1.5, "alignment": "Good" },
+        "found": { "description": "pawn found prepared food", "weight": 2.0, "alignment": "Good" },
+        "lose": { "description": "prepared meals spoiled or stolen", "weight": 4.0, "alignment": "Bad" }
+      }
+    },
+    {
+      "id": "Food_RawPlant",
+      "label": "Raw Plant Food",
+      "sortOrder": 8,
+      "variants": {
+        "pod": { "description": "raw plant food pod crash", "weight": 1.5, "alignment": "Good" },
+        "found": { "description": "pawn found raw plant food", "weight": 2.0, "alignment": "Good" },
+        "lose": { "description": "raw plant food spoiled", "weight": 3.5, "alignment": "Bad" }
+      }
+    },
+    {
+      "id": "Food_RawMeat",
+      "label": "Raw Meat",
+      "sortOrder": 9,
+      "variants": {
+        "pod": { "description": "raw meat pod crash", "weight": 1.5, "alignment": "Good" },
+        "found": { "description": "pawn found raw meat", "weight": 2.0, "alignment": "Good" },
+        "lose": { "description": "raw meat spoiled", "weight": 3.5, "alignment": "Bad" }
+      }
+    },
+    {
+      "id": "Food_RawSpecial",
+      "label": "Special Food",
+      "sortOrder": 10,
+      "variants": {
+        "pod": { "description": "special food pod crash", "weight": 0.8, "alignment": "Good" },
+        "found": { "description": "pawn found special food", "weight": 1.0, "alignment": "Good" }
+      }
+    },
+    {
+      "id": "Food_AnimalFeed",
+      "label": "Animal Feed",
+      "sortOrder": 11,
+      "variants": {
+        "pod": { "description": "animal feed pod crash", "weight": 0.8, "alignment": "Good" }
+      }
+    },
+    {
+      "id": "Food_AnimalProducts",
+      "label": "Animal Products",
+      "sortOrder": 12,
+      "variants": {
+        "pod": { "description": "animal products pod crash", "weight": 1.0, "alignment": "Good" },
+        "found": { "description": "pawn found animal products", "weight": 1.2, "alignment": "Good" }
+      }
+    },
+    {
+      "id": "Animal_Corpses",
+      "label": "Animal Corpses",
+      "sortOrder": 13
+    },
+    {
+      "id": "Resources_Metals",
+      "label": "Metals",
+      "sortOrder": 14,
+      "variants": {
+        "pod": { "description": "metal shipment pod crash", "weight": 1.0, "alignment": "Good" },
+        "found": { "description": "pawn found metal", "weight": 1.2, "alignment": "Good" },
+        "lose": { "description": "metals went missing", "weight": 2.0, "alignment": "Bad" }
+      }
+    },
+    {
+      "id": "Resources_Stone",
+      "label": "Stone",
+      "sortOrder": 15,
+      "variants": {
+        "pod": { "description": "stone blocks pod crash", "weight": 0.5, "alignment": "Good" },
+        "found": { "description": "pawn found stone blocks", "weight": 0.6, "alignment": "Good" },
+        "lose": { "description": "stone blocks lost", "weight": 1.0, "alignment": "Bad" }
+      }
+    },
+    {
+      "id": "Resources_Textile_Leathers",
+      "label": "Leathers",
+      "sortOrder": 16,
+      "variants": {
+        "pod": { "description": "leathers pod crash", "weight": 1.0, "alignment": "Good" },
+        "found": { "description": "pawn found leather", "weight": 1.2, "alignment": "Good" },
+        "lose": { "description": "leather lost", "weight": 1.5, "alignment": "Bad" }
+      }
+    },
+    {
+      "id": "Resources_Textile_Fabrics",
+      "label": "Fabrics",
+      "sortOrder": 17,
+      "variants": {
+        "pod": { "description": "fabrics pod crash", "weight": 1.0, "alignment": "Good" },
+        "found": { "description": "pawn found fabric", "weight": 1.2, "alignment": "Good" },
+        "lose": { "description": "fabric lost", "weight": 1.5, "alignment": "Bad" }
+      }
+    },
+    {
+      "id": "Resources_Textile_Wools",
+      "label": "Wools",
+      "sortOrder": 18,
+      "variants": {
+        "pod": { "description": "wools pod crash", "weight": 0.8, "alignment": "Good" },
+        "found": { "description": "pawn found wool", "weight": 1.0, "alignment": "Good" },
+        "lose": { "description": "wool lost", "weight": 1.2, "alignment": "Bad" }
+      }
+    },
+    {
+      "id": "Resources_Chemical_Raw",
+      "label": "Raw Chemicals",
+      "sortOrder": 19,
+      "variants": {
+        "pod": { "description": "raw chemicals pod crash", "weight": 0.8, "alignment": "Good" },
+        "found": { "description": "pawn found chemicals", "weight": 1.0, "alignment": "Good" },
+        "lose": { "description": "chemicals lost", "weight": 1.5, "alignment": "Bad" }
+      }
+    },
+    {
+      "id": "Resources_Components",
+      "label": "Components",
+      "sortOrder": 20,
+      "variants": {
+        "pod": { "description": "components pod crash", "weight": 1.2, "alignment": "Good" },
+        "found": { "description": "pawn found components", "weight": 1.5, "alignment": "Good" },
+        "lose": { "description": "components lost", "weight": 2.0, "alignment": "Bad" }
+      }
+    },
+    {
+      "id": "Apparel_Clothing",
+      "label": "Clothing",
+      "sortOrder": 21,
+      "variants": {
+        "pod": { "description": "clothing pod crash", "weight": 1.0, "alignment": "Good" },
+        "found": { "description": "pawn found clothing", "weight": 1.2, "alignment": "Good" },
+        "lose": { "description": "clothing lost", "weight": 1.2, "alignment": "Bad" }
+      }
+    },
+    {
+      "id": "MedicineList",
+      "label": "Medicine",
+      "sortOrder": 22,
+      "variants": {
+        "pod": { "description": "medicine pod crash", "weight": 1.5, "alignment": "Good" },
+        "found": { "description": "pawn found medicine", "weight": 2.0, "alignment": "Good" },
+        "lose": { "description": "medicine lost", "weight": 3.0, "alignment": "Bad" }
+      }
+    },
+    {
+      "id": "DrugsList",
+      "label": "Drugs",
+      "sortOrder": 23,
+      "variants": {
+        "pod": { "description": "drugs pod crash", "weight": 1.2, "alignment": "Good" },
+        "found": { "description": "pawn found drugs", "weight": 1.5, "alignment": "Good" },
+        "lose": { "description": "drugs lost", "weight": 2.0, "alignment": "Bad" }
+      }
+    },
+    {
+      "id": "AnimalList",
+      "label": "Animals",
+      "sortOrder": 24
+    },
+    {
+      "id": "DiseaseList",
+      "label": "Diseases",
+      "sortOrder": 25
+    },
+    {
+      "id": "DamageTypeList",
+      "label": "Damage Types",
+      "sortOrder": 26
+    },
+    {
+      "id": "GameConditionList",
+      "label": "Game Conditions",
+      "sortOrder": 27
+    },
+    {
+      "id": "AllWeathersList",
+      "label": "Weathers",
+      "sortOrder": 28
+    },
+    {
+      "id": "AllSkillsList",
+      "label": "Skills",
+      "sortOrder": 29
+    }
+  ]
+}

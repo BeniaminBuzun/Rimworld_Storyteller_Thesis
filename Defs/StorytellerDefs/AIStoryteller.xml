@@ -228,7 +228,7 @@
 
 			-->
 			
-			<li Class="RimTelligence.Source.AIStoryteller.StorytellerCompProperties_AI">
+			<li Class="RimTelligence.AIStoryteller.StorytellerCompProperties_AI">
 				<category>Misc</category>
 				<minDaysPassed>0</minDaysPassed>
 				<incidentChance>0.1</incidentChance>

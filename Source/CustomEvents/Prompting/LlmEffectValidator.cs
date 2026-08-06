@@ -1,7 +1,7 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 
-namespace RimTelligence.Source.CustomEvents
+namespace RimTelligence.CustomEvents.Prompting
 {
     public static class LlmEffectValidator
     {
@@ -35,41 +35,41 @@ namespace RimTelligence.Source.CustomEvents
 
             var valid = new List<GameEffect>();
 
-            foreach (var e in effects)
+            foreach (var effect in effects)
             {
-                string reason = GetRejectionReason(e);
+                string reason = GetRejectionReason(effect);
                 if (reason != null)
                 {
-                    ModLogger.Warning($"[Validator] Dropping effect type='{e.type}' defName='{e.defName}': {reason}");
+                    ModLogger.Warning($"[Validator] Dropping effect type='{effect.type}' defName='{effect.defName}': {reason}");
                     continue;
                 }
-                valid.Add(e);
+                valid.Add(effect);
             }
 
             return valid;
         }
 
-        private static string GetRejectionReason(GameEffect e)
+        private static string GetRejectionReason(GameEffect effect)
         {
-            if (string.IsNullOrWhiteSpace(e.type))
+            if (string.IsNullOrWhiteSpace(effect.type))
                 return "type is blank";
 
             // Unknown type — handler won't exist, executor already warns but we drop early
             if (!Handlers.EffectHandlerRegistry.GetAllHandlers()
-                    .Any(h => string.Equals(h.EffectName, e.type, System.StringComparison.OrdinalIgnoreCase)))
-                return $"unknown effect type '{e.type}'";
+                    .Any(handler => string.Equals(handler.EffectName, effect.type, System.StringComparison.OrdinalIgnoreCase)))
+                return $"unknown effect type '{effect.type}'";
 
             // Required defName missing
-            if (_requiresDefName.Contains(e.type) && string.IsNullOrWhiteSpace(e.defName))
-                return $"type '{e.type}' requires a defName but got empty string";
+            if (_requiresDefName.Contains(effect.type) && string.IsNullOrWhiteSpace(effect.defName))
+                return $"type '{effect.type}' requires a defName but got empty string";
 
             // Pure filler: nothing meaningful was set
-            bool noCount = e.count <= 0;
-            bool noValue = e.value <= 0;
-            bool noTarget = string.IsNullOrWhiteSpace(e.targetPawn);
-            bool noDefName = string.IsNullOrWhiteSpace(e.defName);
+            bool noCount = effect.count <= 0;
+            bool noValue = effect.value <= 0;
+            bool noTarget = string.IsNullOrWhiteSpace(effect.targetPawn);
+            bool noDefName = string.IsNullOrWhiteSpace(effect.defName);
 
-            if (noCount && noValue && noTarget && noDefName && e.defName != "MeteoriteImpact")
+            if (noCount && noValue && noTarget && noDefName && effect.defName != "MeteoriteImpact")
                 return "all fields are zero/empty — pure filler";
 
             return null;

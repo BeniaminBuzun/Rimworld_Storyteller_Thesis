@@ -1,6 +1,7 @@
+using RimTelligence.Memory;
 using System.Collections.Generic;
 
-namespace RimTelligence.Source.CustomEvents.Prompting
+namespace RimTelligence.CustomEvents.Prompting
 {
     public class RagQueryResult
     {

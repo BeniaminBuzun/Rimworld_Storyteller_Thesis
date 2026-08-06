@@ -1,38 +1,38 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Data.SQLite;
 
-namespace RimTelligence
+namespace RimTelligence.Memory
 {
    
     // Shared blob/similarity helpers used by both stores
     public static class RagBlob
     {
-        public static byte[] ToBlob(float[] v)
+        public static byte[] ToBlob(float[] values)
         {
-            var b = new byte[v.Length * 4];
-            Buffer.BlockCopy(v, 0, b, 0, b.Length);
-            return b;
+            var bytes = new byte[values.Length * 4];
+            Buffer.BlockCopy(values, 0, bytes, 0, bytes.Length);
+            return bytes;
         }
 
-        public static float[] FromBlob(byte[] b)
+        public static float[] FromBlob(byte[] bytes)
         {
-            var v = new float[b.Length / 4];
-            Buffer.BlockCopy(b, 0, v, 0, b.Length);
-            return v;
+            var values = new float[bytes.Length / 4];
+            Buffer.BlockCopy(bytes, 0, values, 0, bytes.Length);
+            return values;
         }
 
-        public static float CosineSim(float[] a, float[] b)
+        public static float CosineSim(float[] vectorA, float[] vectorB)
         {
-            float dot = 0, ma = 0, mb = 0;
-            for (int i = 0; i < a.Length; i++)
+            float dotProduct = 0, magnitudeA = 0, magnitudeB = 0;
+            for (int index = 0; index < vectorA.Length; index++)
             {
-                dot += a[i] * b[i];
-                ma += a[i] * a[i];
-                mb += b[i] * b[i];
+                dotProduct += vectorA[index] * vectorB[index];
+                magnitudeA += vectorA[index] * vectorA[index];
+                magnitudeB += vectorB[index] * vectorB[index];
             }
-            return dot / ((float)Math.Sqrt(ma) * (float)Math.Sqrt(mb) + 1e-8f);
+            return dotProduct / ((float)Math.Sqrt(magnitudeA) * (float)Math.Sqrt(magnitudeB) + 1e-8f);
         }
     }
 

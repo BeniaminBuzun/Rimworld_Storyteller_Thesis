@@ -1,6 +1,6 @@
-﻿using RimWorld;
+using RimWorld;
 
-namespace RimTelligence.Source.AIStoryteller
+namespace RimTelligence.AIStoryteller
 {
     public class StorytellerCompProperties_AI : StorytellerCompProperties
     {

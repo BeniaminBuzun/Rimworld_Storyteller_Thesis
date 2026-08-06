@@ -1,5 +1,5 @@
-﻿using HarmonyLib;
-using RimTelligence.Source.AIStoryteller;
+using HarmonyLib;
+using RimTelligence.AIStoryteller;
 using RimWorld;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,7 +7,7 @@ using System.Reflection.Emit;
 using UnityEngine;
 using Verse;
 
-namespace RimTelligence.Source.Storyteller
+namespace RimTelligence.AIStoryteller
 {
     [HarmonyPatch(typeof(StorytellerUI), "DrawStorytellerSelectionInterface")]
     public static class Patch_DrawStorytellerSelectionInterface
@@ -19,14 +19,14 @@ namespace RimTelligence.Source.Storyteller
             var targetMethod = AccessTools.PropertyGetter(typeof(ModsConfig), nameof(ModsConfig.AnomalyActive));
             var injectionMethod = AccessTools.Method(typeof(AIStorytellerSelectInjection), nameof(AIStorytellerSelectInjection.DrawMyMenu));
 
-            for (int i = 0; i < codes.Count; i++)
+            for (int instructionIndex = 0; instructionIndex < codes.Count; instructionIndex++)
             {
-                if (codes[i].Calls(targetMethod))
+                if (codes[instructionIndex].Calls(targetMethod))
                 {
                     var loadListing = new CodeInstruction(OpCodes.Ldarg, 4);
 
-                    loadListing.labels = codes[i].labels.ToList();
-                    codes[i].labels.Clear();
+                    loadListing.labels = codes[instructionIndex].labels.ToList();
+                    codes[instructionIndex].labels.Clear();
 
                     yield return loadListing;
                     yield return new CodeInstruction(OpCodes.Ldarg_1);
@@ -34,7 +34,7 @@ namespace RimTelligence.Source.Storyteller
                     yield return new CodeInstruction(OpCodes.Call, injectionMethod);
                 }
 
-                yield return codes[i];
+                yield return codes[instructionIndex];
             }
         }
     }

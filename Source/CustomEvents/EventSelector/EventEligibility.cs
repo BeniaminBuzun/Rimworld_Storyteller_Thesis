@@ -1,11 +1,11 @@
-﻿using RimTelligence.Source.DataSnapshots;
+using RimTelligence.DataSnapshots;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace RimTelligence.Source.CustomEvents.EventSelector
+namespace RimTelligence.CustomEvents.EventSelector
 {
     public static class EventEligibility
     {
@@ -24,16 +24,16 @@ namespace RimTelligence.Source.CustomEvents.EventSelector
 
             //  pawn-targeted
             if (type == "MiracleHealChronicCondition")
-                return snapshot.colonists.Any(p =>
-                    p.health?.chronic_conditions?.Count > 0);
+                return snapshot.colonists.Any(colonist =>
+                    colonist.health?.chronic_conditions?.Count > 0);
 
             if (type == "MiracleHealMissingPart")
-                return snapshot.colonists.Any(p =>
-                    p.health?.missing_body_parts?.Count > 0);
+                return snapshot.colonists.Any(colonist =>
+                    colonist.health?.missing_body_parts?.Count > 0);
 
             if (type == "MiracleHealDisease")
-                return snapshot.colonists.Any(p =>
-                    p.health?.diseases?.Count > 0);
+                return snapshot.colonists.Any(colonist =>
+                    colonist.health?.diseases?.Count > 0);
 
             //  lose items — only if colony actually has some 
             if (type.StartsWith("LoseItems_"))
@@ -47,12 +47,11 @@ namespace RimTelligence.Source.CustomEvents.EventSelector
 
         private static bool HasStockpileItems(string category, ColonySnapshot snapshot)
         {
-            var allowed = Handlers.Implementations.ItemsRelated
+            var allowed = Handlers.Item
                 .EventItemMapping.GetAllowedDefs("LoseItems_" + category);
 
             if (allowed == null || allowed.Count == 0)
                 return true;
-
 
             foreach (string defName in allowed)
             {

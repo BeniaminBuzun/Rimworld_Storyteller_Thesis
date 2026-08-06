@@ -1,10 +1,10 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace RimTelligence.Source.Memory
+namespace RimTelligence.Memory
 {
     public interface IEmbeddingProvider
     {
@@ -25,8 +25,8 @@ namespace RimTelligence.Source.Memory
 
             int hash = text.GetHashCode();
             var rng = new System.Random(hash);
-            for (int i = 0; i < Dim; i++)
-                vec[i] = (float)(rng.NextDouble() * 2.0 - 1.0);
+            for (int index = 0; index < Dim; index++)
+                vec[index] = (float)(rng.NextDouble() * 2.0 - 1.0);
 
             return vec;
         }

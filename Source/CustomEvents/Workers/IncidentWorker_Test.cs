@@ -1,8 +1,8 @@
-﻿using Newtonsoft.Json;
-using RimTelligence.Source.CustomEvents.Execution;
-using RimTelligence.Source.CustomEvents.Prompting;
-using RimTelligence.Source.DataSnapshots;
-using RimTelligence.Source.LlmCom;
+using Newtonsoft.Json;
+using RimTelligence.CustomEvents.Execution;
+using RimTelligence.CustomEvents.Prompting;
+using RimTelligence.DataSnapshots;
+using RimTelligence.Llm;
 using RimWorld;
 using RimWorld.Planet;
 using System;
@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 using Verse;
 
 // rewrite later nad DebugActions too written fastly with claude
-namespace RimTelligence.Source.CustomEvents.Workers
+namespace RimTelligence.CustomEvents.Workers
 {
     public class IncidentWorker_Test : IncidentWorker
     {

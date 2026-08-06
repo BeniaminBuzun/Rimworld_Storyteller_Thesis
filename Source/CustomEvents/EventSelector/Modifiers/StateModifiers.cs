@@ -1,8 +1,7 @@
-﻿using RimTelligence.Source.CustomEvents.EventSelector.Modifiers.Implementations;
-using RimTelligence.Source.DataSnapshots;
+using RimTelligence.DataSnapshots;
 using System.Collections.Generic;
 
-namespace RimTelligence.Source.CustomEvents.EventSelector.Modifiers
+namespace RimTelligence.CustomEvents.EventSelector.Modifiers
 {
     public static class StateModifiers
     {

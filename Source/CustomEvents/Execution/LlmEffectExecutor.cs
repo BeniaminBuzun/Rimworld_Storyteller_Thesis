@@ -1,11 +1,11 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Text;
 using RimWorld.Planet;
 using Verse;
-using RimTelligence.Source.CustomEvents.Handlers;
+using RimTelligence.CustomEvents.Handlers;
 
-namespace RimTelligence.Source.CustomEvents.Execution
+namespace RimTelligence.CustomEvents.Execution
 {
     public static class LlmEffectExecutor
     {
@@ -39,9 +39,9 @@ namespace RimTelligence.Source.CustomEvents.Execution
                         focusTarget = result;
                     }
                 }
-                catch (Exception e)
+                catch (Exception exception)
                 {
-                    ModLogger.Error($"Effect {effect.type} failed: {e.Message}\n{e.StackTrace}");
+                    ModLogger.Error($"Effect {effect.type} failed: {exception.Message}\n{exception.StackTrace}");
                 }
             }
 

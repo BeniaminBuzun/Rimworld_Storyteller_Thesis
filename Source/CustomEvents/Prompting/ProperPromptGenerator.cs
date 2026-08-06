@@ -1,12 +1,12 @@
-﻿using RimTelligence.Source.CustomEvents.Handlers;
-using RimTelligence.Source.DataSnapshots;
-using RimTelligence.Source.Memory;
+using RimTelligence.CustomEvents.Handlers;
+using RimTelligence.DataSnapshots;
+using RimTelligence.Memory;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace RimTelligence.Source.CustomEvents.Prompting
+namespace RimTelligence.CustomEvents.Prompting
 {
     public static class ProperPromptGenerator
     {
@@ -132,8 +132,8 @@ namespace RimTelligence.Source.CustomEvents.Prompting
             var allHandlers = EffectHandlerRegistry.GetAllHandlers();
             foreach (var chosen in chosenEvents)
             {
-                var handler = allHandlers.FirstOrDefault(h =>
-                    string.Equals(h.EffectName, chosen.type, StringComparison.OrdinalIgnoreCase));
+                var handler = allHandlers.FirstOrDefault(candidate =>
+                    string.Equals(candidate.EffectName, chosen.type, StringComparison.OrdinalIgnoreCase));
                 if (handler == null) continue;
 
                 sb.AppendLine($"- {handler.EffectName}: {handler.PromptStructure}");
@@ -159,31 +159,31 @@ namespace RimTelligence.Source.CustomEvents.Prompting
                 return;
 
             sb.AppendLine("RELEVANT CONTEXT (past events / lore relevant to this moment):");
-            foreach (var r in ragContext.StaticResults)
-                sb.AppendLine($"- [Static] {r.Source} (Score: {r.Score:F2}): {r.Text}");
-            foreach (var r in ragContext.DynamicResults)
-                sb.AppendLine($"- [Dynamic] {r.Source} (Score: {r.Score:F2}): {r.Text}");
+            foreach (var result in ragContext.StaticResults)
+                sb.AppendLine($"- [Static] {result.Source} (Score: {result.Score:F2}): {result.Text}");
+            foreach (var result in ragContext.DynamicResults)
+                sb.AppendLine($"- [Dynamic] {result.Source} (Score: {result.Score:F2}): {result.Text}");
             sb.AppendLine();
         }
 
-        private static void AppendStoryContextPrompts(StringBuilder sb, ColonySnapshot s)
+        private static void AppendStoryContextPrompts(StringBuilder sb, ColonySnapshot snapshot)
         {
-            if (s == null || s.colonists == null || s.colonists.Count == 0)
+            if (snapshot == null || snapshot.colonists == null || snapshot.colonists.Count == 0)
                 return;
 
-            float avgMood = s.colonists.Average(p => p.needs?.mood ?? 0.5f);
-            bool isWinter = s.season?.Contains("Winter") ?? false;
-            bool isNight = TimeSpan.TryParse(s.time, out TimeSpan t)
-                            && (t.Hours >= 22 || t.Hours < 6);
+            float avgMood = snapshot.colonists.Average(pawn => pawn.needs?.mood ?? 0.5f);
+            bool isWinter = snapshot.season?.Contains("Winter") ?? false;
+            bool isNight = TimeSpan.TryParse(snapshot.time, out TimeSpan time)
+                            && (time.Hours >= 22 || time.Hours < 6);
 
             // One atmosphere note, written as creative direction not a rule
             string note = null;
             if (avgMood < 0.25f) note = "These people are close to breaking. Let that bleed through without stating it.";
             else if (avgMood > 0.75f) note = "They're almost happy. Make that feel precarious.";
-            else if (s.daysSinceLastRaid <= 2) note = "The last raid isn't over in their heads. One detail of that rawness.";
+            else if (snapshot.daysSinceLastRaid <= 2) note = "The last raid isn't over in their heads. One detail of that rawness.";
             else if (isWinter) note = "The cold is a character. One physical sensation only.";
             else if (isNight) note = "Dark outside. One sound or shadow. Nothing more.";
-            else if (s.colonistCount <= 3) note = "Few people. Every event lands harder. One internal beat.";
+            else if (snapshot.colonistCount <= 3) note = "Few people. Every event lands harder. One internal beat.";
 
             if (note != null)
             {

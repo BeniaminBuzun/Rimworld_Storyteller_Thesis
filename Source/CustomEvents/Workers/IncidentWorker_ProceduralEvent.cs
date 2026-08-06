@@ -1,11 +1,11 @@
-﻿using Newtonsoft.Json;
-using RimTelligence.Source.AIStoryteller;
-using RimTelligence.Source.CustomEvents.EventSelector;
-using RimTelligence.Source.CustomEvents.Execution;
-using RimTelligence.Source.CustomEvents.Prompting;
-using RimTelligence.Source.DataSnapshots;
-using RimTelligence.Source.LlmCom;
-using RimTelligence.Source.Memory;
+using Newtonsoft.Json;
+using RimTelligence.AIStoryteller;
+using RimTelligence.CustomEvents.EventSelector;
+using RimTelligence.CustomEvents.Execution;
+using RimTelligence.CustomEvents.Prompting;
+using RimTelligence.DataSnapshots;
+using RimTelligence.Llm;
+using RimTelligence.Memory;
 using RimWorld;
 using RimWorld.Planet;
 using System;
@@ -14,7 +14,7 @@ using System.IO;
 using System.Threading.Tasks;
 using Verse;
 
-namespace RimTelligence.Source.CustomEvents.Workers
+namespace RimTelligence.CustomEvents.Workers
 {
     // Wrapper class to deserialize the output of the First LLM call
     public class Step1ResponseWrapper
@@ -35,14 +35,14 @@ namespace RimTelligence.Source.CustomEvents.Workers
                 {
                     _ragProvider = new RagContextProvider(new OnnxEmbeddingProvider());
                 }
-                catch (Exception e)
+                catch (Exception exception)
                 {
-                    ModLogger.Error($"[RAG] Failed to initialize OnnxEmbeddingProvider, falling back to stub: {e.Message}");
+                    ModLogger.Error($"[RAG] Failed to initialize OnnxEmbeddingProvider, falling back to stub: {exception.Message}");
                     _ragProvider = new RagContextProvider(new StubEmbeddingProvider());
                 }
 
-                var s = AIStorytellerMod.Settings;
-                _ragProvider.Configure(s.ragMaxResultsPerStore, s.ragMinSimilarity);
+                var settings = AIStorytellerMod.Settings;
+                _ragProvider.Configure(settings.ragMaxResultsPerStore, settings.ragMinSimilarity);
                 _ragProviderInitialized = true;
             }
             return _ragProvider;
@@ -123,7 +123,6 @@ namespace RimTelligence.Source.CustomEvents.Workers
             // Then feed directly into Step 2 as before
 
 
-
             // ====================================================================
             // RAG CONTEXT QUERY
             // ====================================================================
@@ -138,9 +137,9 @@ namespace RimTelligence.Source.CustomEvents.Workers
                     if (ragContext.HasResults)
                         ModLogger.Message($"[RAG] Context loaded: {ragContext.StaticResults.Count} static + {ragContext.DynamicResults.Count} dynamic results");
                 }
-                catch (Exception e)
+                catch (Exception exception)
                 {
-                    ModLogger.Warning($"[RAG] Query failed (non-fatal): {e.Message}");
+                    ModLogger.Warning($"[RAG] Query failed (non-fatal): {exception.Message}");
                 }
             }
 
@@ -162,9 +161,9 @@ namespace RimTelligence.Source.CustomEvents.Workers
             {
                 step2ResponseRaw = await com.GetLlmResponse(step2Prompt);
             }
-            catch (Exception e)
+            catch (Exception exception)
             {
-                ModLogger.Error($"[Step 2] LLM call failed: {e.Message}");
+                ModLogger.Error($"[Step 2] LLM call failed: {exception.Message}");
                 return;
             }
 
@@ -185,9 +184,9 @@ namespace RimTelligence.Source.CustomEvents.Workers
             {
                 finalEvent = JsonConvert.DeserializeObject<LlmCustomEvent>(cleanedStep2Json);
             }
-            catch (Exception e)
+            catch (Exception exception)
             {
-                ModLogger.Error($"[Step 2] JSON parse failed: {e.Message}\nResponse was:\n{cleanedStep2Json}");
+                ModLogger.Error($"[Step 2] JSON parse failed: {exception.Message}\nResponse was:\n{cleanedStep2Json}");
                 return;
             }
 
@@ -228,9 +227,9 @@ namespace RimTelligence.Source.CustomEvents.Workers
             {
                 File.WriteAllText(path, content);
             }
-            catch (Exception e)
+            catch (Exception exception)
             {
-                ModLogger.Error($"Failed to write log file to {path}: {e.Message}");
+                ModLogger.Error($"Failed to write log file to {path}: {exception.Message}");
             }
         }
     }
