@@ -181,10 +181,7 @@ namespace RimTelligence.CustomEvents.Workers
 
                         if (history != null)
                         {
-                            string family = handler.EffectName.Contains('_') ? handler.EffectName.Split('_')[0] : handler.EffectName;
-                            float penalty = Mathf.Max(
-                                history.RecencyPenalty(handler.EffectName),
-                                history.FamilyRecencyPenalty(family) * 0.5f);
+                            float penalty = history.RecencyPenalty(handler.EffectName);
                             weight *= (1f - penalty);
                         }
 

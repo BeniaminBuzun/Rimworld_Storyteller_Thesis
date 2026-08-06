@@ -118,7 +118,7 @@ namespace RimTelligence.CustomEvents.Workers
             //    return;
             //}
 
-            List<SelectedEventIntent> chosenEvents = HeuristicEventSelector.Select(snapshot, map);
+            List<SelectedEventIntent> chosenEvents = HeuristicEventSelector.Select(snapshot);
 
             // Then feed directly into Step 2 as before
 

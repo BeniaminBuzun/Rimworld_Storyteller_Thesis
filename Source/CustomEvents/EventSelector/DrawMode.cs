@@ -7,8 +7,5 @@ namespace RimTelligence.CustomEvents.EventSelector
         BadStreak,   // only Bad/Neutral, state modifiers active
         GoodStreak,  // only Good/Neutral, state modifiers active
         NeutralOnly,  // only Neutral, state modifiers active
-        AnimalFocus,
-        PawnFocus,
-        EnvironmentFocus,
     }
 }

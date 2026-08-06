@@ -1,20 +1,16 @@
 using RimTelligence.DataSnapshots;
-using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using UnityEngine;
 
 namespace RimTelligence.CustomEvents.EventSelector.Modifiers
 {
 
     public class MoodModifier : IEventModifier
     {
-        public bool ShouldApply(ColonySnapshot snapshot) => snapshot.colonists?.Count > 0;
-
         public float Modify(EventEntry entry, ColonySnapshot snapshot)
         {
+            if(!(snapshot.colonists?.Count > 0))
+                return 1f;
+
             float avgMood = snapshot.colonists.Average(pawn => pawn.needs?.mood ?? 0.5f);
             float multiplier = 1f;
 

@@ -19,64 +19,31 @@ namespace RimTelligence.CustomEvents.EventSelector
 
         public EventHistory(Game game) { _instance = this; }
 
-        // How many of the last N batches were Bad (no Good/Neutral break)
-        public int ConsecutiveBadBatches
-        {
-            get
-            {
-                int count = 0;
-                for (int index = _recentAlignments.Count - 1; index >= 0; index--)
-                {
-                    if (_recentAlignments[index] == EventAlignment.Bad) count++;
-                    else break;
-                }
-                return count;
-            }
-        }
+        public int ConsecutiveBadBatches => ConsecutiveAlignments(EventAlignment.Bad);
+        public int ConsecutiveGoodBatches => ConsecutiveAlignments(EventAlignment.Good);
 
-        // How many of the last N batches were Good (no Bad/Neutral break)
-        public int ConsecutiveGoodBatches
+        // How many of the last batches had this alignment (no other alignment in between)
+        private int ConsecutiveAlignments(EventAlignment alignment)
         {
-            get
+            int count = 0;
+            for (int index = _recentAlignments.Count - 1; index >= 0; index--)
             {
-                int count = 0;
-                for (int index = _recentAlignments.Count - 1; index >= 0; index--)
-                {
-                    if (_recentAlignments[index] == EventAlignment.Good) count++;
-                    else break;
-                }
-                return count;
+                if (_recentAlignments[index] == alignment) count++;
+                else break;
             }
+            return count;
         }
 
         // Returns a 0-1 penalty for how recently this type was seen
         // 1.0 = seen last event (max penalty), 0.0 = not seen in window
         public float RecencyPenalty(string type)
         {
-            int idx = _recentTypes.LastIndexOf(type);
-            if (idx < 0) return 0f;
+            int index = _recentTypes.LastIndexOf(type);
+            if (index < 0) return 0f;
 
-            int stepsAgo = _recentTypes.Count - 1 - idx;
+            int stepsAgo = _recentTypes.Count - 1 - index;
             // linear decay: 0 steps ago → 1.0 penalty, TypeWindow steps ago → 0.0
             return Math.Max(0f, 1f - (float)stepsAgo / TypeWindow);
-        }
-
-        public float FamilyRecencyPenalty(string family)
-        {
-            // find the most recent type in this family
-            float worst = 0f;
-            for (int index = 0; index < _recentTypes.Count; index++)
-            {
-                string type = _recentTypes[index];
-                string typeFamily = type.Contains('_') ? type.Split('_')[0] : type;
-                if (string.Equals(typeFamily, family, StringComparison.OrdinalIgnoreCase))
-                {
-                    int stepsAgo = _recentTypes.Count - 1 - index;
-                    float penalty = Math.Max(0f, 1f - (float)stepsAgo / TypeWindow);
-                    if (penalty > worst) worst = penalty;
-                }
-            }
-            return worst;
         }
 
         public void Record(List<SelectedEventIntent> events)

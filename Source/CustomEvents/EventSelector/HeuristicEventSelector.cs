@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using RimTelligence.CustomEvents.EventSelector;
 using RimTelligence.CustomEvents.EventSelector.Modifiers;
 using RimTelligence.CustomEvents.Handlers;
 using RimTelligence.DataSnapshots;
@@ -11,9 +10,7 @@ namespace RimTelligence.CustomEvents.EventSelector
 {
     public static class HeuristicEventSelector
     {
-        private static readonly int[] _countWeights = { 50, 30, 15, 5 }; // 1,2,3,4 events
-
-        public static List<SelectedEventIntent> Select(ColonySnapshot snapshot, Map map)
+        public static List<SelectedEventIntent> Select(ColonySnapshot snapshot)
         {
             DrawMode mode = DrawModeSelector.Pick(snapshot);
             ModLogger.Message($"[Selector] DrawMode={mode}");
@@ -23,50 +20,28 @@ namespace RimTelligence.CustomEvents.EventSelector
                 .Select(handler => new EventEntry(handler.EffectName, handler.BaseWeight, handler.Alignment))
                 .ToList();
 
-            //Strip ineligible entries
-            pool = pool.Where(entry => EventEligibility.IsEligible(entry.Type, snapshot)).ToList();
-
             //    Apply alignment filter                        
             pool = FilterByMode(pool, mode);
 
-            if (pool.Count == 0)
-            {
-                ModLogger.Warning("[Selector] Pool empty after filtering, falling back to full pool.");
-                pool = EffectHandlerRegistry.GetAllHandlers()
-                    .Select(handler => new EventEntry(handler.EffectName, handler.BaseWeight, handler.Alignment))
-                    .ToList();
-            }
+            //Strip ineligible entries
+            pool = pool.Where(entry => EventEligibility.IsEligible(entry.Type, snapshot)).ToList();
 
-            //  Apply state multipliers (skip in PureRandom) 
+            //  Apply state multipliers 
             if (mode != DrawMode.PureRandom)
             {
                 foreach (var entry in pool)
                     entry.Weight *= StateModifiers.Apply(entry, snapshot);
             }
 
-            //  Apply recency penalties 
+            //  History (recorded after the draw)
             var history = EventHistory.Current;
-            if (history != null)
-            {
-                foreach (var entry in pool)
-                {
-                    // Per-type penalty: full weight reduction for recently seen types
-                    float typePenalty = history.RecencyPenalty(entry.Type);
-                    // Per-family penalty: softer, prevents e.g. 3 pod crashes in a row
-                    float familyPenalty = history.FamilyRecencyPenalty(entry.Family) * 0.5f;
-
-                    float penalty = Math.Max(typePenalty, familyPenalty);
-                    entry.Weight *= (1f - penalty);
-                }
-            }
 
             // Strip anything that ended up at zero weight
             pool = pool.Where(entry => entry.Weight > 0f).ToList();
 
             //  Draw 
-            int count = DrawCount(mode);
+            int count = DrawCount();
             var drawn = new List<EventEntry>();
-            var usedFamilies = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             for (int index = 0; index < count && pool.Count > 0; index++)
             {
@@ -75,25 +50,8 @@ namespace RimTelligence.CustomEvents.EventSelector
 
                 drawn.Add(pick);
 
-                // Remove exact type from pool (no duplicates)
-                pool.RemoveAll(entry => entry.Type == pick.Type);
-
-                // Family cap: after drawing one from a family, 
-                // halve all remaining entries in that family
-                // (soft cap — doesn't prevent them entirely, just makes them less likely)
-                if (usedFamilies.Contains(pick.Family))
-                {
-                    // Second draw from same family: very heavy penalty
-                    foreach (var entry in pool.Where(entry => entry.Family == pick.Family))
-                        entry.Weight *= 0.1f;
-                }
-                else
-                {
-                    // First time seeing this family: mild penalty on siblings
-                    foreach (var entry in pool.Where(entry => entry.Family == pick.Family))
-                        entry.Weight *= 0.3f;
-                }
-                usedFamilies.Add(pick.Family);
+                // Keep the same event drawable, but at half probability on a second draw
+                pick.Weight *= 0.5f;
             }
 
             var result = drawn
@@ -108,7 +66,6 @@ namespace RimTelligence.CustomEvents.EventSelector
         }
 
         //  Helpers 
-
         private static List<EventEntry> FilterByMode(List<EventEntry> pool, DrawMode mode)
         {
             switch (mode)
@@ -117,34 +74,16 @@ namespace RimTelligence.CustomEvents.EventSelector
                     return pool.Where(entry => entry.Alignment != EventAlignment.Good).ToList();
                 case DrawMode.GoodStreak:
                     return pool.Where(entry => entry.Alignment != EventAlignment.Bad).ToList();
+                case DrawMode.NeutralOnly:
+                    return pool.Where(entry => entry.Alignment == EventAlignment.Neutral).ToList();
                 default: // Weighted, PureRandom
                     return pool;
             }
         }
 
-        private static int DrawCount(DrawMode mode)
+        private static int DrawCount()
         {
-            switch (mode)
-            {
-                case DrawMode.PureRandom:
-                    // Genuinely flat 1-4
-                    return Rand.RangeInclusive(1, 4);
-
-                case DrawMode.BadStreak:
-                    // Can pile on, but weight toward 1-2
-                    return WeightedCountDraw(new[] { 40, 35, 20, 5 });
-
-                case DrawMode.GoodStreak:
-                    // Good things come in smaller doses
-                    return WeightedCountDraw(new[] { 60, 30, 8, 2 });
-
-                default: // Weighted
-                    return WeightedCountDraw(_countWeights);
-            }
-        }
-
-        private static int WeightedCountDraw(int[] weights)
-        {
+            int[] weights = { 10, 30, 35, 20, 5 }; // 1-5 events
             int total = weights.Sum();
             int roll = Rand.Range(0, total);
             int cursor = 0;

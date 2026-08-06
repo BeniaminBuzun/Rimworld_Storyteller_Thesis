@@ -3,7 +3,7 @@
 	<IncidentDef>
 		<defName>CustomTextEvent</defName>
 		<label>custom text event</label>
-		<workerClass>RimTelligence.Source.CustomEvents.IncidentWorker_CustomTextEvent</workerClass>
+		<workerClass>RimTelligence.CustomEvents.Workers.IncidentWorker_ProceduralEvent</workerClass>
 		<category>Misc</category>
 		<baseChance>0</baseChance>
 		<targetTags>

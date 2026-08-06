@@ -1,16 +1,9 @@
 using RimTelligence.DataSnapshots;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace RimTelligence.CustomEvents.EventSelector.Modifiers
 {
     public class AnimalsModifier : IEventModifier
     {
-
-        public bool ShouldApply(ColonySnapshot snapshot) => true;
 
         public float Modify(EventEntry entry, ColonySnapshot snapshot)
         {
