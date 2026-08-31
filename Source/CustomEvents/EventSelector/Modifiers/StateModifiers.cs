@@ -1,3 +1,4 @@
+using RimTelligence.CustomEvents.Handlers;
 using RimTelligence.DataSnapshots;
 using System.Collections.Generic;
 
@@ -8,14 +9,13 @@ namespace RimTelligence.CustomEvents.EventSelector.Modifiers
         private static readonly IReadOnlyList<IEventModifier> _modifiers = new List<IEventModifier>
         {
             new MoodModifier(),
-            new FoodModifier(),
             new AnimalsModifier(),
             new HasActiveConditionModifier(),
             new SeasonWinterModifier(),
             new DawnedColonistsModifier(),
             new RaidModifiers(),
         };
-        public static float Apply(EventEntry entry, ColonySnapshot snapshot)
+        public static float Apply(IEffect entry, ColonySnapshot snapshot)
         {
             float multiplier = 1f;
 

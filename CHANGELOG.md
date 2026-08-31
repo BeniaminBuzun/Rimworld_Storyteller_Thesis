@@ -10,14 +10,9 @@ semver section when a version is released.
 
 ## [Unreleased]
 
-### Added
+## [0.15.0] - 2026-08-30
 
-- Crude RAG implementation feeding prompt context
 
-### Changed
-
-- Integrated incident generation with the storyteller flow
-- Refactored and cleaned up event selection code
 
 ## [0.14.0] - 2026-05-16
 

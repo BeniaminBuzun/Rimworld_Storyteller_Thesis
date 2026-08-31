@@ -1,4 +1,3 @@
-using Newtonsoft.Json;
 using RimTelligence.CustomEvents.Execution;
 using RimTelligence.CustomEvents.Prompting;
 using RimTelligence.DataSnapshots;
@@ -19,9 +18,14 @@ namespace RimTelligence.CustomEvents.Workers
     {
         public void FireLlmEventAsync(Map map, string eventJson )
         {
-            LlmCustomEvent evt;
+            LlmParseResult<LlmCustomEvent> parseResult = LlmResponseParser.ParseEvent(eventJson);
+            if (!parseResult.isSuccess || parseResult.data == null)
+            {
+                ModLogger.Error($"[Test Worker] Parse failed: {parseResult.errorMessage}\nPreview: {parseResult.responsePreview}");
+                return;
+            }
 
-            evt = JsonConvert.DeserializeObject<LlmCustomEvent>(eventJson);
+            LlmCustomEvent evt = parseResult.data;
 
             // 5. Game Thread Execution
             LongEventHandler.ExecuteWhenFinished(() =>

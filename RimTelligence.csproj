@@ -54,6 +54,15 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Source\CustomEvents\Effects\EffectFactory.cs" />
+    <Compile Include="Source\CustomEvents\Effects\EffectContractProvider.cs" />
+    <Compile Include="Source\CustomEvents\Effects\Item\ItemEffectsHelper.cs" />
+    <Compile Include="Source\CustomEvents\Effects\Pawns\Buffs\MoodBuff.cs" />
+    <Compile Include="Source\CustomEvents\Effects\Pawns\Debuffs\MoodDebuff.cs" />
+    <Compile Include="Source\CustomEvents\Effects\Pawns\ExpPointsHelper.cs" />
+    <Compile Include="Source\CustomEvents\Effects\Pawns\MoodHelper.cs" />
+    <Compile Include="Source\CustomEvents\Prompting\EffectContractProvider.cs" />
+    <Compile Include="Source\ModPaths.cs" />
     <Compile Include="Source\AIStoryteller\AiStorytellerMod.cs" />
     <Compile Include="Source\AIStoryteller\HarmonyPatches.cs" />
     <Compile Include="Source\AIStoryteller\Presets.cs" />
@@ -61,13 +70,9 @@
     <Compile Include="Source\AIStoryteller\StorytellerCompProperties_AI.cs" />
     <Compile Include="Source\CustomEvents\EventSelector\DrawMode.cs" />
     <Compile Include="Source\CustomEvents\EventSelector\DrawModeSelector.cs" />
-    <Compile Include="Source\CustomEvents\EventSelector\EventEligibility.cs" />
-    <Compile Include="Source\CustomEvents\EventSelector\EventEntry.cs" />
-    <Compile Include="Source\CustomEvents\EventSelector\EventHistory.cs" />
     <Compile Include="Source\CustomEvents\EventSelector\HeuristicEventSelector.cs" />
     <Compile Include="Source\CustomEvents\EventSelector\Modifiers\AnimalsModifier.cs" />
     <Compile Include="Source\CustomEvents\EventSelector\Modifiers\DawnedColonistsModifier.cs" />
-    <Compile Include="Source\CustomEvents\EventSelector\Modifiers\FoodModifier.cs" />
     <Compile Include="Source\CustomEvents\EventSelector\Modifiers\HasActiveConditionModifier.cs" />
     <Compile Include="Source\CustomEvents\EventSelector\Modifiers\IEventModifier.cs" />
     <Compile Include="Source\CustomEvents\EventSelector\Modifiers\MoodModifier.cs" />
@@ -76,39 +81,31 @@
     <Compile Include="Source\CustomEvents\EventSelector\Modifiers\StateModifiers.cs" />
     <Compile Include="Source\CustomEvents\Execution\LlmEffectExecutor.cs" />
     <Compile Include="Source\CustomEvents\Execution\RimTelligenceDispatcher.cs" />
-    <Compile Include="Source\CustomEvents\GameEffect.cs" />
-    <Compile Include="Source\CustomEvents\Handlers\Animal\AnimalInsanityHandler.cs" />
-    <Compile Include="Source\CustomEvents\Handlers\Animal\SelfTameHandler.cs" />
-    <Compile Include="Source\CustomEvents\Handlers\Animal\SpawnAnimalsHandler.cs" />
-    <Compile Include="Source\CustomEvents\Handlers\EffectHandlerRegistry.cs" />
-    <Compile Include="Source\CustomEvents\Handlers\Environment\ChangeWeatherHandler.cs" />
-    <Compile Include="Source\CustomEvents\Handlers\Environment\CropBlightHandler.cs" />
-    <Compile Include="Source\CustomEvents\Handlers\Environment\MeteoriteImpactHandler.cs" />
-    <Compile Include="Source\CustomEvents\Handlers\Environment\StartExtremeWeatherEvent.cs" />
-    <Compile Include="Source\CustomEvents\Handlers\IEffectHandler.cs" />
-    <Compile Include="Source\CustomEvents\Handlers\Item\EventItemMapping.cs" />
-    <Compile Include="Source\CustomEvents\Handlers\Item\GenericItemsHandler.cs" />
-    <Compile Include="Source\CustomEvents\Handlers\Item\LoseItemsHandler.cs" />
-    <Compile Include="Source\CustomEvents\Handlers\Item\PawnFoundItemsHandler.cs" />
-    <Compile Include="Source\CustomEvents\Handlers\Item\ResourcePodCrashHandler.cs" />
-    <Compile Include="Source\CustomEvents\Handlers\Item\WealthBasedQuantityResolver.cs" />
-    <Compile Include="Source\CustomEvents\Handlers\Pawns\Buffs\AddExpPointsHandler.cs" />
-    <Compile Include="Source\CustomEvents\Handlers\Pawns\Buffs\MoodEffectHandlers.cs" />
-    <Compile Include="Source\CustomEvents\Handlers\Pawns\Debuffs\AddDiseaseHandler.cs" />
-    <Compile Include="Source\CustomEvents\Handlers\Pawns\Debuffs\DamagePawnHandler.cs" />
-    <Compile Include="Source\CustomEvents\Handlers\Pawns\Debuffs\LoseExpPointsHandler.cs" />
-    <Compile Include="Source\CustomEvents\Handlers\Pawns\Debuffs\ThoughtMemoryDynamic.cs" />
-    <Compile Include="Source\CustomEvents\Handlers\Pawns\Miracles\MiracleHealChronicConditionHandler.cs" />
-    <Compile Include="Source\CustomEvents\Handlers\Pawns\Miracles\MiracleHealDiseaseHandler.cs" />
-    <Compile Include="Source\CustomEvents\Handlers\Pawns\Miracles\MiracleHealMissingPartHandler.cs" />
+    <Compile Include="Source\CustomEvents\Effects\Animal\AnimalInsanity.cs" />
+    <Compile Include="Source\CustomEvents\Effects\Animal\SelfTame.cs" />
+    <Compile Include="Source\CustomEvents\Effects\Animal\SpawnAnimals.cs" />
+    <Compile Include="Source\CustomEvents\Effects\Environment\ChangeWeather.cs" />
+    <Compile Include="Source\CustomEvents\Effects\Environment\CropBlight.cs" />
+    <Compile Include="Source\CustomEvents\Effects\Environment\MeteoriteImpact.cs" />
+    <Compile Include="Source\CustomEvents\Effects\Environment\StartExtremeWeather.cs" />
+    <Compile Include="Source\CustomEvents\Effects\IEffect.cs" />
+    <Compile Include="Source\CustomEvents\Effects\EffectConfigRegistry.cs" />
+    <Compile Include="Source\CustomEvents\Effects\Item\LoseItems.cs" />
+    <Compile Include="Source\CustomEvents\Effects\Item\PawnFoundItems.cs" />
+    <Compile Include="Source\CustomEvents\Effects\Item\ResourcePodCrash.cs" />
+    <Compile Include="Source\CustomEvents\Effects\Pawns\Buffs\AddExpPoints.cs" />
+    <Compile Include="Source\CustomEvents\Effects\Pawns\Debuffs\AddDisease.cs" />
+    <Compile Include="Source\CustomEvents\Effects\Pawns\Debuffs\DamagePawn.cs" />
+    <Compile Include="Source\CustomEvents\Effects\Pawns\Debuffs\LoseExpPoints.cs" />
+    <Compile Include="Source\CustomEvents\Effects\Pawns\Buffs\MiracleHealChronicCondition.cs" />
+    <Compile Include="Source\CustomEvents\Effects\Pawns\Buffs\MiracleHealDisease.cs" />
+    <Compile Include="Source\CustomEvents\Effects\Pawns\Buffs\MiracleHealMissingPart.cs" />
     <Compile Include="Source\CustomEvents\LlmCustomEvent.cs" />
-    <Compile Include="Source\CustomEvents\SelectedEventIntent.cs" />
+    <Compile Include="Source\CustomEvents\LlmParseResult.cs" />
     <Compile Include="Source\CustomEvents\Prompting\LlmEffectValidator.cs" />
+    <Compile Include="Source\CustomEvents\Prompting\LlmResponseParser.cs" />
     <Compile Include="Source\CustomEvents\Prompting\ProperPromptGenerator.cs" />
-    <Compile Include="Source\CustomEvents\Prompting\RagContextProvider.cs" />
-    <Compile Include="Source\CustomEvents\Prompting\RagQueryResult.cs" />
     <Compile Include="Source\CustomEvents\Prompting\SnapshotNarrator.cs" />
-    <Compile Include="Source\CustomEvents\Workers\DebugEventWindow.cs" />
     <Compile Include="Source\CustomEvents\Workers\IncidentWorker_ProceduralEvent.cs" />
     <Compile Include="Source\CustomEvents\Workers\IncidentWorker_Test.cs" />
     <Compile Include="Source\CustomEvents\Workers\RimTelligenceDebugActions.cs" />
@@ -119,14 +116,21 @@
     <Compile Include="Source\DataSnapshots\GameObjectsCapturer.cs" />
     <Compile Include="Source\DataSnapshots\ItemCategoryRegistry.cs" />
     <Compile Include="Source\DataSnapshots\PawnSnapshotCapturer.cs" />
-    <Compile Include="Source\Communication\BasicCom.cs" />
+    <Compile Include="Source\Communication\LLMCommunicationHandler.cs" />
+    <Compile Include="Source\Communication\LlmConnectionResult.cs" />
+    <Compile Include="Source\Communication\ProviderCatalog.cs" />
+    <Compile Include="Source\Communication\ProviderConfig.cs" />
     <Compile Include="Source\Memory\BertTokenizer.cs" />
     <Compile Include="Source\Memory\DynamicRagStore.cs" />
     <Compile Include="Source\Memory\Helpers.cs" />
     <Compile Include="Source\Memory\IEmbeddingProvider.cs" />
-    <Compile Include="Source\Memory\OnnxBootstrap.cs" />
+    <Compile Include="Source\Memory\LlmEmbeddingProvider.cs" />
     <Compile Include="Source\Memory\OnnxEmbeddingProvider.cs" />
+    <Compile Include="Source\Memory\NativeDependencyLoader.cs" />
     <Compile Include="Source\Memory\RagBootstrap.cs" />
+    <Compile Include="Source\Memory\RagMigration.cs" />
+    <Compile Include="Source\Memory\RagStoreBase.cs" />
+    <Compile Include="Source\Memory\SaveScopeComponent.cs" />
     <Compile Include="Source\Memory\StaticRagStore.cs" />
     <Compile Include="Source\ModLogger.cs" />
     <Compile Include="Source\Settings.cs" />
@@ -139,9 +143,9 @@
     <PackageReference Include="Lib.Harmony">
       <Version>2.4.2</Version>
     </PackageReference>
-    <PackageReference Include="LlmTornado" Version="3.8.64" />
+    <PackageReference Include="LlmTornado" Version="3.8.67" />
     <PackageReference Include="System.Data.SQLite.Core" Version="1.0.119" />
-    <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.28.0" />
+    <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.29.0" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="About\About.xml" />
@@ -159,6 +163,9 @@
     <Folder Include="Assemblies\" />
     <Folder Include="Native\" />
     <Folder Include="Source\Memory\Models\" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="CHANGELOG.md" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

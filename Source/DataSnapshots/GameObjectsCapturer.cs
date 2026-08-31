@@ -1,10 +1,13 @@
+using RimTelligence.AIStoryteller;
 using RimTelligence.CustomEvents;
+using RimTelligence.CustomEvents.Execution;
 using RimTelligence.DataSnapshots;
 using RimTelligence.Memory;
 using RimWorld;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Verse;
 
 namespace RimTelligence.DataSnapshots
@@ -12,76 +15,104 @@ namespace RimTelligence.DataSnapshots
     [StaticConstructorOnStartup]
     public class GameObjectsCapturer
     {
-        // Pass-through properties for backward compatibility
-        public static List<GameObjectMeta> WeaponsTribal => ItemCategoryRegistry.GetList("WeaponsTribal");
-        public static List<GameObjectMeta> WeaponsIndustrial => ItemCategoryRegistry.GetList("WeaponsIndustrial");
-        public static List<GameObjectMeta> WeaponsSpacer => ItemCategoryRegistry.GetList("WeaponsSpacer");
-        public static List<GameObjectMeta> WeaponsArchotech => ItemCategoryRegistry.GetList("WeaponsArchotech");
-        public static List<GameObjectMeta> WeaponsUltra => ItemCategoryRegistry.GetList("WeaponsUltra");
-        public static List<GameObjectMeta> WeaponsOther => ItemCategoryRegistry.GetList("WeaponsOther");
-
-        public static List<GameObjectMeta> Food_Meals => ItemCategoryRegistry.GetList("Food_Meals");
-        public static List<GameObjectMeta> Food_RawPlant => ItemCategoryRegistry.GetList("Food_RawPlant");
-        public static List<GameObjectMeta> Food_RawMeat => ItemCategoryRegistry.GetList("Food_RawMeat");
-        public static List<GameObjectMeta> Food_RawSpecial => ItemCategoryRegistry.GetList("Food_RawSpecial");
-        public static List<GameObjectMeta> Food_AnimalFeed => ItemCategoryRegistry.GetList("Food_AnimalFeed");
-        public static List<GameObjectMeta> Food_AnimalProducts => ItemCategoryRegistry.GetList("Food_AnimalProducts");
-        public static List<GameObjectMeta> Animal_Corpses => ItemCategoryRegistry.GetList("Animal_Corpses");
-
-        public static List<GameObjectMeta> Resources_Metals => ItemCategoryRegistry.GetList("Resources_Metals");
-        public static List<GameObjectMeta> Resources_Stone => ItemCategoryRegistry.GetList("Resources_Stone");
-        public static List<GameObjectMeta> Resources_Textile_Leathers => ItemCategoryRegistry.GetList("Resources_Textile_Leathers");
-        public static List<GameObjectMeta> Resources_Textile_Fabrics => ItemCategoryRegistry.GetList("Resources_Textile_Fabrics");
-        public static List<GameObjectMeta> Resources_Textile_Wools => ItemCategoryRegistry.GetList("Resources_Textile_Wools");
-        public static List<GameObjectMeta> Resources_Chemical_Raw => ItemCategoryRegistry.GetList("Resources_Chemical_Raw");
-        public static List<GameObjectMeta> Resources_Components => ItemCategoryRegistry.GetList("Resources_Components");
-        public static List<GameObjectMeta> Apparel_Clothing => ItemCategoryRegistry.GetList("Apparel_Clothing");
-
-        public static List<GameObjectMeta> MedicineList => ItemCategoryRegistry.GetList("MedicineList");
-        public static List<GameObjectMeta> DrugsList => ItemCategoryRegistry.GetList("DrugsList");
-
-        public static List<GameObjectMeta> AnimalList => ItemCategoryRegistry.GetList("AnimalList");
-
-        public static List<GameObjectMeta> DiseaseList => ItemCategoryRegistry.GetList("DiseaseList");
-        public static List<GameObjectMeta> DamageTypeList => ItemCategoryRegistry.GetList("DamageTypeList");
-        public static List<GameObjectMeta> GameConditionList => ItemCategoryRegistry.GetList("GameConditionList");
-        public static List<GameObjectMeta> AllWeathersList => ItemCategoryRegistry.GetList("AllWeathersList");
-        public static List<GameObjectMeta> AllSkillsList => ItemCategoryRegistry.GetList("AllSkillsList");
-
         public static readonly IEmbeddingProvider EmbeddingProvider = new OnnxEmbeddingProvider();
 
-        static GameObjectsCapturer()
+        public static IEmbeddingProvider ResolveEmbeddingProvider()
         {
-            PopulateItems();
-        }
+            Settings settings = AIStorytellerMod.Settings;
+            if (settings != null && settings.embeddingSource == "Provider")
+                return new LlmEmbeddingProvider();
 
-        private static void PopulateItems()
-        {
-            ItemCategoryRegistry.PopulateAll();
+            return new OnnxEmbeddingProvider();
         }
 
         public static void PopulateVectorStore()
         {
-            var store = new StaticRagStore(RagBootstrap.DbPath);
-            store.ClearAll();
+            Task.Run(() => PopulateVectorStoreCoreAsync());
+        }
 
-            foreach (var kvp in ItemCategoryRegistry.AllCategories)
+        private static async Task PopulateVectorStoreCoreAsync()
+        {
+            Settings settings = AIStorytellerMod.Settings;
+
+            if (settings != null && settings.embeddingSource == "Provider")
             {
-                string category = kvp.Key;
-                var items = kvp.Value.Items;
-
-                foreach (var item in items)
+                string validationError = LlmEmbeddingProvider.ValidateConfig(settings);
+                if (validationError != null)
                 {
-                    string text = string.IsNullOrEmpty(item.Description)
-                        ? item.Label
-                        : item.Label + ": " + item.Description;
-
-                    float[] embedding = EmbeddingProvider.Embed(text);
-                    store.AddChunk(category, item.DefName, text, embedding);
+                    ModLogger.Error("RAG population aborted: " + validationError);
+                    RimTelligenceDispatcher.ExecutionQueue.Enqueue(() =>
+                    {
+                        Find.LetterStack.ReceiveLetter(
+                            "RAG Embeddings Not Generated",
+                            "The provider-based embedding source is not configured.\n" + validationError,
+                            LetterDefOf.NegativeEvent);
+                    });
+                    return;
                 }
             }
 
-            ModLogger.Message("Static vector store populated from config-driven categories.");
+            var chunks = new List<VectorChunk>();
+
+            try
+            {
+                IEmbeddingProvider provider = ResolveEmbeddingProvider();
+                using (provider as IDisposable)
+                {
+                    foreach (var categoryEntry in ItemCategoryRegistry.AllCategories)
+                    {
+                        string category = categoryEntry.Key;
+                        var items = categoryEntry.Value.Items;
+
+                        foreach (var item in items)
+                        {
+                            string text = string.IsNullOrEmpty(item.Description)
+                                ? item.Label
+                                : item.Label + ": " + item.Description;
+
+                            float[] embedding = await provider.EmbedAsync(text);
+                            chunks.Add(new VectorChunk { Category = category, DefName = item.DefName, Text = text, Embedding = embedding });
+                        }
+                    }
+                }
+            }
+            catch (Exception exception)
+            {
+                ModLogger.Error("RAG population failed: " + exception.Message);
+                RimTelligenceDispatcher.ExecutionQueue.Enqueue(() =>
+                {
+                    Find.LetterStack.ReceiveLetter(
+                        "RAG Embeddings Not Generated",
+                        "Embedding generation failed:\n" + exception.Message,
+                        LetterDefOf.NegativeEvent);
+                });
+                return;
+            }
+
+            RimTelligenceDispatcher.ExecutionQueue.Enqueue(() =>
+            {
+                try
+                {
+                    var store = new StaticRagStore(RagBootstrap.DbPath);
+                    store.ClearAll();
+                    foreach (VectorChunk chunk in chunks)
+                        store.AddChunk(chunk.Category, chunk.DefName, chunk.Text, chunk.Embedding);
+
+                    ModLogger.Message("Static vector store populated from config-driven categories.");
+                }
+                catch (Exception exception)
+                {
+                    ModLogger.Error("RAG store write failed: " + exception.Message);
+                }
+            });
+        }
+
+        private class VectorChunk
+        {
+            public string Category;
+            public string DefName;
+            public string Text;
+            public float[] Embedding;
         }
     }
 }

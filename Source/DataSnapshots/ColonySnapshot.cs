@@ -18,6 +18,9 @@ namespace RimTelligence.DataSnapshots
         // other inhibitants
         public int colonyAnimalCount;
         public List<string> colonyAnimals;
+        public List<PawnSnapshot> prisoners;
+        public List<PawnSnapshot> slaves;
+        public List<PawnSnapshot> visitors;
         // add information about prisoners, slaves, visitors
 
         // threats & story
@@ -38,14 +41,11 @@ namespace RimTelligence.DataSnapshots
         public Dictionary<string, int> cultivatedPlants;
 
         // resources
-        public ResourceSnapshot resources;
+        public ResourceSnapshot colonyResources;
 
         // world & diplomacy 
         public Dictionary<string, int> factionRelations;
         public List<string> activeQuests;
-
-        //events
-        public List<EventSnapshot> recentEvents;
 
     }
 

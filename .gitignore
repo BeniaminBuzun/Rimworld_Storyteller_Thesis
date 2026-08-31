@@ -22,6 +22,10 @@ obj/
 
 .DS_Store
 Thumbs.db
+*.tmp
+*.swp
+.vscode/
+.idea/
 
 # NuGet
 packages/

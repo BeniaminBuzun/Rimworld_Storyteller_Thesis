@@ -1,22 +1,17 @@
 using System;
 using System.Collections.Generic;
-using System.Data.SQLite;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace RimTelligence.Memory
 {
-    public class StaticRagStore
+    public class StaticRagStore : RagStoreBase
     {
-        private readonly string connStr;
-        public StaticRagStore(string dbPath) { connStr = "Data Source=" + dbPath + ";Version=3;"; }
+        public StaticRagStore(string dbPath) : base(dbPath) { }
 
         public void AddChunk(string category, string defName, string text, float[] embedding, string metadataJson = null)
         {
-            using (var conn = new SQLiteConnection(connStr))
+            using (var conn = OpenConnection())
             {
-                conn.Open();
                 var cmd = conn.CreateCommand();
                 cmd.CommandText = "INSERT INTO static_chunks (category, def_name, text, embedding, metadata) VALUES (@c,@d,@t,@e,@m)";
                 cmd.Parameters.AddWithValue("@c", category);
@@ -30,9 +25,8 @@ namespace RimTelligence.Memory
 
         public void ClearAll()
         {
-            using (var conn = new SQLiteConnection(connStr))
+            using (var conn = OpenConnection())
             {
-                conn.Open();
                 var cmd = conn.CreateCommand();
                 cmd.CommandText = "DELETE FROM static_chunks";
                 cmd.ExecuteNonQuery();
@@ -42,9 +36,8 @@ namespace RimTelligence.Memory
         public List<RagResult> Query(float[] queryEmbedding, int topK = 5, string categoryFilter = null)
         {
             var results = new List<RagResult>();
-            using (var conn = new SQLiteConnection(connStr))
+            using (var conn = OpenConnection())
             {
-                conn.Open();
                 var cmd = conn.CreateCommand();
                 cmd.CommandText = categoryFilter == null
                         ? "SELECT text, category, def_name, metadata, embedding FROM static_chunks"

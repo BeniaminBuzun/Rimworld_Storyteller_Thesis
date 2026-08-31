@@ -16,6 +16,14 @@ namespace RimTelligence.CustomEvents.Prompting
 
         public static string Narrate(ColonySnapshot snapshot)
         {
+            if (snapshot == null)
+            {
+                ModLogger.Debug("SnapshotNarrator.Narrate: snapshot is null; returning neutral narrative.");
+                return "A small colony on the edge of the Rimworld. Colony details are currently unavailable.";
+            }
+
+            ModLogger.Debug("SnapshotNarrator.Narrate: narrating colony '" + snapshot.colonyName + "'.");
+
             var sb = new StringBuilder();
 
             // Identity
@@ -102,14 +110,14 @@ namespace RimTelligence.CustomEvents.Prompting
             }
 
             // Resources
-            if (snapshot.resources?.allResources != null && snapshot.resources.allResources.Count > 0)
+            if (snapshot.colonyResources?.allResources != null && snapshot.colonyResources.allResources.Count > 0)
             {
-                var topResources = snapshot.resources.allResources
+                var topResources = snapshot.colonyResources.allResources
                     .OrderByDescending(kv => kv.Value)
                     .Take(MaxResourceEntries)
                     .Select(kv => $"{kv.Key}: {kv.Value}");
-                string suffix = snapshot.resources.allResources.Count > MaxResourceEntries
-                    ? $" (+ {snapshot.resources.allResources.Count - MaxResourceEntries} more)"
+                string suffix = snapshot.colonyResources.allResources.Count > MaxResourceEntries
+                    ? $" (+ {snapshot.colonyResources.allResources.Count - MaxResourceEntries} more)"
                     : "";
                 sb.AppendLine($"Resources: {string.Join(", ", topResources)}{suffix}.");
             }
@@ -128,8 +136,8 @@ namespace RimTelligence.CustomEvents.Prompting
                 sb.AppendLine($"Active quests: {string.Join(", ", snapshot.activeQuests)}.");
 
             // Recent events
-            if (snapshot.recentEvents != null && snapshot.recentEvents.Count > 0 && _rng.NextDouble() < 0.5)
-                sb.AppendLine($"[RECENT EVENTS — do not repeat]: {string.Join("; ", snapshot.recentEvents.Select(recentEvent => $"{recentEvent.title}: {recentEvent.description}"))}.");
+            // [TODO] for implementation
+
             return sb.ToString().Trim();
         }
 
