@@ -1,18 +1,20 @@
-﻿using LudeonTK;
+using LudeonTK;
 using Newtonsoft.Json;
-using RimTelligence.Source.CustomEvents;
+using RimTelligence.CustomEvents;
+using RimTelligence.CustomEvents.Handlers;
+using RimTelligence.CustomEvents.Prompting;
+using RimTelligence.CustomEvents.Workers;
+using RimTelligence.DataSnapshots;
+using RimTelligence.Memory;
 using RimTelligence.Source.CustomEvents.Handlers;
-using RimTelligence.Source.CustomEvents.Handlers.Implementations.ItemsRelated;
-using RimTelligence.Source.CustomEvents.Workers;
-using RimTelligence.Source.CustomEvents.Workers.RimTelligence.Source.Debug;
-using RimTelligence.Source.DataSnapshots;
 using RimWorld;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using Verse;
 
-namespace RimTelligence.Source.Debug
+namespace RimTelligence.CustomEvents.Workers
 {
     public static class RimTelligenceDebugActions
     {
@@ -22,39 +24,181 @@ namespace RimTelligence.Source.Debug
             Map map = Find.CurrentMap;
             List<DebugMenuOption> options = new List<DebugMenuOption>();
 
-            foreach (var handler in EffectHandlerRegistry.GetAllHandlers())
+            foreach (string handlerName in EffectFactory.GetAllEffectNames())
             {
-                var capturedHandler = handler;
+                string capturedName = handlerName;
                 options.Add(new DebugMenuOption(
-                    capturedHandler.EffectName,
+                    capturedName,
                     DebugMenuOptionMode.Action,
-                    () => OpenParamDialog(capturedHandler, map)
+                    () => OpenParamDialog(capturedName, map)
                 ));
             }
 
             Find.WindowStack.Add(new Dialog_DebugOptionListLister(options));
         }
 
-        [DebugAction("RimTelligence", "Open Event History Debug", allowedGameStates = AllowedGameStates.PlayingOnMap)]
-        private static void OpenEventDebugWindow()
+        [DebugAction("RimTelligence", "Test RAG Query", allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void TestRagQuery()
         {
-            Find.WindowStack.Add(new DebugEventWindow());
+            Find.WindowStack.Add(new Dialog_RagQuery());
         }
 
-        private static void OpenParamDialog(IEffectHandler handler, Map map)
+        [DebugAction("RimTelligence", "Print Active Save ID", allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void PrintActiveSaveId()
+        {
+            var component = SaveScopeComponent.Current;
+            if (component == null || string.IsNullOrEmpty(component.SaveId))
+            {
+                ModLogger.Message("No active save loaded — SaveId unavailable.");
+                return;
+            }
+            ModLogger.Message("Active Save ID: " + component.SaveId);
+        }
+
+        [DebugAction("RimTelligence", "Test Response Parser", allowedGameStates = AllowedGameStates.PlayingOnMap)]
+        private static void TestResponseParser()
+        {
+            Find.WindowStack.Add(new Dialog_ParserBattery());
+        }
+
+        private static void OpenParamDialog(string effectName, Map map)
         {
             string colonistName = map.mapPawns.FreeColonists.FirstOrDefault()?.Name.ToStringShort ?? "";
 
             GameEffect effect = new GameEffect
             {
-                type = handler.EffectName,
-                defName = "",
-                count = 0,
-                value = SeverityTypes.None,
-                targetPawn = colonistName
+                EffectName = effectName,
+                SelectedDefName = new string[0],
+                Severity = SeverityTypes.None,
+                TargetPawn = colonistName
             };
 
             Find.WindowStack.Add(new Dialog_EffectTest(effect, map));
+        }
+    }
+
+    public class Dialog_RagQuery : Window
+    {
+        private string queryBuf = "";
+        private int topK = 5;
+        private string topKBuf = "5";
+        private List<RagResult> lastResults = new List<RagResult>();
+        private Vector2 resultsScroll;
+
+        public override Vector2 InitialSize => new Vector2(600f, 500f);
+
+        public Dialog_RagQuery()
+        {
+            doCloseButton = true;
+            closeOnClickedOutside = true;
+            absorbInputAroundWindow = true;
+        }
+
+        public override void DoWindowContents(Rect inRect)
+        {
+            Listing_Standard ui = new Listing_Standard();
+            ui.Begin(inRect);
+
+            Text.Font = GameFont.Medium;
+            ui.Label("RAG Query Test");
+            Text.Font = GameFont.Small;
+            ui.GapLine();
+
+            ui.Label("Query text:");
+            queryBuf = ui.TextEntry(queryBuf);
+
+            ui.Gap(6f);
+            ui.TextFieldNumericLabeled("topK: ", ref topK, ref topKBuf, 1f, 20f);
+
+            ui.Gap(6f);
+            ui.Label("Active Save ID: " + (SaveScopeComponent.Current?.SaveId ?? "(none)"));
+
+            ui.Gap(10f);
+            GUI.color = Color.green;
+            if (ui.ButtonText("Run Query"))
+            {
+                RunQuery();
+            }
+            GUI.color = Color.white;
+
+            GUI.color = Color.cyan;
+            if (ui.ButtonText("Run Dynamic Query (save-scoped)"))
+            {
+                RunDynamicQuery();
+            }
+            GUI.color = Color.white;
+
+            ui.GapLine();
+            ui.Label($"Results ({lastResults.Count}):");
+
+            Rect outRect = ui.GetRect(250f);
+            Rect viewRect = new Rect(0f, 0f, outRect.width - 16f, lastResults.Count * 60f);
+
+            Widgets.BeginScrollView(outRect, ref resultsScroll, viewRect);
+            float yPosition = 0f;
+            foreach (var result in lastResults)
+            {
+                Rect rowRect = new Rect(0f, yPosition, viewRect.width, 56f);
+                Widgets.DrawMenuSection(rowRect);
+
+                Rect scoreLabel = new Rect(rowRect.x + 4f, rowRect.y + 2f, rowRect.width - 8f, 18f);
+                Widgets.Label(scoreLabel, $"[{result.Score:F3}] ({result.Source})");
+
+                Rect textLabel = new Rect(rowRect.x + 4f, rowRect.y + 20f, rowRect.width - 8f, 34f);
+                Text.Font = GameFont.Tiny;
+                Widgets.Label(textLabel, result.Text);
+                Text.Font = GameFont.Small;
+
+                yPosition += 60f;
+            }
+            Widgets.EndScrollView();
+
+            ui.End();
+        }
+
+        private void RunQuery()
+        {
+            if (string.IsNullOrWhiteSpace(queryBuf))
+            {
+                Log.Message("[RimTelligence] Empty query, skipped.");
+                return;
+            }
+
+            float[] embedding = GameObjectsCapturer.EmbeddingProvider.Embed(queryBuf);
+            var store = new StaticRagStore(RagBootstrap.DbPath);
+            lastResults = store.Query(embedding, topK: topK);
+            resultsScroll = Vector2.zero;
+
+            Log.Message($"[RimTelligence] Query: \"{queryBuf}\" — {lastResults.Count} results:");
+            foreach (var result in lastResults)
+                Log.Message($"  [{result.Score:F3}] ({result.Source}) {result.Text}");
+        }
+
+        private void RunDynamicQuery()
+        {
+            if (string.IsNullOrWhiteSpace(queryBuf))
+            {
+                Log.Message("[RimTelligence] Empty query, skipped.");
+                return;
+            }
+
+            var component = SaveScopeComponent.Current;
+            if (component == null || string.IsNullOrEmpty(component.SaveId))
+            {
+                lastResults.Clear();
+                resultsScroll = Vector2.zero;
+                Log.Message("[RimTelligence] No active save loaded — dynamic query returned no results.");
+                return;
+            }
+
+            float[] embedding = GameObjectsCapturer.EmbeddingProvider.Embed(queryBuf);
+            var store = new DynamicRagStore(RagBootstrap.DbPath, component.SaveId);
+            lastResults = store.Query(embedding, topK: topK);
+            resultsScroll = Vector2.zero;
+
+            Log.Message($"[RimTelligence] Dynamic query (save {component.SaveId}): \"{queryBuf}\" — {lastResults.Count} results:");
+            foreach (var result in lastResults)
+                Log.Message($"  [{result.Score:F3}] ({result.Source}) {result.Text}");
         }
     }
 
@@ -64,9 +208,7 @@ namespace RimTelligence.Source.Debug
         private readonly GameEffect effect;
 
         private string defNameBuf;
-        private string defDescriptionBuf;
         private string pawnBuf;
-        private string countBuf;
 
         private Vector2 pawnScroll;
         private Vector2 defScroll;
@@ -82,10 +224,8 @@ namespace RimTelligence.Source.Debug
             this.effect = effect;
             this.map = map;
 
-            defNameBuf = effect.defName ?? "";
-            defDescriptionBuf = effect.defDescription ?? "";
-            pawnBuf = effect.targetPawn ?? "";
-            countBuf = effect.count.ToString();
+            defNameBuf = effect.SelectedDefName != null && effect.SelectedDefName.Length > 0 ? effect.SelectedDefName[0] : "";
+            pawnBuf = effect.TargetPawn ?? "";
 
             doCloseButton = true;
             closeOnClickedOutside = true;
@@ -106,27 +246,34 @@ namespace RimTelligence.Source.Debug
             Listing_Standard ui = new Listing_Standard();
             ui.Begin(viewRect);
 
-            ui.Label($"<color=orange>Handler: {effect.type}</color>");
+            ui.Label($"<color=orange>Handler: {effect.EffectName}</color>");
             ui.GapLine();
 
-            var handler = EffectHandlerRegistry.GetHandler(effect.type);
+            var handler = EffectFactory.Create(effect.EffectName);
             if (handler != null)
             {
                 Text.Font = GameFont.Tiny;
-                ui.Label($"Prompt Hint: {handler.PromptStructure}");
+                string description;
+                try
+                {
+                    description = handler.Config.NarrativeDescription;
+                }
+                catch
+                {
+                    description = string.Empty;
+                }
+                ui.Label($"Description: {description}");
                 Text.Font = GameFont.Small;
                 ui.Gap();
             }
 
             //  Fields 
             defNameBuf = ui.TextEntryLabeled("defName:        ", defNameBuf);
-            defDescriptionBuf = ui.TextEntryLabeled("defDescription: ", defDescriptionBuf);
             pawnBuf = ui.TextEntryLabeled("targetPawn:     ", pawnBuf);
-            ui.TextFieldNumericLabeled("count: ", ref effect.count, ref countBuf, 0f, 100000f);
 
             //  ValueType selector 
             ui.Gap(4f);
-            ui.Label($"Value Strategy: <color=cyan>{effect.value}</color>");
+            ui.Label($"Value Strategy: <color=cyan>{effect.Severity}</color>");
 
             Rect valueRow = ui.GetRect(ButtonHeight);
             float btnW = valueRow.width / 4f;
@@ -142,17 +289,17 @@ namespace RimTelligence.Source.Debug
             ui.Label("Quick-fill targetPawn:");
             DrawScrollableButtons(
                 ui,
-                map.mapPawns.FreeColonists.Select(p => p.Name.ToStringShort).ToList(),
+                map.mapPawns.FreeColonists.Select(pawn => pawn.Name.ToStringShort).ToList(),
                 ref pawnScroll,
                 val => pawnBuf = val
             );
 
             //  Def quick-fill 
-            List<string> defList = GetDefList(effect.type);
+            List<string> defList = GetDefList(effect.EffectName);
             if (defList != null && defList.Count > 0)
             {
                 ui.GapLine();
-                ui.Label($"Quick-fill defName ({effect.type}):");
+                ui.Label($"Quick-fill defName ({effect.EffectName}):");
                 DrawScrollableButtons(
                     ui,
                     defList,
@@ -183,16 +330,16 @@ namespace RimTelligence.Source.Debug
             Widgets.EndScrollView();
         }
 
-        private void DrawValueButton(Rect row, int index, float btnW, SeverityTypes v, string label)
+        private void DrawValueButton(Rect row, int index, float btnW, SeverityTypes severity, string label)
         {
-            Rect r = new Rect(row.x + index * btnW, row.y, btnW - 2f, row.height);
+            Rect buttonRect = new Rect(row.x + index * btnW, row.y, btnW - 2f, row.height);
 
-            bool active = effect.value == v;
+            bool active = effect.Severity == severity;
             if (active)
-                Widgets.DrawBoxSolid(r, new Color(0.3f, 0.6f, 0.3f, 0.4f));
+                Widgets.DrawBoxSolid(buttonRect, new Color(0.3f, 0.6f, 0.3f, 0.4f));
 
-            if (Widgets.ButtonText(r, label))
-                effect.value = v;
+            if (Widgets.ButtonText(buttonRect, label))
+                effect.Severity = severity;
         }
 
         private void DrawScrollableButtons(
@@ -217,13 +364,13 @@ namespace RimTelligence.Source.Debug
             Rect innerRect = new Rect(0f, 0f, outerRect.width - 20f, totalHeight);
 
             Widgets.BeginScrollView(outerRect, ref scroll, innerRect);
-            float y = 0f;
+            float yPosition = 0f;
             foreach (string item in items)
             {
-                Rect btnRect = new Rect(5f, y, innerRect.width - 5f, ButtonHeight - 2f);
+                Rect btnRect = new Rect(5f, yPosition, innerRect.width - 5f, ButtonHeight - 2f);
                 if (Widgets.ButtonText(btnRect, item))
                     onSelect(item);
-                y += ButtonHeight;
+                yPosition += ButtonHeight;
             }
             Widgets.EndScrollView();
             ui.Gap(4f);
@@ -231,54 +378,31 @@ namespace RimTelligence.Source.Debug
 
         private static List<string> GetDefList(string effectType)
         {
-            string family = effectType.Contains("_")
-                ? effectType.Substring(0, effectType.IndexOf('_'))
-                : effectType;
+            if (string.IsNullOrEmpty(effectType))
+                return null;
 
-            switch (family)
+            try
             {
-                case "ResourcePodCrash":
-                case "PawnFoundItem":
-                case "LoseItems":
-                    return EventItemMapping.GetAllowedDefs(effectType);
-
-                case "DiseasePawn":
-                    return GameObjectsCapturer.DiseaseList.Select(m => m.DefName).ToList();
-
-                case "DamagePawn":
-                    return GameObjectsCapturer.DamageTypeList.Select(m => m.DefName).ToList();
-
-                case "AddExpPoints":
-                case "LoseExpPoints":
-                    return GameObjectsCapturer.AllSkillsList.Select(m => m.DefName).ToList();
-
-                case "MiracleHealDisease":
-                    return GameObjectsCapturer.DiseaseList.Select(m => m.DefName).ToList();
-
-                case "ChangeWeather":
-                    return GameObjectsCapturer.AllWeathersList.Select(m => m.DefName).ToList();
-
-                case "GameCondition":
-                    return GameObjectsCapturer.GameConditionList.Select(m => m.DefName).ToList();
-
-                case "AnimalInsanity":
-                    return GameObjectsCapturer.AnimalList.Select(m => m.DefName).ToList();
-
-                default:
-                    return null;
+                List<GameObjectMeta> defs = EffectContractProvider.GetRelatedDefList(effectType);
+                return defs?.Count > 0
+                    ? defs.Select(def => def.DefName).ToList()
+                    : null;
+            }
+            catch
+            {
+                return null;
             }
         }
 
         private void FireEffect()
         {
-            effect.defName = defNameBuf;
-            effect.defDescription = defDescriptionBuf;
-            effect.targetPawn = pawnBuf;
+            effect.SelectedDefName = string.IsNullOrEmpty(defNameBuf) ? new string[0] : new string[] { defNameBuf };
+            effect.TargetPawn = pawnBuf;
 
             LlmCustomEvent evt = new LlmCustomEvent
             {
-                letterTitle = $"Test: {effect.type}",
-                letterText = $"Debug manual trigger of {effect.type}.",
+                letterTitle = $"Test: {effect.EffectName}",
+                letterText = $"Debug manual trigger of {effect.EffectName}.",
                 effects = new List<GameEffect> { effect }
             };
 
@@ -290,6 +414,131 @@ namespace RimTelligence.Source.Debug
 
             Messages.Message("Effect fired. Check Log.", MessageTypeDefOf.PositiveEvent);
             Close();
+        }
+    }
+
+    public class Dialog_ParserBattery : Window
+    {
+        private static readonly string CleanEventJson =
+            "{\"letterTitle\":\"Title A\",\"letterText\":\"Text A\"," +
+            "\"effects\":[{\"type\":\"MeteoriteImpact\",\"targetPawn\":\"\",\"defName\":\"\",\"count\":1,\"value\":\"LOW\"}]}";
+
+        private readonly List<BatteryResult> results = new List<BatteryResult>();
+        private Vector2 scrollPosition;
+
+        public override Vector2 InitialSize => new Vector2(760f, 520f);
+
+        public Dialog_ParserBattery()
+        {
+            doCloseButton = true;
+            closeOnClickedOutside = true;
+            absorbInputAroundWindow = true;
+            RunBattery();
+        }
+
+        private void RunBattery()
+        {
+            results.Clear();
+
+            // US1: fences, prose wrapping, BOM/line endings
+            AddRecoverable("fence json", "Here is the JSON:\n```json\n" + CleanEventJson + "\n```");
+            AddRecoverable("fence JSON uppercase", "```JSON\n" + CleanEventJson + "\n```");
+            AddRecoverable("fence js", "```js\n" + CleanEventJson + "\n```");
+            AddRecoverable("fence no tag", "```\n" + CleanEventJson + "\n```");
+            AddRecoverable("fence trailing space", "```json \n" + CleanEventJson + "\n```");
+            AddRecoverable("prose before", "Sure! Here is your JSON: " + CleanEventJson);
+            AddRecoverable("prose after", CleanEventJson + " Hope that helps!");
+            AddRecoverable("prose both sides", "Sure! " + CleanEventJson + " Hope that helps!");
+            AddRecoverable("BOM + CRLF + fence", "\uFEFF\r\n```json\r\n" + CleanEventJson + "\r\n```\r\n");
+            AddRecoverable("two objects, first wins", CleanEventJson + " and also {\"letterTitle\":\"Second\"}",
+                data => data.letterTitle == "Title A");
+            AddUnrecoverable("braces and quotes in letterText (empty effects)",
+                "{\"letterTitle\":\"T\",\"letterText\":\"A {weird} [thing] and \\\"quotes\\\"\",\"effects\":[]}");
+
+            // US2: malformed-but-recoverable JSON
+            AddRecoverable("array top level", "[" + CleanEventJson + "]",
+                data => data.letterTitle == "Title A");
+            AddRecoverable("array prose wrapped", "Here: [" + CleanEventJson + "] done",
+                data => data.letterTitle == "Title A");
+            AddRecoverable("lowercase severity high",
+                "{\"letterTitle\":\"S\",\"letterText\":\"X\",\"effects\":[{\"type\":\"MeteoriteImpact\",\"targetPawn\":\"\",\"defName\":\"\",\"count\":1,\"value\":\"high\"}]}",
+                data => data.effects != null && data.effects.Count == 1 && data.effects[0].Severity == SeverityTypes.High);
+            AddRecoverable("mixed case severity Medium",
+                "{\"letterTitle\":\"S\",\"letterText\":\"X\",\"effects\":[{\"type\":\"MeteoriteImpact\",\"targetPawn\":\"\",\"defName\":\"\",\"count\":1,\"value\":\"Medium\"}]}",
+                data => data.effects != null && data.effects.Count == 1 && data.effects[0].Severity == SeverityTypes.Medium);
+            AddUnrecoverable("trailing comma in object (empty effects)",
+                "{\"letterTitle\":\"TC\",\"letterText\":\"X\",\"effects\":[],}");
+            AddRecoverable("trailing comma in array",
+                "{\"letterTitle\":\"TC\",\"letterText\":\"X\",\"effects\":[{\"type\":\"MeteoriteImpact\",\"targetPawn\":\"\",\"defName\":\"\",\"count\":1,\"value\":\"LOW\"},]}");
+
+            // US3: unrecoverable input and missing-field defaults
+            AddUnrecoverable("garbage then JSON (empty effects)", "garbage {not json} {\"letterTitle\":\"G2J\",\"letterText\":\"X\",\"effects\":[]}");
+            AddUnrecoverable("missing fields (empty effects)",
+                "{\"letterTitle\":\"Quiet\"}");
+            AddUnrecoverable("missing all fields (empty effects)", "{}");
+            AddRecoverable("unknown severity degrades to None",
+                "{\"letterTitle\":\"U\",\"letterText\":\"X\",\"effects\":[{\"type\":\"MeteoriteImpact\",\"targetPawn\":\"\",\"defName\":\"\",\"count\":1,\"value\":\"bogus\"}]}",
+                data => data.effects != null && data.effects.Count == 1 && data.effects[0].Severity == SeverityTypes.None);
+
+            AddUnrecoverable("pure garbage", "this is not json at all");
+            AddUnrecoverable("truncated JSON", "{\"letterTitle\":\"Tru\",\"letterText\":\"");
+            AddUnrecoverable("empty array", "[]");
+            AddUnrecoverable("whitespace only", "   \r\n \t ");
+        }
+
+        private void AddRecoverable(string name, string sample, Func<LlmCustomEvent, bool> assert = null)
+        {
+            LlmParseResult<LlmCustomEvent> result = LlmResponseParser.ParseEvent(sample);
+            bool passed = result.isSuccess && result.data != null && (assert == null || assert(result.data));
+            string detail = passed ? string.Empty : (result.isSuccess ? "assertion failed" : result.errorMessage);
+            results.Add(new BatteryResult(name, passed, detail));
+        }
+
+        private void AddUnrecoverable(string name, string sample)
+        {
+            LlmParseResult<LlmCustomEvent> result = LlmResponseParser.ParseEvent(sample);
+            bool passed = !result.isSuccess && result.data == null && !string.IsNullOrEmpty(result.errorMessage);
+            string detail = passed ? "clean failure" : (result.isSuccess ? "unexpected success" : "missing reason");
+            results.Add(new BatteryResult(name, passed, detail));
+        }
+
+        public override void DoWindowContents(Rect inRect)
+        {
+            Text.Font = GameFont.Medium;
+            Widgets.Label(new Rect(inRect.x, inRect.y, inRect.width, 30f), "LLM Response Parser Battery");
+            Text.Font = GameFont.Small;
+
+            Rect outRect = new Rect(inRect.x, inRect.y + 36f, inRect.width, inRect.height - 60f);
+            Rect viewRect = new Rect(0f, 0f, outRect.width - 16f, results.Count * 26f);
+
+            Widgets.BeginScrollView(outRect, ref scrollPosition, viewRect);
+
+            float rowY = 0f;
+            foreach (BatteryResult result in results)
+            {
+                Rect rowRect = new Rect(0f, rowY, viewRect.width, 24f);
+                GUI.color = result.passed ? Color.green : Color.red;
+                Widgets.Label(rowRect, (result.passed ? "[PASS] " : "[FAIL] ") + result.name +
+                    (result.detail.Length > 0 ? " — " + result.detail : string.Empty));
+                GUI.color = Color.white;
+                rowY += 26f;
+            }
+
+            Widgets.EndScrollView();
+        }
+
+        private class BatteryResult
+        {
+            public string name;
+            public bool passed;
+            public string detail;
+
+            public BatteryResult(string name, bool passed, string detail)
+            {
+                this.name = name;
+                this.passed = passed;
+                this.detail = detail;
+            }
         }
     }
 }

@@ -1,164 +1,102 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using RimTelligence.Source.CustomEvents.EventSelector.DTO;
-using RimTelligence.Source.CustomEvents.EventSelector.Modifiers;
+using RimTelligence.CustomEvents.EventSelector.Modifiers;
+using RimTelligence.CustomEvents.Handlers;
+using RimTelligence.DataSnapshots;
 using RimTelligence.Source.CustomEvents.Handlers;
-using RimTelligence.Source.DataSnapshots;
 using Verse;
 
-namespace RimTelligence.Source.CustomEvents.EventSelector
+namespace RimTelligence.CustomEvents.EventSelector
 {
     public static class HeuristicEventSelector
     {
-        private static readonly int[] _countWeights = { 50, 30, 15, 5 }; // 1,2,3,4 events
-
-        public static List<SelectedEventIntent> Select(ColonySnapshot snapshot, Map map)
+        public static List<IEffect> Select(ColonySnapshot snapshot)
         {
             DrawMode mode = DrawModeSelector.Pick(snapshot);
             ModLogger.Message($"[Selector] DrawMode={mode}");
 
-            //Build base pool from registry
-            var pool = EffectHandlerRegistry.GetAllHandlers()
-                .Select(h => new EventEntry(h.EffectName, h.BaseWeight, h.Alignment))
-                .ToList();
-
-            //Strip ineligible entries
-            pool = pool.Where(e => EventEligibility.IsEligible(e.Type, snapshot)).ToList();
-
-            //    Apply alignment filter                        
-            pool = FilterByMode(pool, mode);
-
-            if (pool.Count == 0)
+            //Build base pool
+            var pool = new List<IEffect>();
+            var allNames = EffectFactory.GetAllEffectNames();
+            foreach (var name in allNames)
             {
-                ModLogger.Warning("[Selector] Pool empty after filtering, falling back to full pool.");
-                pool = EffectHandlerRegistry.GetAllHandlers()
-                    .Select(h => new EventEntry(h.EffectName, h.BaseWeight, h.Alignment))
-                    .ToList();
+                IEffect effect = EffectFactory.Create(name);
+                if (name == "ResourcePodCrash" || name == "PawnFoundItems")
+                {
+                    string selectedRelatedDefList = DrawRelatetDefList();
+                    effect.Config.RelatedDefList = selectedRelatedDefList;
+                }
+                
+                if (effect.CanBeChoosen(snapshot))
+                {
+                    pool.Add(effect);
+                }
             }
 
-            //  Apply state multipliers (skip in PureRandom) 
+            // Apply alignment filter                        
+            pool = FilterByMode(pool, mode);
+
+            //  Apply state multipliers 
             if (mode != DrawMode.PureRandom)
             {
                 foreach (var entry in pool)
-                    entry.Weight *= StateModifiers.Apply(entry, snapshot);
-            }
-
-            //  Apply recency penalties 
-            var history = EventHistory.Current;
-            if (history != null)
-            {
-                foreach (var entry in pool)
-                {
-                    // Per-type penalty: full weight reduction for recently seen types
-                    float typePenalty = history.RecencyPenalty(entry.Type);
-                    // Per-family penalty: softer, prevents e.g. 3 pod crashes in a row
-                    float familyPenalty = history.FamilyRecencyPenalty(entry.Family) * 0.5f;
-
-                    float penalty = Math.Max(typePenalty, familyPenalty);
-                    entry.Weight *= (1f - penalty);
-                }
+                    entry.Config.BaseWeight *= StateModifiers.Apply(entry, snapshot);
             }
 
             // Strip anything that ended up at zero weight
-            pool = pool.Where(e => e.Weight > 0f).ToList();
+            pool = pool.Where(entry => entry.Config.BaseWeight > 0f).ToList();
 
             //  Draw 
-            int count = DrawCount(mode);
-            var drawn = new List<EventEntry>();
-            var usedFamilies = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            int count = DrawCount();
+            List<IEffect> drawn = new List<IEffect>();
 
-            for (int i = 0; i < count && pool.Count > 0; i++)
+            for (int index = 0; index < count && pool.Count > 0; index++)
             {
-                EventEntry pick = WeightedDraw(pool);
-                if (pick == null) break;
+                IEffect pick = WeightedDraw(pool);
 
+                // Keep the same event drawable, but at half probability on a second draw
+                pick.Config.BaseWeight *= 0.01f;
                 drawn.Add(pick);
-
-                // Remove exact type from pool (no duplicates)
-                pool.RemoveAll(e => e.Type == pick.Type);
-
-                // Family cap: after drawing one from a family, 
-                // halve all remaining entries in that family
-                // (soft cap — doesn't prevent them entirely, just makes them less likely)
-                if (usedFamilies.Contains(pick.Family))
-                {
-                    // Second draw from same family: very heavy penalty
-                    foreach (var e in pool.Where(e => e.Family == pick.Family))
-                        e.Weight *= 0.1f;
-                }
-                else
-                {
-                    // First time seeing this family: mild penalty on siblings
-                    foreach (var e in pool.Where(e => e.Family == pick.Family))
-                        e.Weight *= 0.3f;
-                }
-                usedFamilies.Add(pick.Family);
             }
 
-            var result = drawn
-                .Select(e => new SelectedEventIntent { type = e.Type })
-                .ToList();
-
-            // Record for history
-            history?.Record(result);
-
-            ModLogger.Message($"[Selector] Final draw ({mode}): {string.Join(", ", result.Select(e => e.type))}");
-            return result;
+            ModLogger.Message($"[Selector] Final draw ({mode}): {string.Join(", ", drawn.Select(entry => entry.Config.EffectName))}");
+            return drawn;
         }
 
         //  Helpers 
-
-        private static List<EventEntry> FilterByMode(List<EventEntry> pool, DrawMode mode)
+        private static List<IEffect> FilterByMode(List<IEffect> pool, DrawMode mode)
         {
             switch (mode)
             {
                 case DrawMode.BadStreak:
-                    return pool.Where(e => e.Alignment != EventAlignment.Good).ToList();
+                    return pool.Where(entry => entry.Config.Alignment == EventAlignment.Bad).ToList();
                 case DrawMode.GoodStreak:
-                    return pool.Where(e => e.Alignment != EventAlignment.Bad).ToList();
+                    return pool.Where(entry => entry.Config.Alignment == EventAlignment.Good).ToList();
+                case DrawMode.NeutralOnly:
+                    return pool.Where(entry => entry.Config.Alignment == EventAlignment.Neutral).ToList();
                 default: // Weighted, PureRandom
                     return pool;
             }
         }
 
-        private static int DrawCount(DrawMode mode)
+        private static int DrawCount()
         {
-            switch (mode)
-            {
-                case DrawMode.PureRandom:
-                    // Genuinely flat 1-4
-                    return Rand.RangeInclusive(1, 4);
-
-                case DrawMode.BadStreak:
-                    // Can pile on, but weight toward 1-2
-                    return WeightedCountDraw(new[] { 40, 35, 20, 5 });
-
-                case DrawMode.GoodStreak:
-                    // Good things come in smaller doses
-                    return WeightedCountDraw(new[] { 60, 30, 8, 2 });
-
-                default: // Weighted
-                    return WeightedCountDraw(_countWeights);
-            }
-        }
-
-        private static int WeightedCountDraw(int[] weights)
-        {
+            int[] weights = { 10, 30, 35, 20, 5 }; // 1-5 events
             int total = weights.Sum();
             int roll = Rand.Range(0, total);
             int cursor = 0;
-            for (int i = 0; i < weights.Length; i++)
+            for (int index = 0; index < weights.Length; index++)
             {
-                cursor += weights[i];
-                if (roll < cursor) return i + 1;
+                cursor += weights[index];
+                if (roll < cursor) return index + 1;
             }
             return 1;
         }
 
-        private static EventEntry WeightedDraw(List<EventEntry> pool)
+        private static IEffect WeightedDraw(List<IEffect> pool)
         {
-            float total = pool.Sum(e => e.Weight);
+            float total = pool.Sum(entry => entry.Config.BaseWeight);
             if (total <= 0f) return null;
 
             float roll = Rand.Value * total;
@@ -166,10 +104,29 @@ namespace RimTelligence.Source.CustomEvents.EventSelector
 
             foreach (var entry in pool)
             {
-                cursor += entry.Weight;
+                cursor += entry.Config.BaseWeight;
                 if (roll <= cursor) return entry;
             }
             return pool.Last();
         }
+
+        private static string DrawRelatetDefList()
+        {
+            List<ItemCategory> candidates = ItemCategoryRegistry.AllCategories.Values
+                .ToList();
+
+            float total = candidates.Sum(category => category.Weight);
+            float roll = Rand.Value * total;
+            float cursor = 0f;
+
+            foreach (ItemCategory category in candidates)
+            {
+                cursor += category.Weight;
+                if (roll <= cursor)
+                    return category.Id;
+            }
+
+            return candidates.Last().Id;
+        }
     }
-}
+ }

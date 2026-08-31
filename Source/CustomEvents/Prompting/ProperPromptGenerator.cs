@@ -1,11 +1,12 @@
-﻿using RimTelligence.Source.CustomEvents.Handlers;
-using RimTelligence.Source.DataSnapshots;
+using RimTelligence.CustomEvents.Handlers;
+using RimTelligence.DataSnapshots;
+using RimTelligence.Memory;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace RimTelligence.Source.CustomEvents.Prompting
+namespace RimTelligence.CustomEvents.Prompting
 {
     public static class ProperPromptGenerator
     {
@@ -48,7 +49,7 @@ namespace RimTelligence.Source.CustomEvents.Prompting
 
         public static string BuildSystemPrompt(
             string fullSnapshotNarrative,
-            List<SelectedEventIntent> chosenEvents,
+            List<IEffect> chosenEvents,
             ColonySnapshot snapshot = null)
         {
             var tone = _tones[_random.Next(_tones.Length)];
@@ -58,24 +59,19 @@ namespace RimTelligence.Source.CustomEvents.Prompting
 
             var sb = new StringBuilder();
 
-            //
-            //
-            //
-            //
             //  Identity 
             sb.AppendLine("You are a RimWorld storyteller narrator. You are terse and distinctive.");
             sb.AppendLine($"Voice: {tone.name} — {tone.voice}");
             sb.AppendLine($"Principle: \"{tone.sign}\"");
             sb.AppendLine("Every word must sound like YOU. Not a patch note. Not a status report.");
-            sb.AppendLine("Be creative within those constraints. Make the story sing. Make it feel like a moment from a play or a novel, not a game log.");
             sb.AppendLine();
             sb.AppendLine("Output ONLY a valid JSON object. No markdown fences, no preamble.");
             sb.AppendLine();
 
             //  Cue 
-            sb.AppendLine("DIRECTOR'S CUE — these events happened:");
+            sb.AppendLine("DIRECTOR'S CUE — these events happened (use exactly these effectName values):");
             foreach (var evt in chosenEvents)
-                sb.AppendLine($"  - {evt.type} -");
+                sb.AppendLine($"  - {evt.Config.EffectName} -");
             sb.AppendLine();
 
             //  Writing rules 
@@ -102,77 +98,61 @@ namespace RimTelligence.Source.CustomEvents.Prompting
 
             //  Effect rules 
             sb.AppendLine("EFFECT RULES:");
-            sb.AppendLine("- Every effect from the cue must appear in the effects array.");
-            sb.AppendLine("- Every effect gets one clause woven into letterText. One clause. Not a sentence.");
-            sb.AppendLine("- defName must come strictly from Allowed Values below.");
-            sb.AppendLine("- value: LOW/MEDIUM/HIGH when the type uses value. count > 0 when the type uses count.");
+            sb.AppendLine("- The 'effects' array MUST contain exactly the effects from the cue, and MUST NOT be empty.");
+            sb.AppendLine("- Every effect MUST set 'effectName' to the EXACT name given in the cue / Allowed Values below.");
+            sb.AppendLine("- 'selectedDefName' must come strictly from that effect's Allowed Values below.");
+            sb.AppendLine("- Include 'severity' only for effects that show 'severity:' in Allowed Values. Use LOW/MEDIUM/HIGH/EXTREME.");
+            sb.AppendLine("- Include 'targetPawn' only for effects that show 'targetPawn:' in Allowed Values.");
             sb.AppendLine();
-
-            //  Output format 
-            sb.AppendLine("OUTPUT FORMAT:");
-            sb.AppendLine("{");
-            sb.AppendLine("  \"letterTitle\": \"2-4 word title\",");
-            sb.AppendLine("  \"letterText\": \"narrative here\",");
-            sb.AppendLine("  \"effects\": [");
-            sb.AppendLine("    {");
-            sb.AppendLine("      \"type\": \"ExactTypeFromCue\",");
-            sb.AppendLine("      \"targetPawn\": \"PawnName or \\\"\\\"\",");
-            sb.AppendLine("      \"defName\": \"ChosenDefName\",");
-            sb.AppendLine("      \"count\": 0,");
-            sb.AppendLine("      \"value\": \"NONE\"");
-            sb.AppendLine("    }");
-            sb.AppendLine("  ]");
-            sb.AppendLine("}");
+            sb.AppendLine("EFFECT JSON SCHEMA (the ONLY allowed keys):");
+            sb.AppendLine("{\n  \"effectName\": \"<exact effect name from cue>\",\n  \"selectedDefName\": [\"<defName>\"] | [\"<defName>\", \"<second defName>\"],\n  \"severity\": \"LOW|MEDIUM|HIGH|EXTREME\",\n  \"targetPawn\": \"<colonist name>\"\n}");
+            sb.AppendLine("- 'severity' and 'targetPawn' are optional; include them only when that effect's Allowed Values say so.");
             sb.AppendLine();
 
             //  Allowed values 
             sb.AppendLine("ALLOWED VALUES:");
-            var allHandlers = EffectHandlerRegistry.GetAllHandlers();
             foreach (var chosen in chosenEvents)
             {
-                var handler = allHandlers.FirstOrDefault(h =>
-                    string.Equals(h.EffectName, chosen.type, StringComparison.OrdinalIgnoreCase));
-                if (handler == null) continue;
+                EffectConfig contract = EffectContractProvider.GetContract(chosen, snapshot);
 
-                sb.AppendLine($"- {handler.EffectName}: {handler.PromptStructure}");
-                if (!string.IsNullOrWhiteSpace(handler.AditionalPromptStructureInfo))
-                    sb.AppendLine($"  Allowed: {handler.AditionalPromptStructureInfo}");
+                sb.AppendLine($"- {contract.EffectName}: {contract.NarrativeDescription}");
+
+                if (contract.UsesSeverity)
+                    sb.AppendLine("    severity: LOW/MEDIUM/HIGH/EXTREME");
+                if (contract.UsesTargetPawn)
+                    sb.AppendLine("    targetPawn: one of the colonists available in colony state");
+
+                if (contract.IsDefRequired && contract.AllowedDefs.Count > 0)
+                    sb.AppendLine($"    allowed defName: {FormatDefList(contract.AllowedDefs)}");
+                else if (contract.IsDefRequired)
+                    sb.AppendLine("    allowed defName: any defName chosen by you (free text)");
+
+                if (contract.SecondaryAllowedDefs.Count > 0)
+                    sb.AppendLine($"    second defName (body part): {FormatDefList(contract.SecondaryAllowedDefs)}");
+
+                sb.AppendLine();
             }
             sb.AppendLine();
-
             //  Colony state 
             sb.AppendLine("COLONY STATE:");
             sb.AppendLine(fullSnapshotNarrative);
             sb.AppendLine();
 
+            AppendStoryContextPrompts(sb, snapshot);
+
             sb.AppendLine("Return ONLY the JSON object.");
             return sb.ToString();
         }
 
-        private static void AppendStoryContextPrompts(StringBuilder sb, ColonySnapshot s)
+        private static void AppendStoryContextPrompts(StringBuilder sb, ColonySnapshot snapshot)
         {
-            if (s == null || s.colonists == null || s.colonists.Count == 0)
+            if (snapshot == null || snapshot.colonists == null || snapshot.colonists.Count == 0)
                 return;
 
-            float avgMood = s.colonists.Average(p => p.needs?.mood ?? 0.5f);
-            bool isWinter = s.season?.Contains("Winter") ?? false;
-            bool isNight = TimeSpan.TryParse(s.time, out TimeSpan t)
-                            && (t.Hours >= 22 || t.Hours < 6);
-
-            // One atmosphere note, written as creative direction not a rule
-            string note = null;
-            if (avgMood < 0.25f) note = "These people are close to breaking. Let that bleed through without stating it.";
-            else if (avgMood > 0.75f) note = "They're almost happy. Make that feel precarious.";
-            else if (s.daysSinceLastRaid <= 2) note = "The last raid isn't over in their heads. One detail of that rawness.";
-            else if (isWinter) note = "The cold is a character. One physical sensation only.";
-            else if (isNight) note = "Dark outside. One sound or shadow. Nothing more.";
-            else if (s.colonistCount <= 3) note = "Few people. Every event lands harder. One internal beat.";
-
-            if (note != null)
-            {
-                sb.AppendLine($"ATMOSPHERE: {note}");
-                sb.AppendLine();
-            }
+            float avgMood = snapshot.colonists.Average(pawn => pawn.needs?.mood ?? 0.5f);
+            bool isWinter = snapshot.season?.Contains("Winter") ?? false;
+            bool isNight = TimeSpan.TryParse(snapshot.time, out TimeSpan time)
+                            && (time.Hours >= 22 || time.Hours < 6);
 
             // At most one optional twist — 60% chance of nothing
             double roll = _random.NextDouble();
@@ -181,6 +161,27 @@ namespace RimTelligence.Source.CustomEvents.Prompting
             else if (roll < 0.40) sb.AppendLine("OPTIONAL TWIST: One image that earns its beauty.");
 
             sb.AppendLine();
+        }
+
+        private static string FormatDefList(List<GameObjectMeta> defs)
+        {
+            const int MaxDefs = 5;
+
+            List<GameObjectMeta> sample = defs.Count > MaxDefs
+                ? defs.OrderBy(_ => _random.Next()).Take(MaxDefs).ToList()
+                : defs;
+
+            var sb = new StringBuilder();
+            for (int index = 0; index < sample.Count; index++)
+            {
+                if (index > 0)
+                    sb.Append(", ");
+                GameObjectMeta def = sample[index];
+                sb.Append(def.DefName);
+                if (!string.IsNullOrEmpty(def.Label) && def.Label != def.DefName)
+                    sb.Append(" (").Append(def.Label).Append(")");
+            }
+            return sb.ToString();
         }
     }
 }

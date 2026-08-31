@@ -1,10 +1,10 @@
-﻿using RimTelligence.Source.DataSnapshots;
+using RimTelligence.DataSnapshots;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace RimTelligence.Source.CustomEvents.Prompting
+namespace RimTelligence.CustomEvents.Prompting
 {
     public static class SnapshotNarrator
     {
@@ -16,6 +16,14 @@ namespace RimTelligence.Source.CustomEvents.Prompting
 
         public static string Narrate(ColonySnapshot snapshot)
         {
+            if (snapshot == null)
+            {
+                ModLogger.Debug("SnapshotNarrator.Narrate: snapshot is null; returning neutral narrative.");
+                return "A small colony on the edge of the Rimworld. Colony details are currently unavailable.";
+            }
+
+            ModLogger.Debug("SnapshotNarrator.Narrate: narrating colony '" + snapshot.colonyName + "'.");
+
             var sb = new StringBuilder();
 
             // Identity
@@ -29,7 +37,7 @@ namespace RimTelligence.Source.CustomEvents.Prompting
             // Colonists
             if (snapshot.colonists != null && snapshot.colonists.Count > 0)
             {
-                var names = snapshot.colonists.Select(p => p.name).Where(n => !string.IsNullOrWhiteSpace(n)).ToList();
+                var names = snapshot.colonists.Select(pawn => pawn.name).Where(name => !string.IsNullOrWhiteSpace(name)).ToList();
                 sb.AppendLine($"Colonists ({snapshot.colonistCount} total, exact names for targetPawn): {string.Join(", ", names)}.");
                 sb.AppendLine();
 
@@ -38,14 +46,14 @@ namespace RimTelligence.Source.CustomEvents.Prompting
                 var brief = ordered.Skip(SpotlightCount).ToList();
 
                 sb.AppendLine("Key colonists (full detail):");
-                foreach (var p in spotlight)
-                    sb.AppendLine("  " + DescribePawnFull(p));
+                foreach (var pawn in spotlight)
+                    sb.AppendLine("  " + DescribePawnFull(pawn));
 
                 if (brief.Count > 0)
                 {
                     sb.AppendLine("Other colonists (brief):");
-                    foreach (var p in brief)
-                        sb.AppendLine("  " + DescribePawnBrief(p));
+                    foreach (var pawn in brief)
+                        sb.AppendLine("  " + DescribePawnBrief(pawn));
                 }
                 sb.AppendLine();
             }
@@ -102,14 +110,14 @@ namespace RimTelligence.Source.CustomEvents.Prompting
             }
 
             // Resources
-            if (snapshot.resources?.allResources != null && snapshot.resources.allResources.Count > 0)
+            if (snapshot.colonyResources?.allResources != null && snapshot.colonyResources.allResources.Count > 0)
             {
-                var topResources = snapshot.resources.allResources
+                var topResources = snapshot.colonyResources.allResources
                     .OrderByDescending(kv => kv.Value)
                     .Take(MaxResourceEntries)
                     .Select(kv => $"{kv.Key}: {kv.Value}");
-                string suffix = snapshot.resources.allResources.Count > MaxResourceEntries
-                    ? $" (+ {snapshot.resources.allResources.Count - MaxResourceEntries} more)"
+                string suffix = snapshot.colonyResources.allResources.Count > MaxResourceEntries
+                    ? $" (+ {snapshot.colonyResources.allResources.Count - MaxResourceEntries} more)"
                     : "";
                 sb.AppendLine($"Resources: {string.Join(", ", topResources)}{suffix}.");
             }
@@ -128,85 +136,85 @@ namespace RimTelligence.Source.CustomEvents.Prompting
                 sb.AppendLine($"Active quests: {string.Join(", ", snapshot.activeQuests)}.");
 
             // Recent events
-            if (snapshot.recentEvents != null && snapshot.recentEvents.Count > 0 && _rng.NextDouble() < 0.5)
-                sb.AppendLine($"[RECENT EVENTS — do not repeat]: {string.Join("; ", snapshot.recentEvents.Select(m => $"{m.title}: {m.description}"))}.");
+            // [TODO] for implementation
+
             return sb.ToString().Trim();
         }
 
-        private static float InterestScore(PawnSnapshot p)
+        private static float InterestScore(PawnSnapshot pawn)
         {
             float score = 0f;
-            if (p.health?.is_downed == true) score += 10f;
-            if (p.health?.diseases?.Count > 0) score += 5f;
-            if (p.health?.injuries?.Count > 0) score += 3f;
-            if (p.health?.missing_body_parts?.Count > 0) score += 4f;
-            if (p.needs.mood < 0.3f) score += 4f;
-            else if (p.needs.mood < 0.5f) score += 2f;
-            if (p.traits?.Count > 0) score += 1f;
+            if (pawn.health?.is_downed == true) score += 10f;
+            if (pawn.health?.diseases?.Count > 0) score += 5f;
+            if (pawn.health?.injuries?.Count > 0) score += 3f;
+            if (pawn.health?.missing_body_parts?.Count > 0) score += 4f;
+            if (pawn.needs.mood < 0.3f) score += 4f;
+            else if (pawn.needs.mood < 0.5f) score += 2f;
+            if (pawn.traits?.Count > 0) score += 1f;
             return score;
         }
 
-        private static string DescribePawnFull(PawnSnapshot p)
+        private static string DescribePawnFull(PawnSnapshot pawn)
         {
             var sb = new StringBuilder();
-            sb.Append($"{p.name} (age {p.age})");
+            sb.Append($"{pawn.name} (age {pawn.age})");
 
             // Location & drafted status
-            if (!string.IsNullOrWhiteSpace(p.current_location))
-                sb.Append($" [LOCATION: {p.current_location.ToLower()}]");
-            if (p.is_drafted)
+            if (!string.IsNullOrWhiteSpace(pawn.current_location))
+                sb.Append($" [LOCATION: {pawn.current_location.ToLower()}]");
+            if (pawn.is_drafted)
                 sb.Append(" [DRAFTED]");
 
             // Weapon
-            if (!string.IsNullOrWhiteSpace(p.primary_weapon))
-                sb.Append($" [WEAPON: {p.primary_weapon.ToLower()}]");
+            if (!string.IsNullOrWhiteSpace(pawn.primary_weapon))
+                sb.Append($" [WEAPON: {pawn.primary_weapon.ToLower()}]");
 
             // Current action & queue
-            if (!string.IsNullOrWhiteSpace(p.current_action))
-                sb.Append($" [ACTION: {p.current_action.ToLower()}]");
-            if (p.queued_actions?.Count > 0)
-                sb.Append($" [QUEUE: {string.Join(" → ", p.queued_actions).ToLower()}]");
+            if (!string.IsNullOrWhiteSpace(pawn.current_action))
+                sb.Append($" [ACTION: {pawn.current_action.ToLower()}]");
+            if (pawn.queued_actions?.Count > 0)
+                sb.Append($" [QUEUE: {string.Join(" → ", pawn.queued_actions).ToLower()}]");
 
             // Mood + other needs
-            sb.Append($" [MOOD: {DescribeMood(p.needs.mood)}]");
-            sb.Append(DescribeOtherNeeds(p.needs));
+            sb.Append($" [MOOD: {DescribeMood(pawn.needs.mood)}]");
+            sb.Append(DescribeOtherNeeds(pawn.needs));
 
             // Health block
-            if (p.health != null)
+            if (pawn.health != null)
             {
-                sb.Append($" [HEALTH: {p.health.overall_health:P0}");
-                if (p.health.is_downed) sb.Append(", DOWNED");
-                if (p.health.pain_level > 0.3f) sb.Append($", pain {p.health.pain_level:P0}");
-                if (p.health.injuries?.Count > 0) sb.Append($", injuries: {string.Join(", ", p.health.injuries)}");
-                if (p.health.diseases?.Count > 0) sb.Append($", diseases: {string.Join(", ", p.health.diseases)}");
-                if (p.health.missing_body_parts?.Count > 0) sb.Append($", missing: {string.Join(", ", p.health.missing_body_parts)}");
-                if (p.health.implants?.Count > 0) sb.Append($", implants: {string.Join(", ", p.health.implants)}");
-                if (p.health.chronic_conditions?.Count > 0) sb.Append($", chronic: {string.Join(", ", p.health.chronic_conditions)}");
+                sb.Append($" [HEALTH: {pawn.health.overall_health:P0}");
+                if (pawn.health.is_downed) sb.Append(", DOWNED");
+                if (pawn.health.pain_level > 0.3f) sb.Append($", pain {pawn.health.pain_level:P0}");
+                if (pawn.health.injuries?.Count > 0) sb.Append($", injuries: {string.Join(", ", pawn.health.injuries)}");
+                if (pawn.health.diseases?.Count > 0) sb.Append($", diseases: {string.Join(", ", pawn.health.diseases)}");
+                if (pawn.health.missing_body_parts?.Count > 0) sb.Append($", missing: {string.Join(", ", pawn.health.missing_body_parts)}");
+                if (pawn.health.implants?.Count > 0) sb.Append($", implants: {string.Join(", ", pawn.health.implants)}");
+                if (pawn.health.chronic_conditions?.Count > 0) sb.Append($", chronic: {string.Join(", ", pawn.health.chronic_conditions)}");
                 sb.Append("]");
             }
 
             // Traits
-            if (p.traits?.Count > 0)
-                sb.Append($" [TRAITS: {string.Join(", ", p.traits)}]");
+            if (pawn.traits?.Count > 0)
+                sb.Append($" [TRAITS: {string.Join(", ", pawn.traits)}]");
 
             // Background
-            if (!string.IsNullOrWhiteSpace(p.childhood) || !string.IsNullOrWhiteSpace(p.adulthood))
-                sb.Append($" [PAST: {p.childhood}/{p.adulthood}]");
+            if (!string.IsNullOrWhiteSpace(pawn.childhood) || !string.IsNullOrWhiteSpace(pawn.adulthood))
+                sb.Append($" [PAST: {pawn.childhood}/{pawn.adulthood}]");
 
             // Skills
-            if (p.skills?.Count > 0)
-                sb.Append($" [SKILLS: {string.Join(", ", p.skills)}]");
+            if (pawn.skills?.Count > 0)
+                sb.Append($" [SKILLS: {string.Join(", ", pawn.skills)}]");
 
             // Relations
-            if (p.relations != null)
+            if (pawn.relations != null)
             {
                 var rel = new List<string>();
-                if (p.relations.lovers?.Count > 0)
-                    rel.Add($"lovers: {string.Join(", ", p.relations.lovers)}");
-                if (p.relations.rivals?.Count > 0)
-                    rel.Add($"rivals: {string.Join(", ", p.relations.rivals)}");
-                if (!string.IsNullOrWhiteSpace(p.relations.bonded_animal))
-                    rel.Add($"bonded animal: {p.relations.bonded_animal}");
+                if (pawn.relations.lovers?.Count > 0)
+                    rel.Add($"lovers: {string.Join(", ", pawn.relations.lovers)}");
+                if (pawn.relations.rivals?.Count > 0)
+                    rel.Add($"rivals: {string.Join(", ", pawn.relations.rivals)}");
+                if (!string.IsNullOrWhiteSpace(pawn.relations.bonded_animal))
+                    rel.Add($"bonded animal: {pawn.relations.bonded_animal}");
                 if (rel.Count > 0)
                     sb.Append($" [RELATIONS: {string.Join("; ", rel)}]");
             }
@@ -214,25 +222,25 @@ namespace RimTelligence.Source.CustomEvents.Prompting
             return sb.ToString();
         }
 
-        private static string DescribePawnBrief(PawnSnapshot p)
+        private static string DescribePawnBrief(PawnSnapshot pawn)
         {
             var sb = new StringBuilder();
-            sb.Append($"{p.name}");
+            sb.Append($"{pawn.name}");
 
-            if (!string.IsNullOrWhiteSpace(p.current_location))
-                sb.Append($" [LOC: {p.current_location.ToLower()}]");
-            if (p.is_drafted)
+            if (!string.IsNullOrWhiteSpace(pawn.current_location))
+                sb.Append($" [LOC: {pawn.current_location.ToLower()}]");
+            if (pawn.is_drafted)
                 sb.Append(" [DRAFTED]");
 
-            if (!string.IsNullOrWhiteSpace(p.current_action))
-                sb.Append($" [ACTION: {p.current_action.ToLower()}]");
+            if (!string.IsNullOrWhiteSpace(pawn.current_action))
+                sb.Append($" [ACTION: {pawn.current_action.ToLower()}]");
 
-            sb.Append($" [MOOD: {DescribeMood(p.needs.mood)}]");
-            sb.Append(DescribeOtherNeedsBrief(p.needs));
+            sb.Append($" [MOOD: {DescribeMood(pawn.needs.mood)}]");
+            sb.Append(DescribeOtherNeedsBrief(pawn.needs));
 
-            if (p.health?.is_downed == true) sb.Append(" [DOWNED]");
-            if (p.health?.diseases?.Count > 0) sb.Append($" [SICK: {string.Join(", ", p.health.diseases)}]");
-            if (p.traits?.Count > 0) sb.Append($" [TRAITS: {string.Join(", ", p.traits)}]");
+            if (pawn.health?.is_downed == true) sb.Append(" [DOWNED]");
+            if (pawn.health?.diseases?.Count > 0) sb.Append($" [SICK: {string.Join(", ", pawn.health.diseases)}]");
+            if (pawn.traits?.Count > 0) sb.Append($" [TRAITS: {string.Join(", ", pawn.traits)}]");
 
             return sb.ToString();
         }
