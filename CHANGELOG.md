@@ -10,9 +10,29 @@ semver section when a version is released.
 
 ## [Unreleased]
 
-## [0.15.0] - 2026-08-30
 
+## [0.15.0] - 2026-08-31
 
+### Added
+
+- Persistent memory database backend: SQLite RAG (retrieval-augmented generation) store with per-save dynamic chunks and static content chunks (`RagBootstrap`, `RagMigration`, `RagStoreBase`, `DynamicRagStore`, `StaticRagStore`, `SaveScopeComponent`)
+- Embedding providers with cosine-similarity retrieval: built-in ONNX BERT model and tokenizer (`OnnxEmbeddingProvider`, `BertTokenizer`, bundled `model.onnx`/`vocab.txt`) or any configured LLM embedding provider (`LlmEmbeddingProvider`)
+- `NativeDependencyLoader` and `ModPaths` for shipping native SQLite and onnxruntime DLLs alongside the mod
+- Legacy `BasicCom.cs` replaced with `LLMCommunicationHandler`, `ProviderCatalog`, `ProviderConfig`, `LlmConnectionResult`, with structured-JSON, plain-JSON, and plain-text fallback request modes
+- Data-driven effect system bootstrapped from `Data/effect_config.json`: `EffectConfigRegistry`, `EffectContractProvider`, `EffectFactory`, `IEffect` (handlers renamed)
+
+### Changed
+
+- Mod settings reworked to per-provider configs with an active chat provider;
+- Effect handlers reorganized under `Effects/<category>` and reworked around `IEffect`/`EffectFactory`; `LlmEffectExecutor`, `LlmEffectValidator`, and `LlmResponseParser` updated
+- Event selector modifiers simplified and reimplemented directly under `EventSelector/Modifiers`
+- Item-category registry (`ItemCategoryRegistry`, `Data/item-categories.json`)
+- Dynamically generated item effects squashed into `LoseItems`, `PawnFoundItems`, `ResourcePodCrash`
+
+### Removed
+
+- Old handler registry and per-type handler classes (`EffectHandlerRegistry`, `IEffectHandler`, individual `*Handler` classes), replaced by the config-driven effect system
+- old prompt-generator files, `EventHistory`/`EventEligibility`, and redundant selector utility classes
 
 ## [0.14.0] - 2026-05-16
 
