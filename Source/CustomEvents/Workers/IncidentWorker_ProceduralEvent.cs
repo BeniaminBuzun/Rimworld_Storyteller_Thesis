@@ -1,24 +1,22 @@
-﻿using Newtonsoft.Json;
-using RimTelligence.Source.CustomEvents.EventSelector;
-using RimTelligence.Source.CustomEvents.Execution;
-using RimTelligence.Source.CustomEvents.Prompting;
-using RimTelligence.Source.DataSnapshots;
-using RimTelligence.Source.LlmCom;
+using RimTelligence.AIStoryteller;
+using RimTelligence.CustomEvents.EventSelector;
+using RimTelligence.CustomEvents.Execution;
+using RimTelligence.CustomEvents.Handlers;
+using RimTelligence.CustomEvents.Prompting;
+using RimTelligence.DataSnapshots;
+using RimTelligence.Llm;
+using RimTelligence.Memory;
 using RimWorld;
 using RimWorld.Planet;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 using Verse;
 
-namespace RimTelligence.Source.CustomEvents.Workers
+namespace RimTelligence.CustomEvents.Workers
 {
-    // Wrapper class to deserialize the output of the First LLM call
-    public class Step1ResponseWrapper
-    {
-        public List<SelectedEventIntent> selected_events { get; set; }
-    }
-
     public class IncidentWorker_ProceduralEvent : IncidentWorker
     {
         protected override bool TryExecuteWorker(IncidentParms parms)
@@ -38,124 +36,117 @@ namespace RimTelligence.Source.CustomEvents.Workers
         {
             // Capture colony data once
             ColonySnapshot snapshot = ColonySnapshotCapturer.Capture(map);
-            BasicCom com = new BasicCom();
 
-            // commented for now llm was able to chose events but it was boring and difficult to force fun events 
+            string saveId = SaveScopeComponent.Current?.SaveId;
+            int gameTick = GenTicks.TicksGame;
+            LLMCommunicationHandler com = new LLMCommunicationHandler();
 
-            // ====================================================================
-            // STEP 1: EVENT SELECTION (Brief Prompt)
-            // ====================================================================
-
-            //string briefNarrative = SnapshotNarrator.Narrate(snapshot);
-            //string step1Prompt = InitialPromptGenerator.BuildSystemPrompt(briefNarrative);
-
-            //ModLogger.Message($"[Step 1] Prompt generated ({step1Prompt.Length} chars)");
-            //TryWriteFile(@"C:\Users\Karol\Desktop\prompt_step1.txt", step1Prompt);
-
-            //string step1ResponseRaw;
-            //try
-            //{
-            //    step1ResponseRaw = await com.GetLlmResponse(step1Prompt);
-            //}
-            //catch (Exception e)
-            //{
-            //    ModLogger.Error($"[Step 1] LLM call failed: {e.Message}");
-            //    return;
-            //}
-
-            //if (string.IsNullOrWhiteSpace(step1ResponseRaw))
-            //{
-            //    ModLogger.Error("[Step 1] LLM returned empty response.");
-            //    return;
-            //}
-
-            //ModLogger.Message($"[Step 1] Response received.");
-            //TryWriteFile(@"C:\Users\Karol\Desktop\response_step1.txt", step1ResponseRaw);
-
-            //// Parse Step 1 Data
-            //string cleanedStep1Json = step1ResponseRaw.Replace("```json", "").Replace("```", "").Trim();
-            //Step1ResponseWrapper step1Intent;
-            //try
-            //{
-            //    step1Intent = JsonConvert.DeserializeObject<Step1ResponseWrapper>(cleanedStep1Json);
-            //}
-            //catch (Exception e)
-            //{
-            //    ModLogger.Error($"[Step 1] JSON parse failed: {e.Message}\nResponse was:\n{cleanedStep1Json}");
-            //    return;
-            //}
-
-            //if (step1Intent?.selected_events == null || step1Intent.selected_events.Count == 0)
-            //{
-            //    ModLogger.Error("[Step 1] JSON deserialized to null or contained no events.");
-            //    return;
-            //}
-
-            List<SelectedEventIntent> chosenEvents = HeuristicEventSelector.Select(snapshot, map);
-
-            // Then feed directly into Step 2 as before
-
-
-
-            // ====================================================================
-            // STEP 2: STORY & PARAMETER GENERATION (Detailed Prompt)
-            // ====================================================================
+            List<IEffect> chosenEvents = HeuristicEventSelector.Select(snapshot);
 
             string fullNarrative = SnapshotNarrator.Narrate(snapshot);
+
             string step2Prompt = ProperPromptGenerator.BuildSystemPrompt(
-                    SnapshotNarrator.Narrate(snapshot),
+                    fullNarrative,
                     chosenEvents,
                     snapshot);
 
-            ModLogger.Message($"[Step 2] Prompt generated ({step2Prompt.Length} chars)");
-            //TryWriteFile(@"C:\Users\Karol\Desktop\prompt_step2.txt", step2Prompt);
+            string step2Provider = "unknown";
+            string step2Model = "unknown";
+            LlmParseResult<LlmCustomEvent> parseResult = null;
+            string lastFailureReason = "Unknown error.";
 
-            string step2ResponseRaw;
-            try
+            const int MaxAttempts = 3;
+            const string RetryHint =
+                "\n\nRETRY HINT: The previous response was rejected. You MUST include a non-empty '\"effects\"' array with at least one valid effect whose defName comes from the listed Allowed Values. Keep letterText to 2-3 short sentences, keep the whole response compact, and close every brace.";
+
+            for (int attempt = 1; attempt <= MaxAttempts; attempt++)
             {
-                step2ResponseRaw = await com.GetLlmResponse(step2Prompt);
+                if (attempt > 1)
+                {
+                    int backoffSeconds = 60;
+                    string reasonPreview = lastFailureReason?.Length > 150 ? lastFailureReason.Substring(0, 150) + "..." : lastFailureReason;
+                    ModLogger.Message($"[Step 2] Attempt {attempt}/{MaxAttempts}: backing off {backoffSeconds}s before retry (reason: {reasonPreview})");
+                    await Task.Delay(TimeSpan.FromSeconds(backoffSeconds));
+                }
+
+                string attemptPrompt = attempt > 1 ? step2Prompt + RetryHint : step2Prompt;
+
+                string responseRaw;
+                int responsePromptTokens = 0;
+                int responseCompletionTokens = 0;
+                int responseReasoningTokens = 0;
+                try
+                {
+                    LlmConnectionResult step2Result = await com.GetLlmResponseWithDetailsAsync(attemptPrompt);
+                    if (step2Result == null || !step2Result.isSuccess)
+                    {
+                        lastFailureReason = step2Result?.errorMessage ?? "Unknown error";
+                        step2Provider = step2Result?.providerId ?? "unknown";
+                        step2Model = step2Result?.model ?? "unknown";
+                        ModLogger.Error($"[Step 2] Attempt {attempt}/{MaxAttempts}: LLM call failed. Provider: {step2Provider}, Model: {step2Model}, Reason: {lastFailureReason}");
+                        continue;
+                    }
+
+                    step2Provider = step2Result.providerId ?? "unknown";
+                    step2Model = step2Result.model ?? "unknown";
+                    responseRaw = step2Result.responseText;
+                    responsePromptTokens = step2Result.promptTokens;
+                    responseCompletionTokens = step2Result.completionTokens;
+                    responseReasoningTokens = step2Result.reasoningTokens;
+                }
+                catch (Exception exception)
+                {
+                    lastFailureReason = exception.Message;
+                    ModLogger.Error($"[Step 2] Attempt {attempt}/{MaxAttempts}: LLM call threw: {lastFailureReason}");
+                    continue;
+                }
+
+                if (string.IsNullOrWhiteSpace(responseRaw))
+                {
+                    lastFailureReason = "The language model returned an empty response.";
+                    ModLogger.Error($"[Step 2] Attempt {attempt}/{MaxAttempts}: {lastFailureReason}");
+                    continue;
+                }
+
+                ModLogger.Message($"[Step 2] Attempt {attempt}/{MaxAttempts}: LLM response ({step2Provider}/{step2Model}, {responseRaw.Length} chars, P={responsePromptTokens} C={responseCompletionTokens} R={responseReasoningTokens}):\n{responseRaw}");
+
+                try
+                {
+                    parseResult = LlmResponseParser.ParseEvent(responseRaw, chosenEvents);
+                }
+                catch (Exception exception)
+                {
+                    lastFailureReason = "Parser threw: " + exception.Message;
+                    parseResult = null;
+                    ModLogger.Error($"[Step 2] Attempt {attempt}/{MaxAttempts}: {lastFailureReason}");
+                    continue;
+                }
+
+                if (!parseResult.isSuccess || parseResult.data == null)
+                {
+                    lastFailureReason = parseResult.errorMessage;
+                    ModLogger.Error($"[Step 2] Attempt {attempt}/{MaxAttempts}: Parse failed. Provider: {step2Provider}, Model: {step2Model}, Reason: {lastFailureReason}\nPreview: {parseResult.responsePreview}");
+                    continue;
+                }
+
+                break;
             }
-            catch (Exception e)
+
+            if (parseResult == null || !parseResult.isSuccess || parseResult.data == null)
             {
-                ModLogger.Error($"[Step 2] LLM call failed: {e.Message}");
+                ModLogger.Error($"[Step 2] All {MaxAttempts} attempts failed. Provider: {step2Provider}, Model: {step2Model}, Last reason: {lastFailureReason}");
+
+                RimTelligenceDispatcher.ExecutionQueue.Enqueue(() =>
+                {
+                    Find.LetterStack.ReceiveLetter(
+                        "Storyteller LLM Unavailable",
+                        "The storyteller's language model could not produce a usable response after " + MaxAttempts + " attempts.\nProvider: " + step2Provider + "\nModel: " + step2Model + "\nLast error: " + lastFailureReason,
+                        LetterDefOf.NegativeEvent);
+                });
                 return;
             }
 
-            if (string.IsNullOrWhiteSpace(step2ResponseRaw))
-            {
-                ModLogger.Error("[Step 2] LLM returned empty response.");
-                return;
-            }
-
-            ModLogger.Message($"[Step 2] Response received.");
-            //TryWriteFile(@"C:\Users\Karol\Desktop\response_step2.txt", step2ResponseRaw);
-
-            // Parse Step 2 Data
-            string cleanedStep2Json = step2ResponseRaw.Replace("```json", "").Replace("```", "").Trim();
-            LlmCustomEvent finalEvent;
-
-            try
-            {
-                finalEvent = JsonConvert.DeserializeObject<LlmCustomEvent>(cleanedStep2Json);
-            }
-            catch (Exception e)
-            {
-                ModLogger.Error($"[Step 2] JSON parse failed: {e.Message}\nResponse was:\n{cleanedStep2Json}");
-                return;
-            }
-
-            if (finalEvent == null)
-            {
-                ModLogger.Error($"[Step 2] JSON deserialized to null.\nResponse was:\n{cleanedStep2Json}");
-                return;
-            }
-
-            // ====================================================================
-            // EXECUTION
-            // ====================================================================
-
-            // Strip effects the LLM emitted incorrectly (missing defName, all-zero, unknown type)
-            finalEvent.effects = LlmEffectValidator.StripInvalid(finalEvent.effects);
+            LlmCustomEvent finalEvent = parseResult.data;
 
             // Game Thread Execution
             RimTelligenceDispatcher.ExecutionQueue.Enqueue(() =>
@@ -168,23 +159,10 @@ namespace RimTelligence.Source.CustomEvents.Workers
                 Find.LetterStack.ReceiveLetter(
                     finalEvent.letterTitle ?? "Strange Event",
                     fullText,
-                    LetterDefOf.ThreatSmall,
+                    LetterDefOf.ThreatSmall, // may use different letter type for consideration
                     target.IsValid ? new LookTargets(target) : null
                 );
             });
-        }
-
-        // Helper method to write files safely without crashing the worker if the path is locked/invalid
-        private void TryWriteFile(string path, string content)
-        {
-            try
-            {
-                File.WriteAllText(path, content);
-            }
-            catch (Exception e)
-            {
-                ModLogger.Error($"Failed to write log file to {path}: {e.Message}");
-            }
         }
     }
 }

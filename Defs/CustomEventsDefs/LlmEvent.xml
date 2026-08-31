@@ -3,7 +3,7 @@
 	<IncidentDef>
 		<defName>LlmEvent</defName>
 		<label>Event based on Llm response</label>
-		<workerClass>RimTelligence.Source.CustomEvents.Workers.IncidentWorker_ProceduralEvent</workerClass>
+		<workerClass>RimTelligence.CustomEvents.Workers.IncidentWorker_ProceduralEvent</workerClass>
 		<category>Misc</category>
 		<targetTags>
 			<li>Map_PlayerHome</li>

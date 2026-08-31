@@ -1,11 +1,12 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Text;
 using RimWorld.Planet;
 using Verse;
+using RimTelligence.CustomEvents.Handlers;
 using RimTelligence.Source.CustomEvents.Handlers;
 
-namespace RimTelligence.Source.CustomEvents.Execution
+namespace RimTelligence.CustomEvents.Execution
 {
     public static class LlmEffectExecutor
     {
@@ -22,14 +23,17 @@ namespace RimTelligence.Source.CustomEvents.Execution
 
             foreach (var effect in evt.effects)
             {
-                var handler = EffectHandlerRegistry.GetHandler(effect.type);
+                var handler = EffectFactory.Create(effect.EffectName);
                 if (handler == null)
                 {
-                    ModLogger.Warning($"Unknown effect type requested by LLM: {effect.type}");
+                    ModLogger.Warning($"Unknown effect type requested by LLM: {effect.EffectName}");
                     continue;
                 }
 
-                ModLogger.Message($"Executing: {handler.EffectName} (def: {effect.defName}, count: {effect.count})");
+                string defs = effect.SelectedDefName != null && effect.SelectedDefName.Length > 0
+                    ? string.Join(", ", effect.SelectedDefName)
+                    : "(none)";
+                ModLogger.Message($"Executing: {handler.Config.EffectName} (def: {defs})");
 
                 try
                 {
@@ -39,9 +43,9 @@ namespace RimTelligence.Source.CustomEvents.Execution
                         focusTarget = result;
                     }
                 }
-                catch (Exception e)
+                catch (Exception exception)
                 {
-                    ModLogger.Error($"Effect {effect.type} failed: {e.Message}\n{e.StackTrace}");
+                    ModLogger.Error($"Effect {effect.EffectName} failed: {exception.Message}\n{exception.StackTrace}");
                 }
             }
 
@@ -57,10 +61,10 @@ namespace RimTelligence.Source.CustomEvents.Execution
 
             foreach (var effect in evt.effects)
             {
-                var handler = EffectHandlerRegistry.GetHandler(effect.type);
+                var handler = EffectFactory.Create(effect.EffectName);
                 string summaryLine = handler != null
                     ? handler.GetSummary(effect)
-                    : $"  • Unknown Effect: {effect.type} ({effect.defName})";
+                    : $"  • Unknown Effect: {effect.EffectName} ({effect.DefNameText})";
 
                 lines.AppendLine(summaryLine);
             }

@@ -1,8 +1,7 @@
-﻿using Newtonsoft.Json;
-using RimTelligence.Source.CustomEvents.Execution;
-using RimTelligence.Source.CustomEvents.Prompting;
-using RimTelligence.Source.DataSnapshots;
-using RimTelligence.Source.LlmCom;
+using RimTelligence.CustomEvents.Execution;
+using RimTelligence.CustomEvents.Prompting;
+using RimTelligence.DataSnapshots;
+using RimTelligence.Llm;
 using RimWorld;
 using RimWorld.Planet;
 using System;
@@ -13,15 +12,20 @@ using System.Threading.Tasks;
 using Verse;
 
 // rewrite later nad DebugActions too written fastly with claude
-namespace RimTelligence.Source.CustomEvents.Workers
+namespace RimTelligence.CustomEvents.Workers
 {
     public class IncidentWorker_Test : IncidentWorker
     {
         public void FireLlmEventAsync(Map map, string eventJson )
         {
-            LlmCustomEvent evt;
+            LlmParseResult<LlmCustomEvent> parseResult = LlmResponseParser.ParseEvent(eventJson);
+            if (!parseResult.isSuccess || parseResult.data == null)
+            {
+                ModLogger.Error($"[Test Worker] Parse failed: {parseResult.errorMessage}\nPreview: {parseResult.responsePreview}");
+                return;
+            }
 
-            evt = JsonConvert.DeserializeObject<LlmCustomEvent>(eventJson);
+            LlmCustomEvent evt = parseResult.data;
 
             // 5. Game Thread Execution
             LongEventHandler.ExecuteWhenFinished(() =>

@@ -1,8 +1,8 @@
-﻿using System;
+using System;
 using System.Collections.Concurrent;
 using Verse;
 
-namespace RimTelligence.Source.CustomEvents.Execution
+namespace RimTelligence.CustomEvents.Execution
 {
     public class RimTelligenceDispatcher : GameComponent
     {

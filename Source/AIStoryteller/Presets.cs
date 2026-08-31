@@ -1,6 +1,6 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 
-namespace RimTelligence.Source.AIStoryteller
+namespace RimTelligence.AIStoryteller
 {
     internal class Presets
     {

@@ -1,7 +1,7 @@
 ﻿<Defs>
     <ThoughtDef>
         <defName>RimTelligence_DynamicMoodDebuff</defName>
-        <thoughtClass>RimTelligence.Source.CustomEvents.Handlers.Implementations.Pawns.Debuffs.ThoughtMemoryDynamic</thoughtClass>
+        <thoughtClass>RimTelligence.CustomEvents.Handlers.Pawns.Debuffs.ThoughtMemoryDynamic</thoughtClass>
         <durationDays>1</durationDays>
         <stages>
             <li>
