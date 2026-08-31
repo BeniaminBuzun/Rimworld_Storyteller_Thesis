@@ -4,78 +4,77 @@ using System.Linq;
 using RimTelligence.CustomEvents.EventSelector.Modifiers;
 using RimTelligence.CustomEvents.Handlers;
 using RimTelligence.DataSnapshots;
+using RimTelligence.Source.CustomEvents.Handlers;
 using Verse;
 
 namespace RimTelligence.CustomEvents.EventSelector
 {
     public static class HeuristicEventSelector
     {
-        public static List<SelectedEventIntent> Select(ColonySnapshot snapshot)
+        public static List<IEffect> Select(ColonySnapshot snapshot)
         {
             DrawMode mode = DrawModeSelector.Pick(snapshot);
             ModLogger.Message($"[Selector] DrawMode={mode}");
 
-            //Build base pool from registry
-            var pool = EffectHandlerRegistry.GetAllHandlers()
-                .Select(handler => new EventEntry(handler.EffectName, handler.BaseWeight, handler.Alignment))
-                .ToList();
+            //Build base pool
+            var pool = new List<IEffect>();
+            var allNames = EffectFactory.GetAllEffectNames();
+            foreach (var name in allNames)
+            {
+                IEffect effect = EffectFactory.Create(name);
+                if (name == "ResourcePodCrash" || name == "PawnFoundItems")
+                {
+                    string selectedRelatedDefList = DrawRelatetDefList();
+                    effect.Config.RelatedDefList = selectedRelatedDefList;
+                }
+                
+                if (effect.CanBeChoosen(snapshot))
+                {
+                    pool.Add(effect);
+                }
+            }
 
-            //    Apply alignment filter                        
+            // Apply alignment filter                        
             pool = FilterByMode(pool, mode);
-
-            //Strip ineligible entries
-            pool = pool.Where(entry => EventEligibility.IsEligible(entry.Type, snapshot)).ToList();
 
             //  Apply state multipliers 
             if (mode != DrawMode.PureRandom)
             {
                 foreach (var entry in pool)
-                    entry.Weight *= StateModifiers.Apply(entry, snapshot);
+                    entry.Config.BaseWeight *= StateModifiers.Apply(entry, snapshot);
             }
 
-            //  History (recorded after the draw)
-            var history = EventHistory.Current;
-
             // Strip anything that ended up at zero weight
-            pool = pool.Where(entry => entry.Weight > 0f).ToList();
+            pool = pool.Where(entry => entry.Config.BaseWeight > 0f).ToList();
 
             //  Draw 
             int count = DrawCount();
-            var drawn = new List<EventEntry>();
+            List<IEffect> drawn = new List<IEffect>();
 
             for (int index = 0; index < count && pool.Count > 0; index++)
             {
-                EventEntry pick = WeightedDraw(pool);
-                if (pick == null) break;
-
-                drawn.Add(pick);
+                IEffect pick = WeightedDraw(pool);
 
                 // Keep the same event drawable, but at half probability on a second draw
-                pick.Weight *= 0.5f;
+                pick.Config.BaseWeight *= 0.01f;
+                drawn.Add(pick);
             }
 
-            var result = drawn
-                .Select(entry => new SelectedEventIntent { type = entry.Type })
-                .ToList();
-
-            // Record for history
-            history?.Record(result);
-
-            ModLogger.Message($"[Selector] Final draw ({mode}): {string.Join(", ", result.Select(entry => entry.type))}");
-            return result;
+            ModLogger.Message($"[Selector] Final draw ({mode}): {string.Join(", ", drawn.Select(entry => entry.Config.EffectName))}");
+            return drawn;
         }
 
         //  Helpers 
-        private static List<EventEntry> FilterByMode(List<EventEntry> pool, DrawMode mode)
+        private static List<IEffect> FilterByMode(List<IEffect> pool, DrawMode mode)
         {
             switch (mode)
             {
                 case DrawMode.BadStreak:
-                    return pool.Where(entry => entry.Alignment != EventAlignment.Good).ToList();
+                    return pool.Where(entry => entry.Config.Alignment == EventAlignment.Bad).ToList();
                 case DrawMode.GoodStreak:
-                    return pool.Where(entry => entry.Alignment != EventAlignment.Bad).ToList();
+                    return pool.Where(entry => entry.Config.Alignment == EventAlignment.Good).ToList();
                 case DrawMode.NeutralOnly:
-                    return pool.Where(entry => entry.Alignment == EventAlignment.Neutral).ToList();
+                    return pool.Where(entry => entry.Config.Alignment == EventAlignment.Neutral).ToList();
                 default: // Weighted, PureRandom
                     return pool;
             }
@@ -95,9 +94,9 @@ namespace RimTelligence.CustomEvents.EventSelector
             return 1;
         }
 
-        private static EventEntry WeightedDraw(List<EventEntry> pool)
+        private static IEffect WeightedDraw(List<IEffect> pool)
         {
-            float total = pool.Sum(entry => entry.Weight);
+            float total = pool.Sum(entry => entry.Config.BaseWeight);
             if (total <= 0f) return null;
 
             float roll = Rand.Value * total;
@@ -105,10 +104,29 @@ namespace RimTelligence.CustomEvents.EventSelector
 
             foreach (var entry in pool)
             {
-                cursor += entry.Weight;
+                cursor += entry.Config.BaseWeight;
                 if (roll <= cursor) return entry;
             }
             return pool.Last();
         }
+
+        private static string DrawRelatetDefList()
+        {
+            List<ItemCategory> candidates = ItemCategoryRegistry.AllCategories.Values
+                .ToList();
+
+            float total = candidates.Sum(category => category.Weight);
+            float roll = Rand.Value * total;
+            float cursor = 0f;
+
+            foreach (ItemCategory category in candidates)
+            {
+                cursor += category.Weight;
+                if (roll <= cursor)
+                    return category.Id;
+            }
+
+            return candidates.Last().Id;
+        }
     }
-}
+ }

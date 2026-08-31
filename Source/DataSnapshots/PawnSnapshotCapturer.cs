@@ -13,11 +13,27 @@ namespace RimTelligence.DataSnapshots
         //Pawn
         public static List<PawnSnapshot> CaptureColonists(List<Pawn> pawns)
         {
+            if (pawns == null)
+            {
+                ModLogger.Error("PawnSnapshotCapturer.CaptureColonists: pawn list is null; returning empty.");
+                return new List<PawnSnapshot>();
+            }
+
+            ModLogger.Debug("PawnSnapshotCapturer.CaptureColonists: capturing " + pawns.Count + " colonist(s).");
             return pawns.Select(CaptureColonist).ToList();
         }
 
         public static PawnSnapshot CaptureColonist(Pawn pawn)
         {
+            if (pawn == null)
+            {
+                ModLogger.Error("PawnSnapshotCapturer.CaptureColonist: pawn is null; returning empty snapshot.");
+                return new PawnSnapshot();
+            }
+
+            ModLogger.Debug("PawnSnapshotCapturer.CaptureColonist: capturing '" +
+                (pawn.Name?.ToStringShort ?? "Unknown") + "'.");
+
             return new PawnSnapshot
             {
                 name = pawn.Name?.ToStringShort ?? "Unknown",

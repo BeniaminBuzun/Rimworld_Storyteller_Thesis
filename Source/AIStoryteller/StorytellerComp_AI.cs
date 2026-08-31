@@ -4,6 +4,7 @@ using RimWorld;
 using Verse;
 
 using RimTelligence.CustomEvents;
+using RimTelligence.CustomEvents.Workers;
 
 namespace RimTelligence.AIStoryteller
 {

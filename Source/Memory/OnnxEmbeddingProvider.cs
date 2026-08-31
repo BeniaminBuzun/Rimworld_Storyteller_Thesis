@@ -5,7 +5,7 @@ using RimTelligence.Memory;
 using System;
 using System.IO;
 using System.Linq;
-using System.Reflection;
+using System.Threading.Tasks;
 using Verse;
 
 namespace RimTelligence.Memory
@@ -18,12 +18,12 @@ namespace RimTelligence.Memory
 
         public OnnxEmbeddingProvider()
         {
-            OnnxBootstrap.EnsureNativeLoaded();
+            if (!NativeDependencyLoader.EnsureNativeLoaded("onnxruntime.dll"))
+                throw new InvalidOperationException(
+                    "onnxruntime.dll is unavailable; ONNX embeddings cannot be used.");
 
-            string assembliesDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            string modRoot = Path.GetFullPath(Path.Combine(assembliesDir, ".."));
-            string modelPath = Path.Combine(modRoot, "Source", "Memory", "Models", "model.onnx");
-            string vocabPath = Path.Combine(modRoot, "Source", "Memory", "Models", "vocab.txt");
+            string modelPath = ModPaths.Resolve(Path.Combine("Source", "Memory", "Models", "model.onnx"));
+            string vocabPath = ModPaths.Resolve(Path.Combine("Source", "Memory", "Models", "vocab.txt"));
 
             if (!File.Exists(modelPath)) throw new FileNotFoundException("ONNX model not found", modelPath);
             if (!File.Exists(vocabPath)) throw new FileNotFoundException("vocab.txt not found", vocabPath);
@@ -57,6 +57,11 @@ namespace RimTelligence.Memory
                     .AsTensor<float>();
                 return MeanPoolAndNormalize(lastHiddenState, attentionMask, seqLen);
             }
+        }
+
+        public Task<float[]> EmbedAsync(string text)
+        {
+            return Task.Run(() => Embed(text));
         }
 
         private float[] MeanPoolAndNormalize(Microsoft.ML.OnnxRuntime.Tensors.Tensor<float> hidden, long[] attentionMask, int seqLen)

@@ -12,6 +12,15 @@ namespace RimTelligence.DataSnapshots
     {
         public static ColonySnapshot Capture(Map map)
         {
+            if (map == null)
+            {
+                ModLogger.Error("ColonySnapshotCapturer.Capture: map is null; returning null snapshot.");
+                return null;
+            }
+
+            ModLogger.Debug("ColonySnapshotCapturer.Capture: capturing colony snapshot for map '" +
+                map.uniqueID + "', " + map.mapPawns.FreeColonistsCount + " free colonists.");
+
             return new ColonySnapshot
             {
                 colonyName = Find.FactionManager.OfPlayer.Name,
@@ -21,6 +30,19 @@ namespace RimTelligence.DataSnapshots
                 biome = map.Biome.defName,
                 colonistCount = map.mapPawns.FreeColonistsCount,
                 colonists = PawnSnapshotCapturer.CaptureColonists(map.mapPawns.FreeColonists.ToList()),
+                prisoners = PawnSnapshotCapturer.CaptureColonists(map.mapPawns.PrisonersOfColony.ToList()),
+                slaves = PawnSnapshotCapturer.CaptureColonists(
+                    map.mapPawns.AllPawnsSpawned
+                        .Where(pawn => pawn.IsSlave && pawn.Faction == Faction.OfPlayer)
+                        .ToList()),
+                visitors = PawnSnapshotCapturer.CaptureColonists(
+                    map.mapPawns.AllPawnsSpawned
+                        .Where(pawn => pawn.RaceProps.Humanlike
+                                     && pawn.Faction != null
+                                 && pawn.Faction != Faction.OfPlayer
+                                 && pawn.guest != null
+                                 && pawn.guest.GuestStatus == GuestStatus.Guest)
+                        .ToList()),
                 wealthTotal = map.wealthWatcher.WealthTotal,
                 wealthItems = map.wealthWatcher.WealthItems,
                 wealthBuildings = map.wealthWatcher.WealthBuildings,
@@ -50,8 +72,7 @@ namespace RimTelligence.DataSnapshots
                     .GroupBy(plant => plant.def.defName)
                     .ToDictionary(group => group.Key, group => group.Count()),
 
-                resources = CaptureResources(map),
-                recentEvents = GetLastEvents(),
+                colonyResources = CaptureResources(map),
                 currentTechLevel = Faction.OfPlayer.def.techLevel.ToString(),
                 colonyAnimalCount = map.mapPawns.SpawnedColonyAnimals.Count,
                 colonyAnimals = CaptureColonyAnimals(map),
@@ -135,7 +156,7 @@ namespace RimTelligence.DataSnapshots
                     filtered[kvp.Key.defName] = kvp.Value;
                 }
             }
-            catch (Exception) {}
+            catch (Exception) { }
 
             return new ResourceSnapshot
             {
@@ -160,7 +181,7 @@ namespace RimTelligence.DataSnapshots
                         {
                             description = choiceLetter.Text.Resolve();
                         }
-                        
+
                         events.Add(new EventSnapshot
                         {
                             title = letter.Label,
