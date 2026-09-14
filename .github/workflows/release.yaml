@@ -25,11 +25,11 @@ jobs:
 
       - name: Restore
         shell: pwsh
-        run: dotnet restore RimTelligence.csproj -p:RuntimeIdentifiers=win-x64
+        run: dotnet restore RimTelligence.csproj -p:RuntimeIdentifiers=win
 
       - name: Build
         shell: pwsh
-        run: msbuild RimTelligence.csproj /t:Build /p:Configuration=Release /p:Platform=AnyCPU /p:RuntimeIdentifiers=win-x64 /p:OutputPath=Assemblies\ /v:m /nologo
+        run: msbuild RimTelligence.csproj /t:Build /p:Configuration=Release /p:Platform=AnyCPU /p:RuntimeIdentifiers=win /p:OutputPath=Assemblies\ /v:m /nologo
 
       - name: Resolve Version and Package
         id: pack
