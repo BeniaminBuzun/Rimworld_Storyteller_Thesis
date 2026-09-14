@@ -10,6 +10,10 @@ semver section when a version is released.
 
 ## [Unreleased]
 
+## [0.15.1] - 2026-09-14
+
+### Added
+- `release.yaml` workflow for automated releases
 
 ## [0.15.0] - 2026-08-31
 
