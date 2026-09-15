@@ -1,0 +1,71 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version override (e.g. 0.15.0)'
+        required: false
+        type: string
+permissions:
+  contents: write
+jobs:
+  build-release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      
+      - uses: microsoft/setup-msbuild@v3
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '8.x'
+
+      - name: Restore
+        shell: pwsh
+        run: dotnet restore RimTelligence.csproj -p:RuntimeIdentifiers=win
+
+      - name: Build
+        shell: pwsh
+        run: msbuild RimTelligence.csproj /t:Build /p:Configuration=Release /p:Platform=AnyCPU /p:RuntimeIdentifiers=win /p:OutputPath=Assemblies\ /v:m /nologo
+
+      - name: Resolve Version and Package
+        id: pack
+        shell: pwsh
+        run: |
+          # 1. Resolve the version
+          $ver = "${{ inputs.version }}"
+          if (!$ver) { $ver = "${{ github.ref_name }}".TrimStart('v') }
+          echo "version=$ver" >> $env:GITHUB_OUTPUT
+          
+          # 2. Setup directories
+          $stage = "staging"
+          $outZip = "dist\RimTelligence-$ver.zip"
+          if (Test-Path staging) { Remove-Item -Recurse -Force staging }
+          New-Item -ItemType Directory -Force -Path $stage, "dist", "$stage\Source\Memory" | Out-Null
+          
+          # 3. Copy files
+          Copy-Item -Recurse About, Assemblies, Defs, Textures, Native, Data $stage -ErrorAction SilentlyContinue
+          Copy-Item -Recurse "Source\Memory\Models" "$stage\Source\Memory" -ErrorAction SilentlyContinue
+          Copy-Item CHANGELOG.md, README.md $stage -ErrorAction SilentlyContinue
+          
+          # 4. Patch About.xml with the correct version
+          $about = "$stage\About\About.xml"
+          (Get-Content $about -Raw) -replace '<modVersion>.*?</modVersion>', "<modVersion>$ver</modVersion>" | Set-Content $about -Encoding utf8
+          
+          # 5. Zip the mod and clean up staging
+          Compress-Archive -Path "$stage\*" -DestinationPath $outZip -Force
+          Remove-Item -Recurse -Force staging
+          
+          # 6. Pass the zip path to the publish step
+          echo "zip=$outZip" >> $env:GITHUB_OUTPUT
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v3
+        with:
+          files: ${{ steps.pack.outputs.zip }}
+          generate_release_notes: true
+          name: "RimTelligence-v${{ steps.pack.outputs.version }}"
+          tag_name: "v${{ steps.pack.outputs.version }}"

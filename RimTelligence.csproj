@@ -3,8 +3,8 @@
   <Target Name="FlattenNativeSqlite" AfterTargets="Build">
     <ItemGroup>
       <SqliteNative Include="$(OutDir)x64\SQLite.Interop.dll" />
-      <OnnxNative Include="$(NuGetPackageRoot)microsoft.ml.onnxruntime\1.28.0\runtimes\win-x64\native\onnxruntime.dll" />
-      <OnnxProvidersShared Include="$(NuGetPackageRoot)microsoft.ml.onnxruntime\1.28.0\runtimes\win-x64\native\onnxruntime_providers_shared.dll" />
+      <OnnxNative Include="$(NuGetPackageRoot)microsoft.ml.onnxruntime\$(MicrosoftMLOnnxRuntimeVersion)\runtimes\win-x64\native\onnxruntime.dll" />
+      <OnnxProvidersShared Include="$(NuGetPackageRoot)microsoft.ml.onnxruntime\$(MicrosoftMLOnnxRuntimeVersion)\runtimes\win-x64\native\onnxruntime_providers_shared.dll" />
     </ItemGroup>
     <MakeDir Directories="$(ProjectDir)Native" />
     <Copy SourceFiles="@(SqliteNative)" DestinationFolder="$(ProjectDir)Native" />
@@ -23,6 +23,8 @@
     <RootNamespace>RimTelligence</RootNamespace>
     <AssemblyName>RimTelligence</AssemblyName>
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <RuntimeIdentifiers>win</RuntimeIdentifiers>
+    <MicrosoftMLOnnxRuntimeVersion>1.29.0</MicrosoftMLOnnxRuntimeVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
   </PropertyGroup>
@@ -145,7 +147,7 @@
     </PackageReference>
     <PackageReference Include="LlmTornado" Version="3.8.67" />
     <PackageReference Include="System.Data.SQLite.Core" Version="1.0.119" />
-    <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.29.0" />
+    <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="$(MicrosoftMLOnnxRuntimeVersion)" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="About\About.xml" />
