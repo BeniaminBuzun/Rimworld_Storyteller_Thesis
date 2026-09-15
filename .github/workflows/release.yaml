@@ -41,7 +41,7 @@ jobs:
           echo "version=$ver" >> $env:GITHUB_OUTPUT
           
           # 2. Setup directories
-          $stage = "staging\RimTelligence"
+          $stage = "staging"
           $outZip = "dist\RimTelligence-$ver.zip"
           if (Test-Path staging) { Remove-Item -Recurse -Force staging }
           New-Item -ItemType Directory -Force -Path $stage, "dist", "$stage\Source\Memory" | Out-Null
@@ -56,7 +56,7 @@ jobs:
           (Get-Content $about -Raw) -replace '<modVersion>.*?</modVersion>', "<modVersion>$ver</modVersion>" | Set-Content $about -Encoding utf8
           
           # 5. Zip the mod and clean up staging
-          Compress-Archive -Path $stage -DestinationPath $outZip -Force
+          Compress-Archive -Path "$stage\*" -DestinationPath $outZip -Force
           Remove-Item -Recurse -Force staging
           
           # 6. Pass the zip path to the publish step
@@ -67,5 +67,5 @@ jobs:
         with:
           files: ${{ steps.pack.outputs.zip }}
           generate_release_notes: true
-          name: "RimTelligence v${{ steps.pack.outputs.version }}"
+          name: "RimTelligence-v${{ steps.pack.outputs.version }}"
           tag_name: "v${{ steps.pack.outputs.version }}"
