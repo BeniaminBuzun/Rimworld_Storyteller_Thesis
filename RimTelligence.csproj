@@ -41,9 +41,27 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+<<<<<<< Updated upstream
     <Content Include="Defs\CustomEventsDefs\MoodDefs\MoodDebuff.xml" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Source\AIStoryteller\AIStorytellerMod.cs" />
+=======
+    <Compile Include="Source\AIStoryteller\StorytellerState.cs" />
+    <Compile Include="Source\CustomEvents\Effects\EffectFactory.cs" />
+    <Compile Include="Source\CustomEvents\Effects\EffectContractProvider.cs" />
+    <Compile Include="Source\CustomEvents\Effects\Item\ItemEffectsHelper.cs" />
+    <Compile Include="Source\CustomEvents\Effects\Pawns\Buffs\MoodBuff.cs" />
+    <Compile Include="Source\CustomEvents\Effects\Pawns\Debuffs\MoodDebuff.cs" />
+    <Compile Include="Source\CustomEvents\Effects\Pawns\ExpPointsHelper.cs" />
+    <Compile Include="Source\CustomEvents\Effects\Pawns\MoodHelper.cs" />
+    <Compile Include="Source\CustomEvents\Prompting\EffectContractProvider.cs" />
+    <Compile Include="Source\CustomEvents\Prompting\LlmMultipleEventResponse.cs" />
+    <Compile Include="Source\ModPaths.cs" />
+    <Compile Include="Source\AIStoryteller\AiStorytellerMod.cs" />
+    <Compile Include="Source\AIStoryteller\HarmonyPatches.cs" />
+    <Compile Include="Source\AIStoryteller\Presets.cs" />
+    <Compile Include="Source\AIStoryteller\StorytellerComp_AI.cs" />
+>>>>>>> Stashed changes
     <Compile Include="Source\AIStoryteller\StorytellerCompProperties_AI.cs" />
     <Compile Include="Source\AIStoryteller\StorytellerComp_AI.cs" />
     <Compile Include="Source\CustomEvents\DTO\LlmCustomEvent.cs" />
