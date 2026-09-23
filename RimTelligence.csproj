@@ -56,6 +56,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Source\AIStoryteller\StorytellerState.cs" />
     <Compile Include="Source\CustomEvents\Effects\EffectFactory.cs" />
     <Compile Include="Source\CustomEvents\Effects\EffectContractProvider.cs" />
     <Compile Include="Source\CustomEvents\Effects\Item\ItemEffectsHelper.cs" />
@@ -64,6 +65,7 @@
     <Compile Include="Source\CustomEvents\Effects\Pawns\ExpPointsHelper.cs" />
     <Compile Include="Source\CustomEvents\Effects\Pawns\MoodHelper.cs" />
     <Compile Include="Source\CustomEvents\Prompting\EffectContractProvider.cs" />
+    <Compile Include="Source\CustomEvents\Prompting\LlmMultipleEventResponse.cs" />
     <Compile Include="Source\ModPaths.cs" />
     <Compile Include="Source\AIStoryteller\AiStorytellerMod.cs" />
     <Compile Include="Source\AIStoryteller\HarmonyPatches.cs" />

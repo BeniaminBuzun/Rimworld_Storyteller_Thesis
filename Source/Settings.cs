@@ -32,7 +32,12 @@ namespace RimTelligence
             if (string.IsNullOrEmpty(providerId))
                 return null;
 
-            return providerConfigs.Find(config => config.providerId == providerId);
+            // Ensure the list wasn't set to null by Scribe
+            if (providerConfigs == null)
+                providerConfigs = new List<ProviderConfig>();
+
+            // Add 'config != null' to safely skip corrupted XML entries
+            return providerConfigs.Find(config => config != null && config.providerId == providerId);
         }
 
         public ProviderConfig GetOrCreateProviderConfig(string providerId)
