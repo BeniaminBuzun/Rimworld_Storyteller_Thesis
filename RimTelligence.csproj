@@ -41,11 +41,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-<<<<<<< Updated upstream
     <Content Include="Defs\CustomEventsDefs\MoodDefs\MoodDebuff.xml" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Source\AIStoryteller\AIStorytellerMod.cs" />
-=======
     <Compile Include="Source\AIStoryteller\StorytellerState.cs" />
     <Compile Include="Source\CustomEvents\Effects\EffectFactory.cs" />
     <Compile Include="Source\CustomEvents\Effects\EffectContractProvider.cs" />
@@ -61,7 +58,6 @@
     <Compile Include="Source\AIStoryteller\HarmonyPatches.cs" />
     <Compile Include="Source\AIStoryteller\Presets.cs" />
     <Compile Include="Source\AIStoryteller\StorytellerComp_AI.cs" />
->>>>>>> Stashed changes
     <Compile Include="Source\AIStoryteller\StorytellerCompProperties_AI.cs" />
     <Compile Include="Source\AIStoryteller\StorytellerComp_AI.cs" />
     <Compile Include="Source\CustomEvents\DTO\LlmCustomEvent.cs" />

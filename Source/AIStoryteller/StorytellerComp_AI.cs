@@ -3,13 +3,9 @@
 using RimWorld;
 using Verse;
 
-<<<<<<< Updated upstream
-using RimTelligence.Source.CustomEvents;
-=======
 using RimTelligence.CustomEvents;
 using RimTelligence.CustomEvents.Workers;
 using RimTelligence.Source.AIStoryteller;
->>>>>>> Stashed changes
 
 namespace RimTelligence.Source.AIStoryteller
 {
