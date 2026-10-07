@@ -10,6 +10,14 @@ semver section when a version is released.
 
 ## [Unreleased]
 
+## [0.15.2] - 2026-09-14
+
+### Added
+- `scroll bar` to the settings window
+
+### Fixed
+- Mod settings being not persistent between game sessions
+
 ## [0.15.1] - 2026-09-14
 
 ### Added
