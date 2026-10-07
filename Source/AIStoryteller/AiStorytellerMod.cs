@@ -17,6 +17,7 @@ namespace RimTelligence.AIStoryteller
     {
         public static Settings Settings { get; private set; }
         private static Harmony harmony;
+        private Vector2 mainScroll;
         private string connectionTestResult = "";
 
         public AIStorytellerMod(ModContentPack content) : base(content)
@@ -32,6 +33,12 @@ namespace RimTelligence.AIStoryteller
 
         public override void DoSettingsWindowContents(Rect inRect)
         {
+            Rect outRect = new Rect(0f, 0f, inRect.width, inRect.height);
+
+            Rect viewRect = new Rect(0f, 0f, outRect.width - 16f, 1000f);
+
+            Widgets.BeginScrollView(outRect, ref mainScroll, viewRect);
+
             Listing_Standard listing = new Listing_Standard();
             listing.Begin(inRect);
 
@@ -68,6 +75,7 @@ namespace RimTelligence.AIStoryteller
                 $"Min similarity: {Settings.ragMinSimilarity:F2}", Settings.ragMinSimilarity, 0f, 1f);
 
             listing.End();
+            Widgets.EndScrollView();
         }
 
         public override string SettingsCategory() => "AI Storyteller";

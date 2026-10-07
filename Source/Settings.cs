@@ -32,7 +32,7 @@ namespace RimTelligence
             if (string.IsNullOrEmpty(providerId))
                 return null;
 
-            return providerConfigs.Find(config => config.providerId == providerId);
+            return providerConfigs.Find(config => config != null && config.providerId == providerId);
         }
 
         public ProviderConfig GetOrCreateProviderConfig(string providerId)
@@ -57,7 +57,7 @@ namespace RimTelligence
             Scribe_Values.Look(ref ragMaxResultsPerStore, "ragMaxResultsPerStore", 5);
             Scribe_Values.Look(ref ragMinSimilarity, "ragMinSimilarity", 0.5f);
 
-            Scribe_Collections.Look(ref providerConfigs, "providerConfigs", LookMode.Deep, "providerId");
+            Scribe_Collections.Look(ref providerConfigs, "providerConfigs", LookMode.Deep);
             Scribe_Values.Look(ref activeProviderId, "activeProviderId", "");
             Scribe_Values.Look(ref embeddingSource, "embeddingSource", "BuiltIn");
             Scribe_Values.Look(ref embeddingProviderId, "embeddingProviderId", "");
@@ -65,6 +65,7 @@ namespace RimTelligence
             if (Scribe.mode == LoadSaveMode.LoadingVars && !legacyMigrationRan)
             {
                 legacyMigrationRan = true;
+                providerConfigs.RemoveAll(config => config == null);
                 MigrateLegacyKey();
             }
 

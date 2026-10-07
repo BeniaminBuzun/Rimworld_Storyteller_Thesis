@@ -11,7 +11,6 @@ using System.Text;
 using System.Threading.Tasks;
 using Verse;
 
-// rewrite later nad DebugActions too written fastly with claude
 namespace RimTelligence.CustomEvents.Workers
 {
     public class IncidentWorker_Test : IncidentWorker

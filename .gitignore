@@ -28,6 +28,8 @@ Thumbs.db
 *.swp
 .vscode/
 .idea/
+.opencode
+.specify
 
 # NuGet
 packages/
