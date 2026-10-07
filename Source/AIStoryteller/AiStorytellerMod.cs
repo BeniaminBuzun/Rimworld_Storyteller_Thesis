@@ -1,11 +1,11 @@
-using UnityEngine;
-using Verse;
 using HarmonyLib;
+using LlmTornado.Code;
 using RimTelligence.DataSnapshots;
 using RimTelligence.Llm;
-using LlmTornado.Code;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
+using Verse;
 
 namespace RimTelligence.AIStoryteller
 {

@@ -25,8 +25,6 @@ namespace RimTelligence
         public string embeddingSource = "BuiltIn";
         public string embeddingProviderId = "";
 
-        private bool legacyMigrationRan;
-
         public ProviderConfig GetProviderConfig(string providerId)
         {
             if (string.IsNullOrEmpty(providerId))

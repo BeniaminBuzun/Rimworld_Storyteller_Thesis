@@ -67,7 +67,7 @@ namespace RimTelligence.DataSnapshots
         public PawnNeedsSnapshot needs;
     }
 
-    public class PawnNeedsSnapshot 
+    public class PawnNeedsSnapshot
     {
         public float mood;       // 0–1
         public string mental_state;          // "Wandering", "Berserk", "Tantrum" null is normal
@@ -76,14 +76,14 @@ namespace RimTelligence.DataSnapshots
         public float recreation_level;       // 0-1
     }
 
-    public class  PawnRelationsSnapshot
+    public class PawnRelationsSnapshot
     {
         public List<string> lovers;
         public List<string> rivals;
         public string bonded_animal;
     }
 
-    public class HealthSnapshot 
+    public class HealthSnapshot
     {
         public float overall_health;
         public bool is_downed;

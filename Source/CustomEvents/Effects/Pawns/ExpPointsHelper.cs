@@ -1,9 +1,5 @@
 ﻿using RimTelligence.CustomEvents;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace RimTelligence.Source.CustomEvents.Handlers.Pawns
 {

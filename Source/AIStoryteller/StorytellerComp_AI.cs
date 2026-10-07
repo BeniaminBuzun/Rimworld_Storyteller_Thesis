@@ -1,10 +1,6 @@
-using System.Collections.Generic;
-
 using RimWorld;
+using System.Collections.Generic;
 using Verse;
-
-using RimTelligence.CustomEvents;
-using RimTelligence.CustomEvents.Workers;
 
 namespace RimTelligence.AIStoryteller
 {
