@@ -1,10 +1,9 @@
+using RimTelligence.Source.CustomEvents.Handlers;
+using RimWorld.Planet;
 using System;
 using System.Linq;
 using System.Text;
-using RimWorld.Planet;
 using Verse;
-using RimTelligence.CustomEvents.Handlers;
-using RimTelligence.Source.CustomEvents.Handlers;
 
 namespace RimTelligence.CustomEvents.Execution
 {

@@ -7,7 +7,7 @@ namespace RimTelligence.CustomEvents.Handlers
 {
     public interface IEffect
     {
-     
+
         EffectConfig Config { get; }
         GlobalTargetInfo Execute(GameEffect effect, Map map);
         string GetSummary(GameEffect effect);

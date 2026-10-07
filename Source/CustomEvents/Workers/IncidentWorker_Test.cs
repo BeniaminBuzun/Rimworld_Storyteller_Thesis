@@ -1,21 +1,14 @@
 using RimTelligence.CustomEvents.Execution;
 using RimTelligence.CustomEvents.Prompting;
-using RimTelligence.DataSnapshots;
-using RimTelligence.Llm;
 using RimWorld;
 using RimWorld.Planet;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Verse;
 
 namespace RimTelligence.CustomEvents.Workers
 {
     public class IncidentWorker_Test : IncidentWorker
     {
-        public void FireLlmEventAsync(Map map, string eventJson )
+        public void FireLlmEventAsync(Map map, string eventJson)
         {
             LlmParseResult<LlmCustomEvent> parseResult = LlmResponseParser.ParseEvent(eventJson);
             if (!parseResult.isSuccess || parseResult.data == null)
@@ -43,5 +36,5 @@ namespace RimTelligence.CustomEvents.Workers
             });
         }
     }
-    
+
 }

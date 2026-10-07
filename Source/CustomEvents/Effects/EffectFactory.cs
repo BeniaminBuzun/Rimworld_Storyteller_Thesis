@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using RimTelligence.CustomEvents.Handlers;
+﻿using RimTelligence.CustomEvents.Handlers;
 using RimTelligence.CustomEvents.Handlers.Animal;
 using RimTelligence.CustomEvents.Handlers.Environment;
 using RimTelligence.CustomEvents.Handlers.Item;
@@ -9,6 +7,8 @@ using RimTelligence.CustomEvents.Handlers.Pawns.Debuffs;
 using RimTelligence.CustomEvents.Handlers.Pawns.Miracles;
 using RimTelligence.Source.CustomEvents.Handlers.Pawns.Buffs;
 using RimTelligence.Source.CustomEvents.Handlers.Pawns.Debuffs;
+using System;
+using System.Collections.Generic;
 
 namespace RimTelligence.Source.CustomEvents.Handlers
 {
@@ -47,7 +47,7 @@ namespace RimTelligence.Source.CustomEvents.Handlers
 
         public static IEffect Create(string effectName)
         {
-            
+
             if (Registry.TryGetValue(effectName, out var factory))
                 return factory();
             return null;

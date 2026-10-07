@@ -20,7 +20,7 @@ namespace RimTelligence.CustomEvents.EventSelector.Modifiers
             float multiplier = 1f;
 
             foreach (var modifier in _modifiers)
-            {    
+            {
                 multiplier *= modifier.Modify(entry, snapshot);
             }
 

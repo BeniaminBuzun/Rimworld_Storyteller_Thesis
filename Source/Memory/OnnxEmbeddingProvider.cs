@@ -1,12 +1,9 @@
 using Microsoft.ML.OnnxRuntime;
 using Microsoft.ML.OnnxRuntime.Tensors;
-using RimTelligence.CustomEvents;
-using RimTelligence.Memory;
 using System;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Verse;
 
 namespace RimTelligence.Memory
 {

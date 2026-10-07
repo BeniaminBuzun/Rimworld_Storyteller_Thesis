@@ -2,7 +2,6 @@
 using RimTelligence.CustomEvents.Handlers;
 using RimTelligence.CustomEvents.Handlers.Pawns.Debuffs;
 using RimTelligence.DataSnapshots;
-using RimTelligence.Source.CustomEvents.Handlers.Pawns;
 using RimWorld;
 using RimWorld.Planet;
 using System;

@@ -4,7 +4,6 @@ using RimWorld.Planet;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection.Emit;
 using Verse;
 
 namespace RimTelligence.CustomEvents.Handlers.Animal
@@ -23,7 +22,7 @@ namespace RimTelligence.CustomEvents.Handlers.Animal
                 .ToList();
 
             candidates = candidates.Where(pawn => pawn.kindDef.defName == effect.SelectedDefName[0]).ToList();
-            
+
             if (!candidates.Any())
             {
                 ModLogger.Warning($"SelfTame: no tameable animals found for '{effect.DefNameText}'.");

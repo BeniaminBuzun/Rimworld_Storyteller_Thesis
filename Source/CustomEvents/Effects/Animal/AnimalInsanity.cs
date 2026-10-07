@@ -1,9 +1,9 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using RimTelligence.DataSnapshots;
 using RimWorld;
 using RimWorld.Planet;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Verse;
 
 namespace RimTelligence.CustomEvents.Handlers.Animal
@@ -20,9 +20,9 @@ namespace RimTelligence.CustomEvents.Handlers.Animal
                 .Where(pawn => pawn.RaceProps.Animal && !pawn.InMentalState)
                 .ToList();
 
-            
+
             candidates = candidates.Where(pawn => pawn.kindDef.defName == effect.SelectedDefName[0]).ToList();
-            
+
 
             if (!candidates.Any())
             {
