@@ -10,6 +10,8 @@ namespace RimTelligence.Llm
         public string embeddingModel = "";
         public string baseUrl = "";
 
+        public ProviderConfig() { }
+
         public void ExposeData()
         {
             Scribe_Values.Look(ref providerId, "providerId", "");

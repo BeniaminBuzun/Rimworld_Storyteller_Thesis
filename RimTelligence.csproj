@@ -145,9 +145,9 @@
     <PackageReference Include="Lib.Harmony">
       <Version>2.4.2</Version>
     </PackageReference>
-    <PackageReference Include="LlmTornado" Version="3.8.67" />
+    <PackageReference Include="LlmTornado" Version="3.8.71" />
     <PackageReference Include="System.Data.SQLite.Core" Version="1.0.119" />
-    <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="$(MicrosoftMLOnnxRuntimeVersion)" />
+    <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.30.0" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="About\About.xml" />

@@ -1,15 +1,11 @@
 using UnityEngine;
 using Verse;
 using HarmonyLib;
-
-using RimTelligence.CustomEvents;
-using RimTelligence.CustomEvents.Execution;
 using RimTelligence.DataSnapshots;
 using RimTelligence.Llm;
 using LlmTornado.Code;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace RimTelligence.AIStoryteller
 {
@@ -17,7 +13,7 @@ namespace RimTelligence.AIStoryteller
     {
         public static Settings Settings { get; private set; }
         private static Harmony harmony;
-        private string connectionTestResult = "";
+        private Vector2 mainScroll;
 
         public AIStorytellerMod(ModContentPack content) : base(content)
         {
@@ -32,6 +28,12 @@ namespace RimTelligence.AIStoryteller
 
         public override void DoSettingsWindowContents(Rect inRect)
         {
+            Rect outRect = new Rect(0f, 0f, inRect.width, inRect.height);
+
+            Rect viewRect = new Rect(0f, 0f, outRect.width, 1000f);
+
+            Widgets.BeginScrollView(outRect, ref mainScroll, viewRect);
+
             Listing_Standard listing = new Listing_Standard();
             listing.Begin(inRect);
 
@@ -68,6 +70,7 @@ namespace RimTelligence.AIStoryteller
                 $"Min similarity: {Settings.ragMinSimilarity:F2}", Settings.ragMinSimilarity, 0f, 1f);
 
             listing.End();
+            Widgets.EndScrollView();
         }
 
         public override string SettingsCategory() => "AI Storyteller";
@@ -89,7 +92,7 @@ namespace RimTelligence.AIStoryteller
 
             if (!providerNames.Contains(Settings.activeProviderId))
             {
-                Settings.activeProviderId = providerNames.Contains("Groq") ? "Groq" : providerNames[0];
+                Settings.activeProviderId = providerNames[0];
                 Settings.GetOrCreateProviderConfig(Settings.activeProviderId);
             }
 
@@ -130,20 +133,11 @@ namespace RimTelligence.AIStoryteller
 
             listing.Gap(4f);
             DrawModelField(listing, config, provider, false);
-
-            if (!string.IsNullOrEmpty(connectionTestResult))
-            {
-                listing.Gap(4f);
-                listing.Label(connectionTestResult);
-            }
         }
 
         private void DrawEmbeddingSourceSection(Listing_Standard listing)
         {
-            listing.Label("Embedding Source (RAG):");
-            listing.Gap(6f);
-
-            listing.Label("Embedding source:");
+            listing.Label("Embedding provider (for RAG):");
             Rect sourceRect = listing.GetRect(24f);
             if (Widgets.ButtonText(sourceRect, Settings.embeddingSource))
             {
@@ -166,9 +160,7 @@ namespace RimTelligence.AIStoryteller
 
                 if (!embeddingProviderNames.Contains(Settings.embeddingProviderId))
                 {
-                    Settings.embeddingProviderId = embeddingProviderNames.Contains("Voyage")
-                        ? "Voyage"
-                        : embeddingProviderNames[0];
+                    Settings.embeddingProviderId = embeddingProviderNames[0];
                     Settings.GetOrCreateProviderConfig(Settings.embeddingProviderId);
                 }
 

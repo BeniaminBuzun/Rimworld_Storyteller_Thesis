@@ -14,7 +14,7 @@ namespace RimTelligence
 
         public string customStoryPrompt = "Change inside mod setting for custom prompt";
 
-        public string grokApiKey = "";
+        public string llmProviderApiKey = "";
 
         public int ragMaxResultsPerStore = 5;
         public float ragMinSimilarity = 0.5f;
@@ -32,7 +32,7 @@ namespace RimTelligence
             if (string.IsNullOrEmpty(providerId))
                 return null;
 
-            return providerConfigs.Find(config => config.providerId == providerId);
+            return providerConfigs.Find(config => config != null && config.providerId == providerId);
         }
 
         public ProviderConfig GetOrCreateProviderConfig(string providerId)
@@ -52,40 +52,17 @@ namespace RimTelligence
         {
             Scribe_Values.Look(ref customStoryPrompt, "storyPrompt", "");
             Scribe_Values.Look(ref selectedPresetIndex, "selectedPresetIndex", 0);
-            Scribe_Values.Look(ref grokApiKey, "grokApiKey", "");
+            Scribe_Values.Look(ref llmProviderApiKey, "llmProviderApiKey", "");
             Scribe_Values.Look(ref ragEnabled, "ragEnabled", true);
             Scribe_Values.Look(ref ragMaxResultsPerStore, "ragMaxResultsPerStore", 5);
             Scribe_Values.Look(ref ragMinSimilarity, "ragMinSimilarity", 0.5f);
 
-            Scribe_Collections.Look(ref providerConfigs, "providerConfigs", LookMode.Deep, "providerId");
+            Scribe_Collections.Look(ref providerConfigs, "providerConfigs", LookMode.Deep);
             Scribe_Values.Look(ref activeProviderId, "activeProviderId", "");
             Scribe_Values.Look(ref embeddingSource, "embeddingSource", "BuiltIn");
             Scribe_Values.Look(ref embeddingProviderId, "embeddingProviderId", "");
 
-            if (Scribe.mode == LoadSaveMode.LoadingVars && !legacyMigrationRan)
-            {
-                legacyMigrationRan = true;
-                MigrateLegacyKey();
-            }
-
             base.ExposeData();
-        }
-
-        private void MigrateLegacyKey()
-        {
-            if (string.IsNullOrEmpty(grokApiKey))
-                return;
-
-            ProviderConfig groq = GetProviderConfig("Groq");
-            if (groq != null && !string.IsNullOrEmpty(groq.apiKey))
-                return;
-
-            groq = GetOrCreateProviderConfig("Groq");
-            groq.apiKey = grokApiKey;
-            if (string.IsNullOrEmpty(groq.chatModel))
-                groq.chatModel = "groq-llama-3.3-70b-versatile";
-            if (string.IsNullOrEmpty(activeProviderId))
-                activeProviderId = "Groq";
         }
     }
 }
