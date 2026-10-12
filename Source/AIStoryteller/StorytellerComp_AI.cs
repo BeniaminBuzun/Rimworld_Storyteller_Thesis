@@ -26,8 +26,6 @@ namespace RimTelligence.AIStoryteller
             if (ShouldFireIncidentAt(target))
             {
                 var stateTracker = Current.Game.GetComponent<StorytellerState>();
-                stateTracker.conuter++;
-                ModLogger.Message($"increased counter to: {stateTracker.conuter}");
 
                 //var incidentParms = GenerateParms(Props.category, target);
                 //var incidentDef = DefDatabase<IncidentDef>.GetNamed(INCIDENT_DEFNAME);
@@ -53,7 +51,6 @@ namespace RimTelligence.AIStoryteller
         //
         private bool ShouldFireIncidentAt(IIncidentTarget target)
         {
-
             bool modProperlyInitialized = AIStorytellerMod.Settings != null;
             bool isMap = (target as Map) != null;
             //bool randomChance = Rand.Chance(Props.incidentChance);

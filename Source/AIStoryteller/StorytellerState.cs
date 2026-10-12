@@ -9,7 +9,6 @@ namespace RimTelligence.Source.AIStoryteller
 {
     internal class StorytellerState : GameComponent
     {
-        public int conuter = 0;
         private Queue<FiringIncident> incidentQueue = new Queue<FiringIncident>();
 
         public StorytellerState(Game game)
@@ -19,8 +18,7 @@ namespace RimTelligence.Source.AIStoryteller
         public override void ExposeData()
         {
             base.ExposeData();
-            Scribe_Values.Look(ref conuter, "conuter", 0);
-            ModLogger.Message($"saved data: {conuter}");
+            Scribe_Values.Look(ref incidentQueue, "incidentQueue", new Queue<FiringIncident>());
 
             // Save/load state data here
         }
@@ -39,42 +37,28 @@ namespace RimTelligence.Source.AIStoryteller
         {
             ModLogger.Message($"generating new events");
             LlmCall(target);
-            //for (int j = 0; j < 5; j++)
-            //{
-            //    IncidentDef raidDef = IncidentDefOf.RaidEnemy;
-            //    IncidentParms parms = new IncidentParms
-            //    {
-            //        target = target,
-            //        points = 200f,
-            //        customLetterLabel = "Desperate Survivors",
-            //        customLetterText = "asdasdasdasd"
-            //    };
-            //    FiringIncident newIncident = new FiringIncident(raidDef, comp, parms);
-            //    incidentQueue.Enqueue(newIncident);
-            //}
         }
         private async void LlmCall(IIncidentTarget target)
         {
             //create a list of human readable labels of events
             List<string> defLabels = DefDatabase<IncidentDef>.AllDefsListForReading
             .Where(def => def.targetTags != null && def.targetTags.Contains(IncidentTargetTagDefOf.Map_PlayerHome))
-            .Select(def => def.label)
+            .Select(def => "name: " + def.label+ ", description: " + def.description)
             .ToList();
 
             //create a dictionary of event labels and their corresponding defNames
             Dictionary<string, string> defDict = DefDatabase<IncidentDef>.AllDefsListForReading
             .Where(def => !string.IsNullOrEmpty(def.label)) //delete missing labels
             .Where(def => def.targetTags != null && def.targetTags.Contains(IncidentTargetTagDefOf.Map_PlayerHome)) //allow only events that can be used on player home map
-            .GroupBy(def => def.label) //save to dict               
+            .GroupBy(def => def.label) //save to dict
             .ToDictionary(
                 group => group.Key,
                 group => group.First().defName
             );
 
             string prompt = "You ara a rimworld storyteller. Create short self-contained story consisting multiple consecutive events. Events should work together as a story connecting one to the other. Story should have a clear beginning, middle, and end. Avoid repetitive or predictable content. Resolve all mysteries you create. Use only available events.\r\n" +
-                "Return output ONLY in JSON format: {events:[ {eventName: <name of event>, message:<message displayed when executing event>, waitTime:<how many hours should pass between last event and this one>} ] }\r\n" +
-            "Use only available events. Available events: " + string.Join(", ", defLabels)
-            ;
+            "Use only available events. Available events: " + string.Join(", ", defLabels);
+
             ModLogger.Message($"LLM request sent");
             ModLogger.Message($"{prompt}");
 
@@ -86,11 +70,21 @@ namespace RimTelligence.Source.AIStoryteller
                 ModLogger.Message($"LLM error");
 
             }
-            string step2Provider = llmResult?.providerId ?? "unknown";
-            string step2Model = llmResult?.model ?? "unknown";
+            //string step2Provider = llmResult?.providerId ?? "unknown";
+            //string step2Model = llmResult?.model ?? "unknown";
             string responseRaw = llmResult.responseText;
-            ModLogger.Message($"llm response: {responseRaw}");
-            LlmMultipleEventResponse receivedData = JsonSerializer.Deserialize<LlmMultipleEventResponse>(responseRaw);
+            
+            ModLogger.Message($"llm 1st stage response: {responseRaw}");
+            string conversionPrompt = "Convert following rimworld events to JSON format: {events:[ {eventName: <name of event>, message:<message displayed when executing event>, waitTime:<how many hours should pass between last event and this one>} ] }\r\n"+
+                "Available events: " + string.Join(", ", defLabels) + "\r\n" +
+                "story: " + responseRaw;
+
+
+
+            LlmConnectionResult llmConversionResult = await com.GetLlmResponseWithDetailsAsync(conversionPrompt);
+            ModLogger.Message($"llm 2nd stage response: {llmConversionResult.responseText}");
+
+            LlmMultipleEventResponse receivedData = JsonSerializer.Deserialize<LlmMultipleEventResponse>(llmConversionResult.responseText);
 
             for (int i = 0; i < receivedData.events.Count; i++)
             {
