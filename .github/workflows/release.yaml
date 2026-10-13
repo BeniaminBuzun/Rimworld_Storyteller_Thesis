@@ -17,19 +17,13 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       
-      - uses: microsoft/setup-msbuild@v3
-
       - uses: actions/setup-dotnet@v6
         with:
           dotnet-version: '8.x'
-
-      - name: Restore
-        shell: pwsh
-        run: dotnet restore RimTelligence.csproj -p:RuntimeIdentifiers=win
-
+      
       - name: Build
         shell: pwsh
-        run: msbuild RimTelligence.csproj /t:Build /p:Configuration=Release /p:Platform=AnyCPU /p:RuntimeIdentifiers=win /p:OutputPath=Assemblies\ /v:m /nologo
+        run: dotnet build RimTelligence.csproj -c Release --nologo -v m /v:m /nologo
 
       - name: Resolve Version and Package
         id: pack

@@ -15,7 +15,7 @@ namespace RimTelligence.CustomEvents.EventSelector.Modifiers
             if (entry.Config.EffectName == "ChangeWeather") multiplier *= 1.8f;
             if (entry.Config.EffectName == "StartExtremeWeatherEvent") multiplier *= 1.2f;
             return multiplier;
-            
+
         }
     }
 }

@@ -1,11 +1,8 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Data.SQLite;
 
 namespace RimTelligence.Memory
 {
-   
+
     // Shared blob/similarity helpers used by both stores
     public static class RagBlob
     {

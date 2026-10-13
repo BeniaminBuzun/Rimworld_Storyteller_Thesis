@@ -1,8 +1,6 @@
 using RimTelligence.DataSnapshots;
-using RimWorld;
 using RimWorld.Planet;
 using System;
-using System.Linq;
 using Verse;
 
 namespace RimTelligence.CustomEvents.Handlers.Animal
@@ -47,7 +45,7 @@ namespace RimTelligence.CustomEvents.Handlers.Animal
             {
                 case SeverityTypes.Low: return 1;
                 case SeverityTypes.Medium: return _random.Next(2, 4);
-                case SeverityTypes.High: return _random.Next(4,6);
+                case SeverityTypes.High: return _random.Next(4, 6);
                 case SeverityTypes.Extreme: return 7;
                 default: return 0;
             }

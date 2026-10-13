@@ -1,10 +1,10 @@
 using RimTelligence.DataSnapshots;
+using RimTelligence.Source.CustomEvents.Handlers.Pawns;
 using RimWorld;
 using RimWorld.Planet;
 using System;
 using System.Linq;
 using Verse;
-using RimTelligence.Source.CustomEvents.Handlers.Pawns;
 
 namespace RimTelligence.CustomEvents.Handlers.Pawns.Buffs
 {

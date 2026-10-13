@@ -1,7 +1,4 @@
-﻿using RimTelligence.DataSnapshots;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System;
 using Verse;
 
 namespace RimTelligence.CustomEvents.Handlers.Item

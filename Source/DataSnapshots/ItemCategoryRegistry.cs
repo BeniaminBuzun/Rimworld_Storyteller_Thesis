@@ -47,7 +47,7 @@ namespace RimTelligence.DataSnapshots
 
                 var categories = new Dictionary<string, ItemCategory>();
                 foreach (var entry in entries)
-                {        
+                {
                     categories[entry.Id] = new ItemCategory { Id = entry.Id, Weight = entry.Weight };
                 }
 
