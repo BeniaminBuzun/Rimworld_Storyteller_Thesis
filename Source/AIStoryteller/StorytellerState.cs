@@ -1,10 +1,12 @@
-﻿using RimTelligence.Llm;
+﻿using RimTelligence.DataSnapshots;
+using RimTelligence.Llm;
 using RimTelligence.Source.CustomEvents.Prompting;
 using RimWorld;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using Verse;
+using Verse.Noise;
 namespace RimTelligence.Source.AIStoryteller
 {
     internal class StorytellerState : GameComponent
@@ -36,10 +38,19 @@ namespace RimTelligence.Source.AIStoryteller
         private void generateNewEvents(IIncidentTarget target, StorytellerComp comp)
         {
             ModLogger.Message($"generating new events");
-            LlmCall(target);
+            if (target is Map map)
+            {
+                LlmCall(map);
+
+            }
+
         }
-        private async void LlmCall(IIncidentTarget target)
+        private async void LlmCall(Map target)
         {
+
+            ColonySnapshot snapshot = ColonySnapshotCapturer.Capture(target);
+
+
             //create a list of human readable labels of events
             List<string> defLabels = DefDatabase<IncidentDef>.AllDefsListForReading
             .Where(def => def.targetTags != null && def.targetTags.Contains(IncidentTargetTagDefOf.Map_PlayerHome))
