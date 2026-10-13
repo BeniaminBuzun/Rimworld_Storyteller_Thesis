@@ -113,7 +113,7 @@ namespace RimTelligence.Llm
 
         private static async Task<ChatRichResponse> Send(TornadoApi api, ChatRequest request, string prompt)
         {
-            Conversation chat =     Chat.CreateConversation(request);
+            Conversation chat = api.Chat.CreateConversation(request);
             chat.AppendUserInput(prompt);
             return await chat.GetResponseRich();
         }

@@ -2,10 +2,10 @@ using RimWorld;
 using System.Collections.Generic;
 using Verse;
 
+
 using RimTelligence.CustomEvents;
 using RimTelligence.CustomEvents.Workers;
 using RimTelligence.Source.AIStoryteller;
-
 namespace RimTelligence.AIStoryteller
 {
     public class StorytellerComp_AI : StorytellerComp

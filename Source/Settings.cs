@@ -35,7 +35,6 @@ namespace RimTelligence
                 providerConfigs = new List<ProviderConfig>();
 
             // Add 'config != null' to safely skip corrupted XML entries
-
             return providerConfigs.Find(config => config != null && config.providerId == providerId);
         }
 
