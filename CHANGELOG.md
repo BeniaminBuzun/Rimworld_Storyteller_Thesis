@@ -10,6 +10,21 @@ semver section when a version is released.
 
 ## [Unreleased]
 
+## [0.15.3] - 2026-10-07
+
+### Fixed
+- `release.yaml` was breaking due to onnxruntime version bump
+- simplified `Rimtelligence.csproj` project config
+- applied linting
+
+## [0.15.2] - 2026-10-07
+
+### Added
+- `scroll bar` to the settings window
+
+### Fixed
+- Mod settings being not persistent between game sessions
+
 ## [0.15.1] - 2026-09-14
 
 ### Added

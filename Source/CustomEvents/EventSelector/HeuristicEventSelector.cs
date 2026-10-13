@@ -1,10 +1,9 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using RimTelligence.CustomEvents.EventSelector.Modifiers;
 using RimTelligence.CustomEvents.Handlers;
 using RimTelligence.DataSnapshots;
 using RimTelligence.Source.CustomEvents.Handlers;
+using System.Collections.Generic;
+using System.Linq;
 using Verse;
 
 namespace RimTelligence.CustomEvents.EventSelector
@@ -27,7 +26,7 @@ namespace RimTelligence.CustomEvents.EventSelector
                     string selectedRelatedDefList = DrawRelatetDefList();
                     effect.Config.RelatedDefList = selectedRelatedDefList;
                 }
-                
+
                 if (effect.CanBeChoosen(snapshot))
                 {
                     pool.Add(effect);
@@ -129,4 +128,4 @@ namespace RimTelligence.CustomEvents.EventSelector
             return candidates.Last().Id;
         }
     }
- }
+}

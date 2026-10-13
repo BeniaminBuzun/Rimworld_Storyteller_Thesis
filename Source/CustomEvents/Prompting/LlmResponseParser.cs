@@ -1,7 +1,6 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
-using RimTelligence.CustomEvents;
 using RimTelligence.CustomEvents.Handlers;
 using System;
 using System.Collections.Generic;

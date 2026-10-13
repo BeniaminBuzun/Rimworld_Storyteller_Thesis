@@ -9,7 +9,7 @@ namespace RimTelligence.CustomEvents.EventSelector.Modifiers
     {
         public float Modify(IEffect entry, ColonySnapshot snapshot)
         {
-            if(!(snapshot.colonists?.Count > 0))
+            if (!(snapshot.colonists?.Count > 0))
                 return 1f;
 
             float avgMood = snapshot.colonists.Average(pawn => pawn.needs?.mood ?? 0.5f);

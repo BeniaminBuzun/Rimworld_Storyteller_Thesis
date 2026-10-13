@@ -2,8 +2,6 @@ using RimWorld;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Verse;
 
 namespace RimTelligence.DataSnapshots
@@ -66,31 +64,31 @@ namespace RimTelligence.DataSnapshots
             catch (Exception) { return new List<string>(); }
         }
 
-    private static string GetRoomName(Pawn pawn)
-    {
-        Room room = pawn.GetRoom();
-
-        // If the room is null or it's considered outside (no roof / map edge)
-        if (room == null || room.PsychologicallyOutdoors)
+        private static string GetRoomName(Pawn pawn)
         {
-            return "Outside";
+            Room room = pawn.GetRoom();
+
+            // If the room is null or it's considered outside (no roof / map edge)
+            if (room == null || room.PsychologicallyOutdoors)
+            {
+                return "Outside";
+            }
+
+            // If the room has a specific designated role (Dining room, Bedroom, Hospital, etc.)
+            if (room.Role != null && room.Role != RoomRoleDefOf.None)
+            {
+                // Use .LabelCap for capitalized (e.g. "Dining room"), or .label for lowercase
+                return room.Role.LabelCap;
+            }
+
+            // Enclosed room with no specific purpose yet (just walls and a roof)
+            return "Empty room";
         }
 
-        // If the room has a specific designated role (Dining room, Bedroom, Hospital, etc.)
-        if (room.Role != null && room.Role != RoomRoleDefOf.None)
+        private static PawnRelationsSnapshot CaptureRelations(Pawn pawn)
         {
-            // Use .LabelCap for capitalized (e.g. "Dining room"), or .label for lowercase
-            return room.Role.LabelCap;
-        }
-
-        // Enclosed room with no specific purpose yet (just walls and a roof)
-        return "Empty room";
-    }
-
-    private static PawnRelationsSnapshot CaptureRelations(Pawn pawn)
-    {
-        try
-        {
+            try
+            {
                 return new PawnRelationsSnapshot
                 {
                     rivals = pawn.Map?.mapPawns?.FreeColonistsSpawned
@@ -110,11 +108,11 @@ namespace RimTelligence.DataSnapshots
                         ?.Select(rel => rel.otherPawn?.Name?.ToStringShort ?? rel.otherPawn?.LabelShort)
                         ?.FirstOrDefault() ?? "None"
                 };
+            }
+            catch (Exception) { return new PawnRelationsSnapshot(); }
         }
-        catch (Exception) { return new PawnRelationsSnapshot(); }
-    }
 
-    private static List<string> CaptureSkills(Pawn pawn)
+        private static List<string> CaptureSkills(Pawn pawn)
         {
             try
             {
@@ -246,7 +244,8 @@ namespace RimTelligence.DataSnapshots
                 .ToList();
         }
 
-        private static string GetCurrentAction(Pawn pawn) {
+        private static string GetCurrentAction(Pawn pawn)
+        {
             string currentAction = "Idle";
             if (pawn.jobs != null && pawn.jobs.curJob != null)
             {
@@ -261,7 +260,7 @@ namespace RimTelligence.DataSnapshots
                 }
             }
             return currentAction;
-            
+
         }
         private static List<string> GetCurrentActionQueue(Pawn pawn)
         {

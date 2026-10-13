@@ -8,10 +8,8 @@ Version history is tracked in [CHANGELOG.md](CHANGELOG.md).
 ## Things that are currently broken, missing or additional features:
 - LLm has problems with generating proper json structure for DamagePawn effects
 - Mood buff/debuff breaks between save and load
-- LlmTornado has outdated groq/OpenRouter provider models list
 - Rag is not wired into any relevant logic
 - CustomEvent prompt is catchy and needs to be fine tuned for more `natural` results
-- Settings needs scrollbar
 - Colony snapshot is not fully complete (wildlifeAnimals should should include metaData)
 - If possible add into event popup window link that jumps into where effect occured
 - 
