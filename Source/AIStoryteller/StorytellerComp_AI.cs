@@ -2,13 +2,16 @@ using RimWorld;
 using System.Collections.Generic;
 using Verse;
 
+using RimTelligence.CustomEvents;
+using RimTelligence.CustomEvents.Workers;
+using RimTelligence.Source.AIStoryteller;
+
 namespace RimTelligence.AIStoryteller
 {
     public class StorytellerComp_AI : StorytellerComp
     {
         private StorytellerCompProperties_AI Props => (StorytellerCompProperties_AI)props;
         private static readonly string INCIDENT_DEFNAME = "LlmEvent";
-
         //
         // This method is invoked by the Storyteller system 
         // once every 1000 ticks (in-game time unit)
@@ -18,16 +21,19 @@ namespace RimTelligence.AIStoryteller
         //
         public override IEnumerable<FiringIncident> MakeIntervalIncidents(IIncidentTarget target)
         {
+
             if (ShouldFireIncidentAt(target))
             {
-                var incidentParms = GenerateParms(Props.category, target);
-                var incidentDef = DefDatabase<IncidentDef>.GetNamed(INCIDENT_DEFNAME);
+                var stateTracker = Current.Game.GetComponent<StorytellerState>();
 
-                if (incidentDef != null)
+                //var incidentParms = GenerateParms(Props.category, target);
+                //var incidentDef = DefDatabase<IncidentDef>.GetNamed(INCIDENT_DEFNAME);
+                var incidentToFire = stateTracker.GetNextIncident(target, this);
+                if (incidentToFire != null)
                 {
-                    ModLogger.Message($"Requesting a new incident: {INCIDENT_DEFNAME}");
-
-                    yield return new FiringIncident(incidentDef, this, incidentParms);
+                    ModLogger.Message($"Firing incident: {incidentToFire.def.defName}");
+                    //yield break;
+                    yield return incidentToFire;
                 }
                 else
                 {
@@ -46,9 +52,10 @@ namespace RimTelligence.AIStoryteller
         {
             bool modProperlyInitialized = AIStorytellerMod.Settings != null;
             bool isMap = (target as Map) != null;
-            bool randomChance = Rand.Chance(Props.incidentChance);
+            //bool randomChance = Rand.Chance(Props.incidentChance);
 
-            return modProperlyInitialized && isMap && randomChance;
+            //return modProperlyInitialized && isMap && randomChance;
+            return modProperlyInitialized && isMap;
         }
     }
 }
