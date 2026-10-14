@@ -10,6 +10,16 @@ semver section when a version is released.
 
 ## [Unreleased]
 
+## [0.17.0] - 2026-10-14
+
+### Changed
+- `LLmEvent` letter now has links to the sites where effects happened
+- `Colony snapshot` now includes descriptions for animals, plants, colonist childhood and adulthood
+- `SpawnAnimal` effect now spawns **all** animals at the same location 
+
+### Added
+- 
+
 ## [0.16.0] - 2026-10-14
 
 ### Added

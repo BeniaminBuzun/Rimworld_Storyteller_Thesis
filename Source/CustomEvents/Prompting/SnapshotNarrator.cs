@@ -61,7 +61,7 @@ namespace RimTelligence.CustomEvents.Prompting
             // Colony animals
             if (!string.IsNullOrWhiteSpace(snapshot.colonyAnimals?.ToString()))
             {
-                var animalList = snapshot.colonyAnimals ?? new List<string>();
+                var animalList = snapshot.colonyAnimals ?? new List<AnimalSnapshot>();
                 if (animalList.Count > 0)
                     sb.AppendLine($"Colony animals ({snapshot.colonyAnimalCount}): {string.Join(", ", animalList)}.");
                 else

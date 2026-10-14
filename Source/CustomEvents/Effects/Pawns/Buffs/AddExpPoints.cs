@@ -10,8 +10,6 @@ namespace RimTelligence.CustomEvents.Handlers.Pawns.Buffs
 {
     internal class AddExpPoints : IEffect
     {
-        public static string XpBonusName;
-
         public EffectConfig Config => EffectConfigRegistry.Get("AddExpPoints");
 
         public bool CanBeChoosen(ColonySnapshot snapshot) => true;
@@ -37,7 +35,7 @@ namespace RimTelligence.CustomEvents.Handlers.Pawns.Buffs
             int expPoints = ExpPointsHelper.GetXpReward(target.skills.GetSkill(skillDef).Level, effect.Severity);
             target.skills.Learn(skillDef, expPoints);
 
-            ModLogger.Message($"AddExpPoints: added {expPoints} XP to '{effect.TargetPawn}' for skill '{effect.DefNameText}'.");
+            ModLogger.Message($"AddExpPoints: added {effect.Severity} XP to '{effect.TargetPawn}' for skill '{effect.DefNameText}'.");
             return new GlobalTargetInfo(target);
         }
 

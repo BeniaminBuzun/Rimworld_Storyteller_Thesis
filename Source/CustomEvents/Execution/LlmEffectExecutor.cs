@@ -1,24 +1,37 @@
 using RimTelligence.Source.CustomEvents.Handlers;
 using RimWorld.Planet;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Verse;
 
 namespace RimTelligence.CustomEvents.Execution
 {
+    public readonly struct EffectOutcome
+    {
+        public readonly string Label;
+        public readonly GlobalTargetInfo Target;
+
+        public EffectOutcome(string label, GlobalTargetInfo target)
+        {
+            Label = label;
+            Target = target;
+        }
+    }
     public static class LlmEffectExecutor
     {
-        public static GlobalTargetInfo ExecuteAll(LlmCustomEvent evt, Map map)
+        public static List<EffectOutcome> ExecuteAll(LlmCustomEvent evt, Map map)
         {
+            var outcomes = new List<EffectOutcome>();
+
             if (evt?.effects == null || !evt.effects.Any())
             {
                 ModLogger.Warning("Execute: no effects to run.");
-                return GlobalTargetInfo.Invalid;
+                return outcomes;
             }
 
             ModLogger.Message($"Running {evt.effects.Count} effects...");
-            GlobalTargetInfo focusTarget = GlobalTargetInfo.Invalid;
 
             foreach (var effect in evt.effects)
             {
@@ -37,9 +50,9 @@ namespace RimTelligence.CustomEvents.Execution
                 try
                 {
                     GlobalTargetInfo result = handler.Execute(effect, map);
-                    if (!focusTarget.IsValid && result.IsValid)
+                    if (result.IsValid)
                     {
-                        focusTarget = result;
+                        outcomes.Add(new EffectOutcome(handler.Config.EffectName, result));
                     }
                 }
                 catch (Exception exception)
@@ -48,7 +61,7 @@ namespace RimTelligence.CustomEvents.Execution
                 }
             }
 
-            return focusTarget;
+            return outcomes;
         }
 
         public static string BuildSummary(LlmCustomEvent evt)

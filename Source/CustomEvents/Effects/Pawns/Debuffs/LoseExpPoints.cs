@@ -42,6 +42,6 @@ namespace RimTelligence.CustomEvents.Handlers.Pawns.Debuffs
         }
 
         public string GetSummary(GameEffect effect) =>
-            $"{effect.TargetPawn} lost a {AddExpPoints.XpBonusName} amount of XP for '{effect.DefNameText}'";
+            $"{effect.TargetPawn} lost a {effect.Severity} amount of XP for '{effect.DefNameText}'";
     }
 }

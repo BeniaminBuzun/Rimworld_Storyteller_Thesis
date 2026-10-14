@@ -31,7 +31,7 @@ namespace RimTelligence.CustomEvents.Handlers.Animal
             {
                 PawnGenerationRequest request = new PawnGenerationRequest(animalKind, null);
                 Pawn animal = PawnGenerator.GeneratePawn(request);
-                GenSpawn.Spawn(animal, CellFinder.RandomEdgeCell(map), map);
+                GenSpawn.Spawn(animal, spawnCell, map);
                 lastAnimal = animal;
                 ModLogger.Message($"Spawned {effect.DefNameText} at {spawnCell}.");
             }

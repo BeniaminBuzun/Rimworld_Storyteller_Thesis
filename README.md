@@ -10,10 +10,8 @@ Version history is tracked in [CHANGELOG.md](CHANGELOG.md).
 - Mood buff/debuff breaks between save and load
 - Rag is not wired into any relevant logic
 - CustomEvent prompt is catchy and needs to be fine tuned for more `natural` results and I do not pass any defs for llm to choose from
-- Colony snapshot is not fully complete (wildlifeAnimals should should include metaData)
 - If possible add into event popup window link that jumps into where effect occured
-- 
-
+- disease description into snapshot
 
 
 ## Installation / Setup

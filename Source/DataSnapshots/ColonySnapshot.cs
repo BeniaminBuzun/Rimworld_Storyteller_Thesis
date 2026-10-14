@@ -1,3 +1,4 @@
+using RimWorld;
 using System.Collections.Generic;
 
 namespace RimTelligence.DataSnapshots
@@ -17,7 +18,7 @@ namespace RimTelligence.DataSnapshots
 
         // other inhibitants
         public int colonyAnimalCount;
-        public List<string> colonyAnimals;
+        public List<AnimalSnapshot> colonyAnimals;
         public List<PawnSnapshot> prisoners;
         public List<PawnSnapshot> slaves;
         public List<PawnSnapshot> visitors;
@@ -37,8 +38,8 @@ namespace RimTelligence.DataSnapshots
         // environment
         public string currentWeather;
         public float temperature;
-        public Dictionary<string, int> wildAnimals;
-        public Dictionary<string, int> cultivatedPlants;
+        public Dictionary<AnimalSnapshot, int> wildAnimals;
+        public Dictionary<PlantSnapshot, int> cultivatedPlants;
 
         // resources
         public ResourceSnapshot colonyResources;
@@ -61,7 +62,9 @@ namespace RimTelligence.DataSnapshots
         public HealthSnapshot health;
         public List<string> traits;
         public string childhood;
+        public string childhood_description;
         public string adulthood;
+        public string adulthood_description;
         public List<string> skills;
         public PawnRelationsSnapshot relations;
         public PawnNeedsSnapshot needs;
@@ -91,7 +94,7 @@ namespace RimTelligence.DataSnapshots
 
         public List<string> missing_body_parts;
         public List<string> injuries;
-        public List<string> diseases;
+        public List<string> diseases; // name and description
         public List<string> implants;
         public List<string> chronic_conditions;  // scars, permanent
         public List<string> other;
@@ -106,6 +109,19 @@ namespace RimTelligence.DataSnapshots
         public string title;
         public string description;
 
+    }
+    public class AnimalSnapshot 
+    {
+        public string name;
+        public string description;
+
+        
+    }
+
+    public class PlantSnapshot
+    {
+        public string name;
+        public string description;
     }
 }
 

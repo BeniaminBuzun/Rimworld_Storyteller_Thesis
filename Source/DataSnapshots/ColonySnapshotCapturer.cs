@@ -1,3 +1,4 @@
+using Newtonsoft.Json;
 using RimWorld;
 using System;
 using System.Collections.Generic;
@@ -60,14 +61,22 @@ namespace RimTelligence.DataSnapshots
 
                 wildAnimals = map.mapPawns.AllPawnsSpawned
                                     .Where(animal => animal.RaceProps.Animal && animal.Faction == null && !animal.InMentalState)
-                                    .GroupBy(animal => animal.def.defName)
+                                    .GroupBy(animal => new AnimalSnapshot
+                                    {
+                                        name = animal.def.label,
+                                        description = animal.def.description
+                                    })
                                     .ToDictionary(group => group.Key, group => group.Count()),
 
                 cultivatedPlants = map.listerThings
                     .ThingsInGroup(ThingRequestGroup.Plant)
                     .OfType<Plant>()
                     .Where(plant => plant.DeliberatelyCultivated())
-                    .GroupBy(plant => plant.def.defName)
+                    .GroupBy(plant => new PlantSnapshot
+                    {
+                        name = plant.def.label,
+                        description = plant.def.description
+                    })
                     .ToDictionary(group => group.Key, group => group.Count()),
 
                 colonyResources = CaptureResources(map),
@@ -83,16 +92,20 @@ namespace RimTelligence.DataSnapshots
             };
         }
 
-        private static List<string> CaptureColonyAnimals(Map map)
+        private static List<AnimalSnapshot> CaptureColonyAnimals(Map map)
         {
             try
             {
                 return map.mapPawns.SpawnedColonyAnimals
-                    .GroupBy(animal => animal.def.LabelCap.ToString())
-                    .Select(group => $"{group.Key} x{group.Count()}")
+                    .GroupBy(animal => new AnimalSnapshot
+                    {
+                        name = animal.def.label,
+                        description = animal.def.description
+                    })
+                    .Select(group => group.Key)
                     .ToList();
             }
-            catch (Exception) { return new List<string>(); }
+            catch (Exception) { return new List<AnimalSnapshot>(); }
         }
 
         private static Dictionary<string, int> CaptureFactionRelations()

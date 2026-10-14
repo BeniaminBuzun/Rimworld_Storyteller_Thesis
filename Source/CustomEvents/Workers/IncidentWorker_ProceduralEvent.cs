@@ -8,6 +8,7 @@ using RimWorld;
 using RimWorld.Planet;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Verse;
 
@@ -59,17 +60,25 @@ namespace RimTelligence.CustomEvents.Workers
             // Game thread execution
             RimTelligenceDispatcher.ExecutionQueue.Enqueue(() =>
             {
-                GlobalTargetInfo target = LlmEffectExecutor.ExecuteAll(finalEvent, map);
+                List<EffectOutcome> outcomes = LlmEffectExecutor.ExecuteAll(finalEvent, map);
 
                 string summary = LlmEffectExecutor.BuildSummary(finalEvent);
                 string fullText = $"{finalEvent.letterText ?? "Something happened."}\n\n{summary}";
 
-                Find.LetterStack.ReceiveLetter(
-                    finalEvent.letterTitle ?? "Strange Event",
-                    fullText,
-                    LetterDefOf.ThreatSmall,
-                    target.IsValid ? new LookTargets(target) : null
-                );
+                var letter = new ChoiceLetter_Procedural
+                {
+                    def = LetterDefOf.ThreatSmall,
+                    ID = Find.UniqueIDsManager.GetNextLetterID(),
+                    Label = finalEvent.letterTitle ?? "Strange Event",
+                    Text = fullText,
+                    lookTargets = outcomes.Count > 0
+                        ? new LookTargets(outcomes.Select(o => o.Target).ToList())
+                        : null,
+                    jumpLabels = outcomes.Select(o => o.Label).ToList(),
+                    jumpTargets = outcomes.Select(o => o.Target).ToList()
+                };
+
+                Find.LetterStack.ReceiveLetter(letter);
             });
         }
 

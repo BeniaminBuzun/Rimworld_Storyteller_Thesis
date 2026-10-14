@@ -39,7 +39,9 @@ namespace RimTelligence.DataSnapshots
                 health = CaptureHealth(pawn),
                 traits = CaptureTraits(pawn),
                 childhood = pawn.story?.Childhood?.title ?? "Unknown",
+                childhood_description = pawn.story?.Childhood?.baseDesc ?? "None",
                 adulthood = pawn.story?.Adulthood?.title ?? "None",
+                adulthood_description = pawn.story?.Adulthood?.baseDesc ?? "None",
                 skills = CaptureSkills(pawn),
                 current_action = GetCurrentAction(pawn),
                 queued_actions = GetCurrentActionQueue(pawn),
@@ -221,7 +223,7 @@ namespace RimTelligence.DataSnapshots
                     && !hediff.IsPermanent()
                     && !hediff.def.chronic
                     && hediff.def.isBad)
-                .Select(hediff => hediff.def.defName)
+                .Select(hediff => (hediff.def.defName))
                 .ToList();
         }
 

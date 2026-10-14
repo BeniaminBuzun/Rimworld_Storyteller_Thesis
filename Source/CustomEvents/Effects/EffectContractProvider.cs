@@ -104,11 +104,9 @@ namespace RimTelligence.CustomEvents.Handlers
             if (snapshot?.wildAnimals == null || snapshot.wildAnimals.Count == 0)
                 return result;
 
-            foreach (string animalName in snapshot.wildAnimals.Keys)
+            foreach (AnimalSnapshot animal in snapshot.wildAnimals.Keys)
             {
-                if (string.IsNullOrEmpty(animalName))
-                    continue;
-                result.Add(new GameObjectMeta { DefName = animalName, Label = animalName, Description = string.Empty });
+                result.Add(new GameObjectMeta { DefName = animal.name, Label = animal.name, Description = animal.description });
             }
 
             result.Sort((a, b) => string.Compare(a.DefName, b.DefName, StringComparison.Ordinal));
