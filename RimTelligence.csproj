@@ -11,8 +11,15 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- BenchmarkRunner is a standalone console host (with its own Benchmark code); keep it out of the mod assembly. -->
+    <Compile Remove="BenchmarkRunner\**" />
+    <EmbeddedResource Remove="BenchmarkRunner\**" />
+    <None Remove="BenchmarkRunner\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Krafs.Rimworld.Ref" Version="1.6.4871" />
-    <PackageReference Include="Lib.Harmony" Version="2.4.2"/>
+    <PackageReference Include="Lib.Harmony" Version="2.4.2" />
     <PackageReference Include="LlmTornado" Version="3.8.71" />
     <PackageReference Include="System.Data.SQLite.Core" Version="1.0.119" />
     <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.30.0" GeneratePathProperty="true" />

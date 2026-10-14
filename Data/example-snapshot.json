@@ -1,0 +1,715 @@
+{
+  "colonyName": "LongTestColony",
+  "day": 47,
+  "time": "12",
+  "season": "Winter",
+  "biome": "BorealForest",
+  "colonistCount": 3,
+  "colonists": [
+    {
+      "name": "Misha",
+      "current_action": "Resting.",
+      "queued_actions": [],
+      "current_location": "Bedroom",
+      "is_drafted": false,
+      "primary_weapon": "Gun_Autopistol",
+      "age": 25,
+      "health": {
+        "overall_health": 1.0,
+        "is_downed": false,
+        "pain_level": 0.2,
+        "missing_body_parts": [],
+        "injuries": [],
+        "diseases": [
+          "Plague"
+        ],
+        "implants": [],
+        "chronic_conditions": [],
+        "other": []
+      },
+      "traits": [
+        "Undergrounder",
+        "Industriousness"
+      ],
+      "childhood": "caveworld tender",
+      "adulthood": "starship janitor",
+      "skills": [
+        "Construction:7",
+        "Mining:7",
+        "Plants:7"
+      ],
+      "relations": {
+        "lovers": [],
+        "rivals": [],
+        "bonded_animal": "None"
+      },
+      "needs": {
+        "mood": 0.26,
+        "mental_state": "None",
+        "food_level": 0.9159998,
+        "rest_level": 0.9882498,
+        "recreation_level": 0.19952476
+      }
+    },
+    {
+      "name": "Lumi",
+      "current_action": "Hauling wood x19 to Stockpile zone 1.",
+      "queued_actions": [],
+      "current_location": "Workshop",
+      "is_drafted": false,
+      "primary_weapon": "MeleeWeapon_Knife",
+      "age": 67,
+      "health": {
+        "overall_health": 1.0,
+        "is_downed": false,
+        "pain_level": 0.0,
+        "missing_body_parts": [],
+        "injuries": [],
+        "diseases": [],
+        "implants": [],
+        "chronic_conditions": [
+          "Scratch"
+        ],
+        "other": []
+      },
+      "traits": [
+        "Brawler"
+      ],
+      "childhood": "caravan child",
+      "adulthood": "bounty hunter",
+      "skills": [
+        "Melee:13",
+        "Social:10",
+        "Artistic:7"
+      ],
+      "relations": {
+        "lovers": [],
+        "rivals": [],
+        "bonded_animal": "None"
+      },
+      "needs": {
+        "mood": 0.5444,
+        "mental_state": "None",
+        "food_level": 0.8119996,
+        "rest_level": 0.8622496,
+        "recreation_level": 0.6789676
+      }
+    },
+    {
+      "name": "Vladimir",
+      "current_action": "Harvesting pine tree.",
+      "queued_actions": [],
+      "current_location": "Kitchen",
+      "is_drafted": false,
+      "primary_weapon": "Gun_ChargeBlasterHeavy",
+      "age": 51,
+      "health": {
+        "overall_health": 1.0,
+        "is_downed": false,
+        "pain_level": 0.0,
+        "missing_body_parts": [],
+        "injuries": [],
+        "diseases": [],
+        "implants": [],
+        "chronic_conditions": [],
+        "other": []
+      },
+      "traits": [
+        "Greedy"
+      ],
+      "childhood": "urbworld criminal",
+      "adulthood": "urbworld politican",
+      "skills": [
+        "Social:12",
+        "Animals:10",
+        "Shooting:9"
+      ],
+      "relations": {
+        "lovers": [
+          "Calvino"
+        ],
+        "rivals": [],
+        "bonded_animal": "None"
+      },
+      "needs": {
+        "mood": 0.496,
+        "mental_state": "None",
+        "food_level": 0.983999968,
+        "rest_level": 0.636031151,
+        "recreation_level": 0.48098743
+      }
+    }
+  ],
+  "colonyAnimalCount": 1,
+  "colonyAnimals": [
+    "Rat x1"
+  ],
+  "prisoners": [],
+  "slaves": [],
+  "visitors": [
+    {
+      "name": "Rivera",
+      "current_action": "Moving.",
+      "queued_actions": [],
+      "current_location": "Outside",
+      "is_drafted": false,
+      "primary_weapon": "None",
+      "age": 44,
+      "health": {
+        "overall_health": 1.0,
+        "is_downed": false,
+        "pain_level": 0.0,
+        "missing_body_parts": [],
+        "injuries": [],
+        "diseases": [],
+        "implants": [],
+        "chronic_conditions": [],
+        "other": []
+      },
+      "traits": [
+        "TorturedArtist",
+        "DrugDesire"
+      ],
+      "childhood": "organ farm",
+      "adulthood": "bartender",
+      "skills": [
+        "Medicine:10",
+        "Animals:8",
+        "Social:7"
+      ],
+      "relations": {
+        "lovers": [],
+        "rivals": [],
+        "bonded_animal": "None"
+      },
+      "needs": {
+        "mood": 0.48,
+        "mental_state": "None",
+        "food_level": 0.9479999,
+        "rest_level": 0.924173355,
+        "recreation_level": 0.0
+      }
+    },
+    {
+      "name": "Vivis",
+      "current_action": "Moving.",
+      "queued_actions": [],
+      "current_location": "Outside",
+      "is_drafted": false,
+      "primary_weapon": "MeleeWeapon_Knife",
+      "age": 36,
+      "health": {
+        "overall_health": 1.0,
+        "is_downed": false,
+        "pain_level": 0.0,
+        "missing_body_parts": [],
+        "injuries": [],
+        "diseases": [],
+        "implants": [],
+        "chronic_conditions": [
+          "Stab",
+          "Scratch"
+        ],
+        "other": []
+      },
+      "traits": [
+        "Pyromaniac",
+        "Beauty"
+      ],
+      "childhood": "pyromaniac",
+      "adulthood": "counselor",
+      "skills": [
+        "Social:11",
+        "Animals:4",
+        "Artistic:4"
+      ],
+      "relations": {
+        "lovers": [],
+        "rivals": [],
+        "bonded_animal": "None"
+      },
+      "needs": {
+        "mood": 0.586400032,
+        "mental_state": "None",
+        "food_level": 0.9519999,
+        "rest_level": 0.8817909,
+        "recreation_level": 0.0
+      }
+    },
+    {
+      "name": "Stars",
+      "current_action": "Moving.",
+      "queued_actions": [],
+      "current_location": "Outside",
+      "is_drafted": false,
+      "primary_weapon": "Gun_ChainShotgun",
+      "age": 45,
+      "health": {
+        "overall_health": 1.0,
+        "is_downed": false,
+        "pain_level": 0.0375,
+        "missing_body_parts": [],
+        "injuries": [],
+        "diseases": [],
+        "implants": [
+          "Joywire"
+        ],
+        "chronic_conditions": [
+          "Gunshot",
+          "Bite"
+        ],
+        "other": []
+      },
+      "traits": [
+        "Neurotic"
+      ],
+      "childhood": "coma child",
+      "adulthood": "drifter",
+      "skills": [
+        "Cooking:9",
+        "Social:8",
+        "Shooting:6"
+      ],
+      "relations": {
+        "lovers": [],
+        "rivals": [],
+        "bonded_animal": "None"
+      },
+      "needs": {
+        "mood": 0.593600035,
+        "mental_state": "None",
+        "food_level": 0.9479999,
+        "rest_level": 0.900686562,
+        "recreation_level": 0.0
+      }
+    },
+    {
+      "name": "Dennis",
+      "current_action": "Moving.",
+      "queued_actions": [],
+      "current_location": "Outside",
+      "is_drafted": false,
+      "primary_weapon": "Gun_LMG",
+      "age": 35,
+      "health": {
+        "overall_health": 1.0,
+        "is_downed": false,
+        "pain_level": 0.0,
+        "missing_body_parts": [],
+        "injuries": [],
+        "diseases": [],
+        "implants": [],
+        "chronic_conditions": [],
+        "other": []
+      },
+      "traits": [
+        "Jealous",
+        "PsychicSensitivity",
+        "Industriousness"
+      ],
+      "childhood": "shop kid",
+      "adulthood": "bodyguard",
+      "skills": [
+        "Shooting:7",
+        "Melee:7",
+        "Social:7"
+      ],
+      "relations": {
+        "lovers": [],
+        "rivals": [],
+        "bonded_animal": "None"
+      },
+      "needs": {
+        "mood": 0.586400032,
+        "mental_state": "None",
+        "food_level": 0.9519999,
+        "rest_level": 0.9050677,
+        "recreation_level": 0.0
+      }
+    },
+    {
+      "name": "Orca",
+      "current_action": "Moving.",
+      "queued_actions": [],
+      "current_location": "Outside",
+      "is_drafted": false,
+      "primary_weapon": "Gun_MachinePistol",
+      "age": 43,
+      "health": {
+        "overall_health": 1.0,
+        "is_downed": false,
+        "pain_level": 0.0,
+        "missing_body_parts": [],
+        "injuries": [],
+        "diseases": [],
+        "implants": [],
+        "chronic_conditions": [
+          "Gunshot"
+        ],
+        "other": []
+      },
+      "traits": [
+        "Gay",
+        "Tough",
+        "Jealous"
+      ],
+      "childhood": "coma child",
+      "adulthood": "escaped convict",
+      "skills": [
+        "Shooting:5",
+        "Mining:5",
+        "Crafting:5"
+      ],
+      "relations": {
+        "lovers": [],
+        "rivals": [],
+        "bonded_animal": "None"
+      },
+      "needs": {
+        "mood": 0.586400032,
+        "mental_state": "None",
+        "food_level": 0.9519999,
+        "rest_level": 0.9675329,
+        "recreation_level": 0.0
+      }
+    },
+    {
+      "name": "Hiroko",
+      "current_action": "Moving.",
+      "queued_actions": [],
+      "current_location": "Outside",
+      "is_drafted": false,
+      "primary_weapon": "Gun_MachinePistol",
+      "age": 15,
+      "health": {
+        "overall_health": 1.0,
+        "is_downed": false,
+        "pain_level": 0.0833333358,
+        "missing_body_parts": [],
+        "injuries": [],
+        "diseases": [],
+        "implants": [],
+        "chronic_conditions": [
+          "Bite"
+        ],
+        "other": []
+      },
+      "traits": [
+        "Neurotic",
+        "CreepyBreathing",
+        "SpeedOffset"
+      ],
+      "childhood": "sickly child",
+      "adulthood": "None",
+      "skills": [
+        "Medicine:9",
+        "Intellectual:7",
+        "Shooting:3"
+      ],
+      "relations": {
+        "lovers": [],
+        "rivals": [],
+        "bonded_animal": "None"
+      },
+      "needs": {
+        "mood": 0.57,
+        "mental_state": "None",
+        "food_level": 0.9519999,
+        "rest_level": 0.8831026,
+        "recreation_level": 0.0
+      }
+    },
+    {
+      "name": "Doctor",
+      "current_action": "Moving.",
+      "queued_actions": [],
+      "current_location": "Outside",
+      "is_drafted": false,
+      "primary_weapon": "Gun_BoltActionRifle",
+      "age": 49,
+      "health": {
+        "overall_health": 1.0,
+        "is_downed": false,
+        "pain_level": 0.0,
+        "missing_body_parts": [],
+        "injuries": [],
+        "diseases": [],
+        "implants": [],
+        "chronic_conditions": [],
+        "other": []
+      },
+      "traits": [
+        "Beauty",
+        "PsychicSensitivity",
+        "ShootingAccuracy"
+      ],
+      "childhood": "coma child",
+      "adulthood": "colony settler",
+      "skills": [
+        "Plants:10",
+        "Social:10",
+        "Construction:6"
+      ],
+      "relations": {
+        "lovers": [
+          "Jahan"
+        ],
+        "rivals": [],
+        "bonded_animal": "None"
+      },
+      "needs": {
+        "mood": 0.586400032,
+        "mental_state": "None",
+        "food_level": 0.9519999,
+        "rest_level": 0.894790351,
+        "recreation_level": 0.0
+      }
+    },
+    {
+      "name": "Raymond",
+      "current_action": "Moving.",
+      "queued_actions": [],
+      "current_location": "Outside",
+      "is_drafted": false,
+      "primary_weapon": "Weapon_GrenadeMolotov",
+      "age": 20,
+      "health": {
+        "overall_health": 1.0,
+        "is_downed": false,
+        "pain_level": 0.0,
+        "missing_body_parts": [],
+        "injuries": [],
+        "diseases": [],
+        "implants": [],
+        "chronic_conditions": [],
+        "other": []
+      },
+      "traits": [
+        "SlowLearner"
+      ],
+      "childhood": "mute",
+      "adulthood": "escaped convict",
+      "skills": [
+        "Animals:7",
+        "Crafting:6",
+        "Mining:5"
+      ],
+      "relations": {
+        "lovers": [],
+        "rivals": [],
+        "bonded_animal": "None"
+      },
+      "needs": {
+        "mood": 0.586400032,
+        "mental_state": "None",
+        "food_level": 0.9519999,
+        "rest_level": 0.884314537,
+        "recreation_level": 0.0
+      }
+    },
+    {
+      "name": "Rat",
+      "current_action": "Moving.",
+      "queued_actions": [],
+      "current_location": "Outside",
+      "is_drafted": false,
+      "primary_weapon": "Gun_PumpShotgun",
+      "age": 31,
+      "health": {
+        "overall_health": 1.0,
+        "is_downed": false,
+        "pain_level": 0.0,
+        "missing_body_parts": [],
+        "injuries": [],
+        "diseases": [],
+        "implants": [],
+        "chronic_conditions": [
+          "Scratch"
+        ],
+        "other": []
+      },
+      "traits": [
+        "Pyromaniac",
+        "DrugDesire",
+        "SlowLearner"
+      ],
+      "childhood": "wreckage explorer",
+      "adulthood": "slaughterer",
+      "skills": [
+        "Animals:12",
+        "Shooting:5",
+        "Intellectual:5"
+      ],
+      "relations": {
+        "lovers": [],
+        "rivals": [],
+        "bonded_animal": "None"
+      },
+      "needs": {
+        "mood": 0.586400032,
+        "mental_state": "None",
+        "food_level": 0.9519999,
+        "rest_level": 0.905459046,
+        "recreation_level": 0.0
+      }
+    },
+    {
+      "name": "Gage",
+      "current_action": "Moving.",
+      "queued_actions": [],
+      "current_location": "Outside",
+      "is_drafted": false,
+      "primary_weapon": "Gun_LMG",
+      "age": 41,
+      "health": {
+        "overall_health": 1.0,
+        "is_downed": false,
+        "pain_level": 0.225000009,
+        "missing_body_parts": [],
+        "injuries": [],
+        "diseases": [],
+        "implants": [],
+        "chronic_conditions": [
+          "Gunshot"
+        ],
+        "other": []
+      },
+      "traits": [
+        "PsychicSensitivity",
+        "NaturalMood",
+        "Industriousness"
+      ],
+      "childhood": "coma child",
+      "adulthood": "civil servant",
+      "skills": [
+        "Social:12",
+        "Animals:7",
+        "Intellectual:7"
+      ],
+      "relations": {
+        "lovers": [],
+        "rivals": [],
+        "bonded_animal": "None"
+      },
+      "needs": {
+        "mood": 0.459999979,
+        "mental_state": "None",
+        "food_level": 0.9479999,
+        "rest_level": 0.887944341,
+        "recreation_level": 0.0
+      }
+    },
+    {
+      "name": "Aoba",
+      "current_action": "Moving.",
+      "queued_actions": [],
+      "current_location": "Outside",
+      "is_drafted": false,
+      "primary_weapon": "Gun_HeavySMG",
+      "age": 54,
+      "health": {
+        "overall_health": 1.0,
+        "is_downed": false,
+        "pain_level": 0.112500004,
+        "missing_body_parts": [
+          "Right thumb"
+        ],
+        "injuries": [],
+        "diseases": [],
+        "implants": [],
+        "chronic_conditions": [
+          "Stab"
+        ],
+        "other": []
+      },
+      "traits": [
+        "Pyromaniac"
+      ],
+      "childhood": "pyromaniac",
+      "adulthood": "colony settler",
+      "skills": [
+        "Construction:9",
+        "Plants:9",
+        "Mining:8"
+      ],
+      "relations": {
+        "lovers": [],
+        "rivals": [],
+        "bonded_animal": "None"
+      },
+      "needs": {
+        "mood": 0.57,
+        "mental_state": "None",
+        "food_level": 0.9519999,
+        "rest_level": 0.922674358,
+        "recreation_level": 0.0
+      }
+    }
+  ],
+  "wealthTotal": 31968.0488,
+  "wealthItems": 16991.82,
+  "wealthBuildings": 10906.2285,
+  "wealthPawns": 4070.0,
+  "currentTechLevel": "Industrial",
+  "daysSinceLastRaid": 0,
+  "activeConditions": [],
+  "totalNutrition": 97.3999939,
+  "isUnderAttck": true,
+  "currentWeather": "SnowGentle",
+  "temperature": -11.8817387,
+  "wildAnimals": {
+    "Thrumbo": 1,
+    "Warg": 2,
+    "Rat": 6,
+    "Fox_Arctic": 1,
+    "Cougar": 1,
+    "Elk": 7,
+    "Raccoon": 2,
+    "Hare": 2,
+    "Lynx": 1
+  },
+  "cultivatedPlants": {},
+  "colonyResources": {
+    "allResources": {
+      "Silver": 1121,
+      "Milk": 75,
+      "EggCassowaryUnfertilized": 34,
+      "MedicineIndustrial": 73,
+      "ComponentIndustrial": 16,
+      "RawPotatoes": 272,
+      "RawRice": 75,
+      "Steel": 344,
+      "WoodLog": 294,
+      "Jade": 1,
+      "Leather_Plain": 174,
+      "Leather_Panthera": 18,
+      "Leather_Bear": 46,
+      "Leather_Pig": 5,
+      "Leather_Light": 11,
+      "BlocksMarble": 230,
+      "Meat_Bear_Grizzly": 135,
+      "Meat_Lynx": 25,
+      "Meat_Elk": 75,
+      "Meat_Horse": 96,
+      "Meat_Pig": 161,
+      "Meat_Deer": 225,
+      "Meat_Rat": 19,
+      "SmokeleafJoint": 5,
+      "MealSurvivalPack": 15,
+      "MealSimple": 10
+    }
+  },
+  "factionRelations": {
+    "Hadberon": 0,
+    "Notistan": -80,
+    "The Crica People": 0,
+    "The Toxo Union": -80,
+    "Leseami Union": -100,
+    "The Ash Sickles": -100
+  },
+  "activeQuests": [
+    "Ship to the Stars",
+    "Breaking Zebo Out",
+    "Rego's Shack of Goodies"
+  ]
+}
