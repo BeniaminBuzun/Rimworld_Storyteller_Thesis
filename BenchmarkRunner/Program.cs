@@ -5,14 +5,6 @@ using System.Reflection;
 
 namespace RimTelligence.Benchmark.Runner
 {
-    /// <summary>
-    /// Console host for the offline benchmark. Its only jobs are to load the real RimWorld/Unity
-    /// assemblies (the mod is built against metadata-only references) and to route mod logging to the
-    /// console, since <c>Verse.Log</c> throws outside the game. Everything else lives in
-    /// <see cref="CustomEvents"/>.
-    ///
-    /// Usage: RimTelligence.Benchmark.exe [--out &lt;dir&gt;]
-    /// </summary>
     public static class Program
     {
         public static int Main(string[] args)
@@ -36,14 +28,12 @@ namespace RimTelligence.Benchmark.Runner
             }
         }
 
-        /// <summary>Value following <paramref name="name"/>, or null when absent.</summary>
         private static string Arg(string[] args, string name)
         {
             int index = Array.IndexOf(args, name);
             return index >= 0 && index + 1 < args.Length ? args[index + 1] : null;
         }
 
-        /// <summary>The mod root is the first folder above the exe that contains an About folder.</summary>
         private static string FindModRoot()
         {
             for (DirectoryInfo directory = new DirectoryInfo(AppContext.BaseDirectory);
@@ -57,7 +47,6 @@ namespace RimTelligence.Benchmark.Runner
             throw new DirectoryNotFoundException("Could not find the mod root above the exe.");
         }
 
-        /// <summary>Locates the runnable game assemblies at Mods/&lt;mod&gt; -> ../../*_Data/Managed.</summary>
         private static string FindManagedDirectory(string modRoot)
         {
             DirectoryInfo gameRoot = Directory.GetParent(modRoot)?.Parent;

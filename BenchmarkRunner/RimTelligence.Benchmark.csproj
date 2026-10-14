@@ -1,20 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
-  <!--
-    Standalone host for the RimTelligence model benchmark.
-
-    It references the mod assembly (so the benchmark reuses the real prompt pipeline) and,
-    at runtime, loads the actual RimWorld/Unity assemblies from the game installation
-    (see Program.cs). Build from this folder:
-
-      dotnet build RimTelligence.Benchmark.csproj -c Release
-
-    Run:
-
-      bin\Release\net472\RimTelligence.Benchmark.exe [modRoot] [managed-dir] [out-dir]
-    (see Program.cs Options.Parse for the exact flag names)
-  -->
-
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net472</TargetFramework>
@@ -29,12 +13,6 @@
     <ProjectReference Include="..\RimTelligence.csproj" />
   </ItemGroup>
 
-  <!--
-    Krafs.Rimworld.Ref deploys metadata-only reference assemblies. If any end up in the
-    output they shadow the real game assemblies and the loader rejects them with
-    BadImageFormatException, so remove them and let the AssemblyResolve hook load the
-    real ones from the game folder.
-  -->
   <Target Name="RemoveRimWorldReferenceAssemblies" AfterTargets="Build">
     <ItemGroup>
       <RimWorldReferenceAssemblies Include="$(OutDir)Assembly-CSharp.dll" />

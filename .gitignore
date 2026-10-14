@@ -42,3 +42,5 @@ packages/
 
 /[Aa]ssets/[Aa]ssetBundles/
 /[Aa]ssets/[Aa]ssetBundles.meta
+
+/BenchmarkOutput/*
