@@ -16,6 +16,8 @@ namespace RimTelligence.CustomEvents.Prompting
 
         private const int PreviewLength = 300;
 
+        private static readonly char[] BomMarker = { '\uFEFF' };
+
         private static readonly JsonSerializer LenientSerializer = JsonSerializer.Create(new JsonSerializerSettings
         {
             Error = HandleMemberConversionError
@@ -24,7 +26,9 @@ namespace RimTelligence.CustomEvents.Prompting
 
         public static LlmParseResult<T> Parse<T>(string rawResponse)
         {
-            string trimmed = (rawResponse ?? string.Empty).TrimStart('\uFEFF').Trim();
+            // TrimStart(char) is a Mono-only overload; pass an array so the call also resolves
+            // on the desktop CLR (used by the out-of-game benchmark host).
+            string trimmed = (rawResponse ?? string.Empty).TrimStart(BomMarker).Trim();
             string preview = BuildPreview(trimmed);
 
             if (string.IsNullOrWhiteSpace(trimmed))

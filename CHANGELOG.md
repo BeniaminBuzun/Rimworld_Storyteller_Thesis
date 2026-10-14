@@ -10,6 +10,15 @@ semver section when a version is released.
 
 ## [Unreleased]
 
+## [0.16.0] - 2026-10-14
+
+### Added
+- `Rimtelligence.Benchmark` project for benchmarking LLM models for custom events
+- `WarmUpAsync` method for testing connection and warming up LLM models
+
+### Changed
+- `IncidentWorker_ProceduralEvent` broken into several smaller methods
+
 ## [0.15.3] - 2026-10-07
 
 ### Fixed

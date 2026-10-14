@@ -10,7 +10,7 @@ namespace RimTelligence.DataSnapshots
     {
         private static readonly string OutputPath = @"C:\Users\Karol\Desktop\resources.json";
 
-        public static void ExportAll()
+        public static void ExportAllDefs()
         {
             try
             {
@@ -26,6 +26,23 @@ namespace RimTelligence.DataSnapshots
             {
                 Log.Error($"[RimTelligence] Failed to export data: {exception}");
             }
+        }
+        public static void ExportColonySnapshot(ColonySnapshot colonySnapshot)
+        {
+            string OutputPath = @"C:\Users\Karol\Desktop\snapshot.json";
+
+            try
+            {
+                string json = JsonConvert.SerializeObject(colonySnapshot, Formatting.Indented);
+                File.WriteAllText(OutputPath, json);
+
+                Log.Message($"[RimTelligence] Data exported to: {OutputPath}");
+            }
+            catch (Exception exception)
+            {
+                Log.Error($"[RimTelligence] Failed to export data: {exception}");
+            }
+
         }
     }
 }

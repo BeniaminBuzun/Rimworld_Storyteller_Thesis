@@ -20,9 +20,10 @@ namespace RimTelligence.Llm
 
 
         public async Task<LlmConnectionResult> GetLlmResponseWithDetailsAsync(
-            string prompt, object jsonSchema = null, string schemaName = "rimtelligence_event")
+            string prompt, object jsonSchema = null, string schemaName = "rimtelligence_event",
+            ProviderConfig configOverride = null)
         {
-            ProviderConfig config = AIStorytellerMod.Settings?.ActiveProvider;
+            ProviderConfig config = configOverride ?? AIStorytellerMod.Settings?.ActiveProvider;
             if (config == null)
                 return LlmConnectionResult.Failure("unknown", "unknown",
                     "No provider configured. Select and apply a provider in the mod settings.");
@@ -32,6 +33,34 @@ namespace RimTelligence.Llm
                 return LlmConnectionResult.Failure(config.providerId, config.chatModel, validationError);
 
             return await RunChatRequestAsync(config, prompt, jsonSchema, schemaName);
+        }
+
+        public async Task<LlmConnectionResult> WarmUpAsync(
+            string greeting = "hello", ProviderConfig configOverride = null)
+        {
+            ProviderConfig config = configOverride ?? AIStorytellerMod.Settings?.ActiveProvider;
+            if (config == null)
+                return LlmConnectionResult.Failure("unknown", "unknown",
+                    "No provider configured. Select and apply a provider in the mod settings.");
+
+            string validationError = ValidateChatConfig(config);
+            if (validationError != null)
+                return LlmConnectionResult.Failure(config.providerId, config.chatModel, validationError);
+
+            try
+            {
+                LLmProviders provider = ProviderCatalog.ResolveProvider(config.providerId);
+                TornadoApi api = BuildApi(config, provider);
+                ChatRequest request = new ChatRequest { Model = ProviderCatalog.BuildChatModel(config) };
+                ChatRichResponse response = await Send(api, request, greeting);
+
+                return LlmConnectionResult.Success(
+                    config.providerId, config.chatModel, response?.Text ?? string.Empty);
+            }
+            catch (Exception exception)
+            {
+                return LlmConnectionResult.Failure(config.providerId, config.chatModel, DescribeError(exception));
+            }
         }
 
         private async Task<LlmConnectionResult> RunChatRequestAsync(
