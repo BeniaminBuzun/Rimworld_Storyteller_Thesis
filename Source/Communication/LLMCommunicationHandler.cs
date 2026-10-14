@@ -10,6 +10,15 @@ namespace RimTelligence.Llm
 {
     public class LLMCommunicationHandler
     {
+        TornadoApi api = new TornadoApi("your-api-key");
+
+        public async void StartNewConversation()
+        {
+            
+        }
+
+
+
         public async Task<LlmConnectionResult> GetLlmResponseWithDetailsAsync(
             string prompt, object jsonSchema = null, string schemaName = "rimtelligence_event",
             ProviderConfig configOverride = null)
