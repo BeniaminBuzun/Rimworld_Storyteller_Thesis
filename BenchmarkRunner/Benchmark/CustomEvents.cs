@@ -34,7 +34,7 @@ namespace RimTelligence.Benchmark
 
             List<IEffect> chosenEvents = HeuristicEventSelector.Select(snapshot);
             string narrative = SnapshotNarrator.Narrate(snapshot);
-            string prompt = ProperPromptGenerator.BuildSystemPrompt(narrative, chosenEvents, snapshot);
+            string prompt = ProperPromptGenerator.BuildSystemPrompt(chosenEvents, snapshot);
 
             ModLogger.Message($"[Benchmark] Snapshot '{snapshot.colonyName}' -> prompt of {prompt.Length} chars.");
             ModLogger.Message($"[Benchmark] Cue: {string.Join(", ", chosenEvents.Select(effect => effect.Config.EffectName))}");

@@ -10,19 +10,47 @@ semver section when a version is released.
 
 ## [Unreleased]
 
-## [0.18.0] - 2026.10.17
-
-### Changed
-- `ColonySnapshot.cs` - now uses `GameObjectMeta.cs` for **missing_body_parts**, **injuries**, **diseases**, **implants**, **chronic_conditions**, **other**
-- `ColonySnapshot.cs` - updated **colony_animals**, **wildAnimals**, **wildAnimals**, **colonyResources** uses new `CountedMeta` class wrapper for proper object counting and later converting for json
+## [0.18.0] - 2026-10-17
 
 ### Added
-- `ColonySnapshot.cs` - added new fields **childhood_description**, **adulthood_description**
-- Automatic population of the database on startup if not populated
-- Custom `ChoiceLetter_Procedural` popup window that links every effect to a place where it happened
+- `ChoiceLetter_Procedural` — custom letter popup that hyperlinks every executed effect to the map tile or object where it happened, so players can click directly to the incident location
+- Automatic RAG database population on game startup when the database is empty (`RagBootstrap`)
+- `GameObjectMeta` — shared metadata wrapper used by `ColonySnapshot` for body parts, injuries, diseases, implants, chronic conditions, and miscellaneous object categories
+- `CountedMeta` — typed wrapper for counted collections (animals, plants, resources) that serialises cleanly to JSON for LLM consumption
+- `PawnSnapshotCapturer` — dedicated capturer that extracts per-pawn health, skills, mood, and background data from the active map
+- `GameObjectsCapturer` — extracts world-level objects (animals, plants, items) for snapshot enrichment
+- Automated multi-effect benchmark (`MultiEffectBenchmark`) that fires a configurable batch of effects per prompt and aggregates pass/fail results in a `BenchmarkReport`
+
+### Changed
+- All **19 effect handlers** now produce rich, narrative `GetSummary()` text:
+  - Preview / default text describes what the effect *will* do in compelling prose
+  - Post-execution text captures actual outcomes (pawn names, quantities, locations)
+  - Human-readable def labels via `LabelCap.Resolve()` instead of raw defNames
+  - All handlers safely handle `null`, empty `SelectedDefName`, and `"random"` targets
+  - **Animal**: `AnimalInsanity`, `SelfTame` (fixed "Nerby" typo → "Nearby"), `SpawnAnimals`
+  - **Environment**: `ChangeWeather`, `CropBlight`, `MeteoriteImpact`, `StartExtremeWeather`
+  - **Item**: `LoseItems`, `PawnFoundItems`, `ResourcePodCrash`
+  - **Pawn Buffs**: `AddExpPoints`, `MiracleHealChronicCondition`, `MiracleHealDisease`, `MiracleHealMissingPart`, `MoodBuff`
+  - **Pawn Debuffs**: `AddDisease`, `DamagePawn`, `LoseExpPoints`, `MoodDebuff`
+- `ColonySnapshot` now uses `GameObjectMeta` for **missing_body_parts**, **injuries**, **diseases**, **implants**, **chronic_conditions**, and **other** health fields
+- `ColonySnapshot` animal, plant, and resource collections now use `CountedMeta` for structured JSON output
+- `ColonySnapshot` added **childhood_description** and **adulthood_description** fields for richer storytelling context
+- `ColonySnapshotCapturer` delegates health/pawn data extraction to `PawnSnapshotCapturer`
+- `IncidentWorker_ProceduralEvent` further decomposed into smaller, focused methods
+- `LlmEffectExecutor` captures `handler.GetSummary(effect)` after `Execute()` into `EffectOutcome.Summary`, then passes outcomes to `BuildSummary()` for the event letter
+- `HarmonyPatches` — consolidated patch registration
+- `StorytellerComp_AI` — minor tick and event flow cleanup
+- `LLMCommunicationHandler` — small request/response handling improvements
+- `LlmResponseParser` / `LlmMultipleEventResponse` — robustness fixes for malformed LLM JSON
+- `SnapshotNarrator` — improved tone and phrasing of generated colony descriptions
+- `AddDisease` effect suppresses `EffectText` when it is not set, avoiding misleading "not set" label in event letters
+- `CropBlight` effect now has improved, evocative effect text describing the scale of crop loss
+- `RimTelligenceDebugActions` — new dev-menu entries for testing the snapshot pipeline
 
 ### Fixed
-- `Mood buff/debuff` is now persistent between save and load
+- `StorytellerState` — `Queue<FiringIncident>` is no longer saved with `Scribe_Values` (unsupported type); serialisation refactored to avoid a `System.ArgumentException` crash on game load
+- `ThoughtMemoryDynamic` — dynamically generated `ThoughtDef` instances are now registered in `DefDatabase` before save so they survive a save/load cycle without "Could not load reference" errors
+- `MoodBuff` / `MoodDebuff` thoughts are now fully persistent between save and load
 
 ## [0.17.0] - 2026-10-14
 

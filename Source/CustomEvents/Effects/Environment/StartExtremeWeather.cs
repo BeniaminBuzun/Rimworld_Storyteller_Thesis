@@ -9,7 +9,7 @@ namespace RimTelligence.CustomEvents.Handlers.Environment
     {
         private static readonly Random _random = new Random();
         private const int TICKS_PER_DAY = 60000;
-        public EffectConfig Config => EffectConfigRegistry.Get("StartExtremeWeatherHandler");
+        public EffectConfig Config => EffectConfigRegistry.Get("StartExtremeWeather");
 
         private string executionSummary;
 

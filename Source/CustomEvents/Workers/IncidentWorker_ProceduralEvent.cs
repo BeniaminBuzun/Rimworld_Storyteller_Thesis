@@ -28,25 +28,23 @@ namespace RimTelligence.CustomEvents.Workers
 
             ModLogger.Message("ProceduralEvent triggered, capturing snapshot...");
 
-            // Everything touching game state stays on the main thread.
             ColonySnapshot snapshot = ColonySnapshotCapturer.Capture(map);
-            DataExporter.ExportColonySnapshot(snapshot);
             string prompt = BuildPrompt(snapshot, out List<IEffect> chosenEvents);
 
-            // Fire and forget; the result is marshalled back via ExecutionQueue.
-            _ = RunEventAsync(prompt, chosenEvents, map);
+            // Built on the main thread, from the same cued effects used in the prompt.
+            object schema = EventJsonSchemaBuilder.Build(chosenEvents, snapshot);
+
+            _ = RunEventAsync(prompt, schema, chosenEvents, map);
             return true;
         }
 
-        private async Task RunEventAsync(string prompt, List<IEffect> chosenEvents, Map map)
+        private async Task RunEventAsync(string prompt, object schema, List<IEffect> chosenEvents, Map map)
         {
             try
             {
-                LlmCustomEvent finalEvent = await RequestEventAsync(prompt, chosenEvents);
+                LlmCustomEvent finalEvent = await RequestEventAsync(prompt, chosenEvents, jsonSchema: schema);
                 if (finalEvent != null)
-                {
                     FireLlmEvent(finalEvent, map);
-                }
             }
             catch (Exception exception)
             {
@@ -59,9 +57,12 @@ namespace RimTelligence.CustomEvents.Workers
             // Game thread execution
             RimTelligenceDispatcher.ExecutionQueue.Enqueue(() =>
             {
+                if (map == null || !Find.Maps.Contains(map)) return;
+
                 List<EffectOutcome> outcomes = LlmEffectExecutor.ExecuteAll(finalEvent, map);
 
                 string summary = LlmEffectExecutor.BuildSummary(finalEvent, outcomes);
+
                 string fullText = $"{finalEvent.letterText ?? "Something happened."}\n\n{summary}";
 
                 var validTargets = outcomes.Where(o => o.Target.IsValid).Select(o => o.Target).ToList();
@@ -86,10 +87,8 @@ namespace RimTelligence.CustomEvents.Workers
         private string BuildPrompt(ColonySnapshot snapshot, out List<IEffect> chosenEvents)
         {
             chosenEvents = HeuristicEventSelector.Select(snapshot);
-            string fullNarrative = SnapshotNarrator.Narrate(snapshot);
 
             return ProperPromptGenerator.BuildSystemPrompt(
-                fullNarrative,
                 chosenEvents,
                 snapshot);
         }
@@ -100,7 +99,8 @@ namespace RimTelligence.CustomEvents.Workers
            ProviderConfig providerConfig = null,
            int maxAttempts = MaxAttempts,
            bool announceFailure = true,
-           Action<LlmConnectionResult> onResponse = null)
+           Action<LlmConnectionResult> onResponse = null,
+           object jsonSchema = null)
         {
             LLMCommunicationHandler communication = new LLMCommunicationHandler();
 
@@ -121,7 +121,7 @@ namespace RimTelligence.CustomEvents.Workers
                 try
                 {
                     LlmConnectionResult result = await communication.GetLlmResponseWithDetailsAsync(
-                        prompt, configOverride: providerConfig);
+                            prompt, jsonSchema: jsonSchema, configOverride: providerConfig);
                     onResponse?.Invoke(result);
 
                     llmProvider = result?.providerId ?? "unknown";

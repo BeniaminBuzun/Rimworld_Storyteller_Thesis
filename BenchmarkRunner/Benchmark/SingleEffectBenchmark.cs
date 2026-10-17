@@ -81,7 +81,7 @@ namespace RimTelligence.Benchmark
                 string prompt;
                 try
                 {
-                    prompt = ProperPromptGenerator.BuildSystemPrompt(narrative, chosen, snapshot);
+                    prompt = ProperPromptGenerator.BuildSystemPrompt(chosen, snapshot);
                 }
                 catch (Exception exception)
                 {

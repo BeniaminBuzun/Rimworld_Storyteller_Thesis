@@ -177,7 +177,7 @@ namespace RimTelligence.Benchmark
                     }
 
                     string caseName = $"HeuristicDraw_{i + 1}_{string.Join("+", drawn.Select(e => e.Config.EffectName))}";
-                    string prompt = ProperPromptGenerator.BuildSystemPrompt(narrative, drawn, snapshot);
+                    string prompt = ProperPromptGenerator.BuildSystemPrompt(drawn, snapshot);
                     string promptPath = Path.Combine(promptDirectory, $"multi-{SanitizeFileName(caseName)}.txt");
                     File.WriteAllText(promptPath, prompt);
 
@@ -289,7 +289,7 @@ namespace RimTelligence.Benchmark
             string prompt;
             try
             {
-                prompt = ProperPromptGenerator.BuildSystemPrompt(narrative, chosen, snapshot);
+                prompt = ProperPromptGenerator.BuildSystemPrompt(chosen, snapshot);
             }
             catch (Exception exception)
             {

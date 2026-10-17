@@ -6,12 +6,31 @@ RimTelligence (Development Name) is an AI-driven storyteller mod for RimWorld.
 Version history is tracked in [CHANGELOG.md](CHANGELOG.md).
 
 ## Things that are currently broken, missing or additional features:
-- LLm has problems with generating proper json structure for DamagePawn effects
-- Mood buff/debuff breaks between save and load
 - Rag is not wired into any relevant logic
-- CustomEvent prompt is catchy and needs to be fine tuned for more `natural` results and I do not pass any defs for llm to choose from
-- Automated benchmark for testing all effects one effect per prompt 
-- Automated benchmark for testing several effects per prompt
+
+## Benchmarking
+
+Run headless model evaluations and benchmarks using `BenchmarkRunner`:
+
+```bash
+# Multi-effect benchmark (testing several effects at once per prompt)
+.\BenchmarkRunner\bin\Debug\net472\RimTelligence.Benchmark.exe --benchmark multi
+
+# Multi-effect benchmark with custom effect combinations
+.\BenchmarkRunner\bin\Debug\net472\RimTelligence.Benchmark.exe --benchmark multi --combos "DamagePawn+AddDisease, ResourcePodCrash+MeteoriteImpact"
+
+# Multi-effect benchmark testing prompts of size N (e.g., pairs or trios)
+.\BenchmarkRunner\bin\Debug\net472\RimTelligence.Benchmark.exe --benchmark multi --effects-per-prompt 2 --cases 5
+
+# Multi-effect benchmark using dynamic storyteller heuristic draws
+.\BenchmarkRunner\bin\Debug\net472\RimTelligence.Benchmark.exe --benchmark multi --heuristic 5
+
+# Single-effect benchmark (testing each effect in isolation)
+.\BenchmarkRunner\bin\Debug\net472\RimTelligence.Benchmark.exe --benchmark single
+```
+
+Reports, execution metrics (latency, token usage, retention rate), and generated story samples are written to `BenchmarkOutput/multi-effect/` and `BenchmarkOutput/single-effect/`.
+
 
 ## Installation / Setup
 1.  Clone the repository into your `RimWorld/Mods` folder.

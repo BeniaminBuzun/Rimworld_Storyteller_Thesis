@@ -9,7 +9,11 @@ namespace RimTelligence.CustomEvents.Execution
         // Thread-safe queue for actions coming from the LLM
         public static readonly ConcurrentQueue<Action> ExecutionQueue = new ConcurrentQueue<Action>();
 
-        public RimTelligenceDispatcher(Game game) { }
+        public RimTelligenceDispatcher(Game game)
+        {
+            // Constructed for every new game and every load: drop anything left from the previous session.
+            while (ExecutionQueue.TryDequeue(out _)) { }
+        }
 
         public override void GameComponentTick()
         {

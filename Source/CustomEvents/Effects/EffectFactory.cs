@@ -28,7 +28,7 @@ namespace RimTelligence.Source.CustomEvents.Handlers
             Register<MiracleHealDisease>("MiracleHealDisease");
             Register<MiracleHealMissingPart>("MiracleHealMissingPart");
             Register<DamagePawn>("DamagePawn");
-            Register<StartExtremeWeather>("StartExtremeWeatherHandler");
+            Register<StartExtremeWeather>("StartExtremeWeather");
             Register<ChangeWeather>("ChangeWeather");
             Register<MeteoriteImpact>("MeteoriteImpact");
             Register<AddExpPoints>("AddExpPoints");
