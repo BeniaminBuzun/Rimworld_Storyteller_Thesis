@@ -10,7 +10,7 @@ semver section when a version is released.
 
 ## [Unreleased]
 
-## [0.18.0] - 2026-10-17
+## [0.17.0] - 2026-10-17
 
 ### Added
 - `ChoiceLetter_Procedural` — custom letter popup that hyperlinks every executed effect to the map tile or object where it happened, so players can click directly to the incident location
@@ -51,16 +51,6 @@ semver section when a version is released.
 - `StorytellerState` — `Queue<FiringIncident>` is no longer saved with `Scribe_Values` (unsupported type); serialisation refactored to avoid a `System.ArgumentException` crash on game load
 - `ThoughtMemoryDynamic` — dynamically generated `ThoughtDef` instances are now registered in `DefDatabase` before save so they survive a save/load cycle without "Could not load reference" errors
 - `MoodBuff` / `MoodDebuff` thoughts are now fully persistent between save and load
-
-## [0.17.0] - 2026-10-14
-
-### Changed
-- `LLmEvent` letter now has links to the sites where effects happened
-- `Colony snapshot` now includes descriptions for animals, plants, colonist childhood and adulthood
-- `SpawnAnimal` effect now spawns **all** animals at the same location 
-
-### Added
-- 
 
 ## [0.16.0] - 2026-10-14
 
