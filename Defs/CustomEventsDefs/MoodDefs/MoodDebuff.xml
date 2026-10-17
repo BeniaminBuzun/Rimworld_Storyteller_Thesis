@@ -1,8 +1,10 @@
-﻿<Defs>
+<Defs>
     <ThoughtDef>
         <defName>RimTelligence_DynamicMoodDebuff</defName>
         <thoughtClass>RimTelligence.CustomEvents.Handlers.Pawns.Debuffs.ThoughtMemoryDynamic</thoughtClass>
         <durationDays>1</durationDays>
+        <stackLimit>10</stackLimit>
+        <stackedEffectMultiplier>1</stackedEffectMultiplier>
         <stages>
             <li>
                 <label>Negative Event</label>

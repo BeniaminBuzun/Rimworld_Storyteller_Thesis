@@ -14,26 +14,41 @@ namespace RimTelligence.CustomEvents.Handlers.Pawns.Debuffs
 
         public bool CanBeChoosen(ColonySnapshot snapshot) => true;
 
+        private string executionSummary;
+
         public GlobalTargetInfo Execute(GameEffect effect, Map map)
         {
-            DamageDef damageDef = DefDatabase<DamageDef>.GetNamed(effect.SelectedDefName[0], errorOnFail: false)
-                ?? DamageDefOf.Burn;
+            string damageName = effect.SelectedDefName != null && effect.SelectedDefName.Length > 0
+                ? effect.SelectedDefName[0]
+                : (!string.IsNullOrWhiteSpace(effect.DefNameText) ? effect.DefNameText : null);
+
+            DamageDef damageDef = (!string.IsNullOrWhiteSpace(damageName)
+                ? DefDatabase<DamageDef>.GetNamed(damageName, errorOnFail: false)
+                : null) ?? DamageDefOf.Burn;
 
             BodyPartDef partDef = null;
-            if (effect.SelectedDefName != null && effect.SelectedDefName.Length >= 2)
+            if (effect.SelectedDefName != null && effect.SelectedDefName.Length >= 2 && !string.IsNullOrWhiteSpace(effect.SelectedDefName[1]))
                 partDef = DefDatabase<BodyPartDef>.GetNamed(effect.SelectedDefName[1], errorOnFail: false);
             else
                 ModLogger.Warning($"DamagePawn: effect for '{effect.TargetPawn}' is missing a body part def; falling back to core body part.");
 
-            var allSpawnedColonists = map.mapPawns.FreeColonistsSpawned;
-            Pawn target = effect.TargetPawn.Equals("random", StringComparison.OrdinalIgnoreCase)
-                ? allSpawnedColonists.RandomElementWithFallback()
-                : allSpawnedColonists.FirstOrDefault(pawn =>
+            var allSpawnedColonists = map.mapPawns.FreeColonistsSpawned.ToList();
+            Pawn target = null;
+            if (!string.IsNullOrWhiteSpace(effect.TargetPawn) && !effect.TargetPawn.Equals("random", StringComparison.OrdinalIgnoreCase))
+            {
+                target = allSpawnedColonists.FirstOrDefault(pawn =>
                     pawn.LabelShort.Equals(effect.TargetPawn, StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (target == null)
+            {
+                target = allSpawnedColonists.RandomElementWithFallback();
+            }
 
             if (target == null)
             {
                 ModLogger.Warning($"DamagePawn: no target found for '{effect.TargetPawn}'.");
+                executionSummary = "A sudden violent impact shook the ground, but missed all colonists.";
                 return GlobalTargetInfo.Invalid;
             }
 
@@ -73,6 +88,18 @@ namespace RimTelligence.CustomEvents.Handlers.Pawns.Debuffs
 
             DamageResult result = target.TakeDamage(dinfo);
 
+            string partLabel = hitPart != null ? hitPart.Label : "body";
+            string dmgLabel = damageDef.LabelCap.Resolve();
+
+            if (result.deflected)
+            {
+                executionSummary = $"{target.LabelShort}'s armor deflected a dangerous {dmgLabel} blow to their {partLabel}!";
+            }
+            else
+            {
+                executionSummary = $"{target.LabelShort} sustained {result.totalDamageDealt:F0} {dmgLabel} damage to their {partLabel} ({effect.Severity.ToString().ToLower()})!";
+            }
+
             ModLogger.Message(
                 $"DamagePawn: {damageDef.defName} ({effect.Severity}) on {target.LabelShort}'s {hitPart.Label} — " +
                 $"requested={damageAmount:F1}, dealt={result.totalDamageDealt:F1}, " +
@@ -96,11 +123,35 @@ namespace RimTelligence.CustomEvents.Handlers.Pawns.Debuffs
                 case SeverityTypes.Low:
                     return partHp * Rand.Range(0.05f, 0.25f);
                 default:
-                    return 0f;
+                    return partHp * Rand.Range(0.15f, 0.30f);
             }
         }
 
-        public string GetSummary(GameEffect effect) =>
-            $"{effect.DefNameText} damage ({effect.Severity}) dealt to {effect.TargetPawn}";
+        public string GetSummary(GameEffect effect)
+        {
+            if (!string.IsNullOrEmpty(executionSummary))
+                return executionSummary;
+
+            return GetDefaultSummary(effect);
+        }
+
+        private static string GetDefaultSummary(GameEffect effect)
+        {
+            string damageName = effect.SelectedDefName != null && effect.SelectedDefName.Length > 0
+                ? effect.SelectedDefName[0]
+                : (!string.IsNullOrWhiteSpace(effect.DefNameText) ? effect.DefNameText : "physical");
+            DamageDef damageDef = DefDatabase<DamageDef>.GetNamed(damageName, errorOnFail: false);
+            string dmgLabel = damageDef != null ? damageDef.LabelCap.Resolve() : damageName;
+
+            string partName = effect.SelectedDefName != null && effect.SelectedDefName.Length >= 2
+                ? effect.SelectedDefName[1]
+                : "body";
+            BodyPartDef partDef = DefDatabase<BodyPartDef>.GetNamed(partName, errorOnFail: false);
+            string partLabel = partDef != null ? partDef.LabelCap.Resolve() : partName;
+
+            string pawn = !string.IsNullOrWhiteSpace(effect.TargetPawn) ? effect.TargetPawn : "A colonist";
+            string sevStr = effect.Severity != SeverityTypes.None ? $" ({effect.Severity.ToString().ToLower()})" : "";
+            return $"{pawn} suffers {dmgLabel} trauma to their {partLabel}{sevStr}.";
+        }
     }
 }

@@ -2,6 +2,8 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
 using RimTelligence.CustomEvents.Handlers;
+using RimTelligence.DataSnapshots;
+using RimTelligence.Source.CustomEvents.Handlers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -58,6 +60,8 @@ namespace RimTelligence.CustomEvents.Prompting
                     }
                 }
 
+                NormalizeEventToken(token);
+
                 T data = token.ToObject<T>(LenientSerializer);
                 if (data == null)
                 {
@@ -69,6 +73,82 @@ namespace RimTelligence.CustomEvents.Prompting
             catch (Exception exception)
             {
                 return WithPreview(LlmParseResult<T>.Failure(exception.Message), preview);
+            }
+        }
+
+        private static void NormalizeEventToken(JToken token)
+        {
+            if (!(token is JObject obj)) return;
+
+            // Normalize letterText if model returned an array of sentences
+            if (obj["letterText"] is JArray textArray)
+            {
+                var sentences = textArray
+                    .Select(t => t.ToString().Trim())
+                    .Where(s => !string.IsNullOrEmpty(s));
+                obj["letterText"] = string.Join(" ", sentences);
+            }
+
+            // If the model put effect properties at the top level instead of inside effects array:
+            // e.g. { "letterTitle": "...", "letterText": "...", "effectName": "ResourcePodCrash", "selectedDefName": [...] }
+            if ((obj["effects"] == null || (obj["effects"] is JArray arr && arr.Count == 0)) 
+                && (obj["effectName"] != null || obj["type"] != null))
+            {
+                var rootEffect = new JObject();
+                if (obj["effectName"] != null) rootEffect["effectName"] = obj["effectName"];
+                else if (obj["type"] != null) rootEffect["effectName"] = obj["type"];
+
+                if (obj["selectedDefName"] != null) rootEffect["selectedDefName"] = obj["selectedDefName"];
+                else if (obj["defName"] != null) rootEffect["selectedDefName"] = obj["defName"];
+
+                if (obj["severity"] != null) rootEffect["severity"] = obj["severity"];
+                if (obj["targetPawn"] != null) rootEffect["targetPawn"] = obj["targetPawn"];
+
+                obj["effects"] = new JArray(rootEffect);
+            }
+
+            // Normalize effects array
+            if (obj["effects"] is JArray effectsArray)
+            {
+                foreach (JToken effectToken in effectsArray)
+                {
+                    if (!(effectToken is JObject effectObj)) continue;
+
+                    // Normalize effectName / type
+                    if (effectObj["effectName"] == null && effectObj["type"] != null)
+                    {
+                        effectObj["effectName"] = effectObj["type"];
+                    }
+
+                    // Normalize selectedDefName / defName
+                    JToken defToken = effectObj["selectedDefName"] ?? effectObj["defName"];
+                    if (defToken != null)
+                    {
+                        if (defToken.Type == JTokenType.String)
+                        {
+                            string raw = defToken.ToString().Trim();
+                            if (raw.Contains(","))
+                            {
+                                var parts = raw.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                                    .Select(p => p.Trim())
+                                    .Where(p => !string.IsNullOrEmpty(p));
+                                effectObj["selectedDefName"] = new JArray(parts);
+                            }
+                            else if (!string.IsNullOrEmpty(raw))
+                            {
+                                effectObj["selectedDefName"] = new JArray(raw);
+                            }
+                            else
+                            {
+                                effectObj["selectedDefName"] = new JArray();
+                            }
+                        }
+                        else if (defToken.Type == JTokenType.Array)
+                        {
+                            effectObj["selectedDefName"] = defToken;
+                        }
+                    }
+                }
             }
         }
 
@@ -84,6 +164,18 @@ namespace RimTelligence.CustomEvents.Prompting
             try
             {
                 result.data.effects = LlmEffectValidator.StripInvalid(result.data.effects, chosenEvents);
+
+                // If no valid effects were parsed but we know what the director cued, attempt
+                // to recover by extracting the cued effects and any referenced defs from the narrative text.
+                if ((result.data.effects == null || result.data.effects.Count == 0) && chosenEvents != null && chosenEvents.Any())
+                {
+                    var recovered = RecoverEffectsFromNarrative(result.data.letterText, chosenEvents);
+                    if (recovered.Count > 0)
+                    {
+                        ModLogger.Warning($"[Parser] Model omitted 'effects' block. Recovered {recovered.Count} effect(s) from letter text.");
+                        result.data.effects = LlmEffectValidator.StripInvalid(recovered, chosenEvents);
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -98,6 +190,7 @@ namespace RimTelligence.CustomEvents.Prompting
                     LlmParseResult<LlmCustomEvent>.Failure("The response contained no effects after validation. An effects array with at least one valid effect is required."),
                     BuildPreview(rawResponse));
             }
+
             if (string.IsNullOrWhiteSpace(result.data.letterText))
             {
                 result.data.letterText = "Something happened.";
@@ -108,6 +201,87 @@ namespace RimTelligence.CustomEvents.Prompting
             }
 
             return result;
+        }
+
+        private static List<GameEffect> RecoverEffectsFromNarrative(string letterText, IEnumerable<IEffect> chosenEvents)
+        {
+            var recovered = new List<GameEffect>();
+            string text = letterText ?? string.Empty;
+
+            foreach (var chosen in chosenEvents)
+            {
+                if (chosen?.Config == null) continue;
+                EffectConfig contract = EffectContractProvider.GetContract(chosen, null);
+                var effect = new GameEffect
+                {
+                    EffectName = contract.EffectName,
+                    Severity = SeverityTypes.Medium
+                };
+
+                if (contract.IsDefRequired)
+                {
+                    var selectedDefs = new List<string>();
+
+                    string primary = FindDefInText(text, contract.AllowedDefs);
+                    if (string.IsNullOrEmpty(primary) && contract.AllowedDefs.Count > 0)
+                    {
+                        primary = contract.AllowedDefs[0].DefName;
+                    }
+                    if (!string.IsNullOrEmpty(primary))
+                    {
+                        selectedDefs.Add(primary);
+                    }
+
+                    if (contract.DefCount > 1)
+                    {
+                        string secondary = FindDefInText(text, contract.SecondaryAllowedDefs);
+                        if (string.IsNullOrEmpty(secondary) && contract.SecondaryAllowedDefs.Count > 0)
+                        {
+                            secondary = contract.SecondaryAllowedDefs[0].DefName;
+                        }
+                        if (!string.IsNullOrEmpty(secondary))
+                        {
+                            selectedDefs.Add(secondary);
+                        }
+                    }
+
+                    effect.SelectedDefName = selectedDefs.ToArray();
+                }
+                else
+                {
+                    effect.SelectedDefName = new string[0];
+                }
+
+                recovered.Add(effect);
+            }
+
+            return recovered;
+        }
+
+        private static string FindDefInText(string text, List<GameObjectMeta> candidates)
+        {
+            if (candidates == null || candidates.Count == 0 || string.IsNullOrEmpty(text))
+                return null;
+
+            foreach (var item in candidates.OrderByDescending(c => c.Label?.Length ?? 0))
+            {
+                if (!string.IsNullOrWhiteSpace(item.Label) &&
+                    text.IndexOf(item.Label, StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    return item.DefName;
+                }
+            }
+
+            foreach (var item in candidates.OrderByDescending(c => c.DefName?.Length ?? 0))
+            {
+                if (!string.IsNullOrWhiteSpace(item.DefName) &&
+                    text.IndexOf(item.DefName, StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    return item.DefName;
+                }
+            }
+
+            return null;
         }
 
         private enum ExtractionFailure

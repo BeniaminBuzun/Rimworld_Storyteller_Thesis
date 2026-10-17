@@ -1,4 +1,4 @@
-﻿using RimTelligence.CustomEvents.Handlers;
+using RimTelligence.CustomEvents.Handlers;
 using RimTelligence.DataSnapshots;
 using System.Collections.Generic;
 using System.Linq;
@@ -68,7 +68,7 @@ namespace RimTelligence.CustomEvents.Prompting
                 {
                     ["type"] = "array",
                     ["items"] = itemsSchema,
-                    ["minItems"] = 1,
+                    ["minItems"] = contract.DefCount,
                     ["maxItems"] = contract.DefCount
                 };
                 required.Add("selectedDefName");

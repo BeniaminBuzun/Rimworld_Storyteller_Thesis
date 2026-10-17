@@ -57,6 +57,8 @@ namespace RimTelligence.DataSnapshots
                 SeedDefCategory(categories, "GameConditionList");
                 SeedDefCategory(categories, "AllWeathersList");
                 SeedDefCategory(categories, "AllSkillsList");
+                SeedDefCategory(categories, "BodyPartList");
+                SeedDefCategory(categories, "CharvestablePlantsList");
 
                 _categories = categories;
                 IsLoaded = true;
@@ -81,6 +83,30 @@ namespace RimTelligence.DataSnapshots
             foreach (var category in _categories.Values)
                 category.Items.Clear();
 
+            bool hasGameDefs = false;
+            try
+            {
+                hasGameDefs = DefDatabase<ThingDef>.AllDefs != null && DefDatabase<ThingDef>.AllDefs.Any();
+            }
+            catch { }
+
+            if (hasGameDefs)
+            {
+                PopulateFromGameDefs();
+            }
+            else
+            {
+                PopulateFromFallbackStore();
+            }
+
+            EnsureDefaultLists();
+
+            foreach (var category in _categories.Values)
+                category.Items.Sort((a, b) => string.Compare(a.DefName, b.DefName, StringComparison.Ordinal));
+        }
+
+        private static void PopulateFromGameDefs()
+        {
             var itemPredicates = BuildItemPredicates();
 
             foreach (ThingDef thingDef in DefDatabase<ThingDef>.AllDefs)
@@ -116,9 +142,134 @@ namespace RimTelligence.DataSnapshots
             TryAddDefs("AllWeathersList", DefDatabase<WeatherDef>.AllDefs, null);
             TryAddDefs("AllSkillsList", DefDatabase<SkillDef>.AllDefs, null);
             TryAddDefs("BodyPartList", DefDatabase<BodyPartDef>.AllDefs, null);
+        }
 
-            foreach (var category in _categories.Values)
-                category.Items.Sort((a, b) => string.Compare(a.DefName, b.DefName, StringComparison.Ordinal));
+        private static void PopulateFromFallbackStore()
+        {
+            try
+            {
+                string dbPath = ModPaths.Resolve(Path.Combine("Data", "rag.db"));
+                if (!File.Exists(dbPath)) return;
+
+                using (var conn = new System.Data.SQLite.SQLiteConnection("Data Source=" + dbPath + ";Version=3;"))
+                {
+                    conn.Open();
+                    using (var cmd = conn.CreateCommand())
+                    {
+                        cmd.CommandText = "SELECT category, def_name, text FROM static_chunks";
+                        using (var reader = cmd.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                string catId = reader.GetString(0);
+                                string defName = reader.GetString(1);
+                                string text = reader.GetString(2);
+
+                                if (!_categories.TryGetValue(catId, out var category))
+                                {
+                                    category = new ItemCategory { Id = catId, Weight = 1.0f };
+                                    _categories[catId] = category;
+                                }
+
+                                string label = defName;
+                                string description = string.Empty;
+                                if (!string.IsNullOrEmpty(text))
+                                {
+                                    int colonIdx = text.IndexOf(':');
+                                    if (colonIdx > 0)
+                                    {
+                                        label = text.Substring(0, colonIdx).Trim();
+                                        description = text.Substring(colonIdx + 1).Trim();
+                                    }
+                                    else
+                                    {
+                                        label = text.Trim();
+                                    }
+                                }
+
+                                category.Items.Add(new GameObjectMeta
+                                {
+                                    DefName = defName,
+                                    Label = label,
+                                    Description = description
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                ModLogger.Warning("Failed to populate categories from fallback store: " + ex.Message);
+            }
+        }
+
+        private static readonly (string defName, string label)[] StandardBodyParts = new[]
+        {
+            ("Torso", "torso"),
+            ("Head", "head"),
+            ("Eye", "eye"),
+            ("Ear", "ear"),
+            ("Nose", "nose"),
+            ("Jaw", "jaw"),
+            ("Neck", "neck"),
+            ("Shoulder", "shoulder"),
+            ("Arm", "arm"),
+            ("Hand", "hand"),
+            ("Finger", "finger"),
+            ("Spine", "spine"),
+            ("Rib", "rib"),
+            ("Leg", "leg"),
+            ("Foot", "foot"),
+            ("Toe", "toe"),
+            ("Heart", "heart"),
+            ("Lung", "lung"),
+            ("Kidney", "kidney"),
+            ("Liver", "liver"),
+            ("Stomach", "stomach"),
+            ("Brain", "brain")
+        };
+
+        private static readonly (string defName, string label)[] StandardPlants = new[]
+        {
+            ("Plant_Rice", "rice plant"),
+            ("Plant_Potato", "potato plant"),
+            ("Plant_Corn", "corn plant"),
+            ("Plant_Healroot", "healroot"),
+            ("Plant_Smokeleaf", "smokeleaf"),
+            ("Plant_Psychoid", "psychoid plant"),
+            ("Plant_Cotton", "cotton plant"),
+            ("Plant_Haygrass", "haygrass"),
+            ("Plant_Devilstrand", "devilstrand")
+        };
+
+        private static void EnsureDefaultLists()
+        {
+            if (_categories.TryGetValue("BodyPartList", out var bodyParts) && bodyParts.Items.Count == 0)
+            {
+                foreach (var (defName, label) in StandardBodyParts)
+                {
+                    bodyParts.Items.Add(new GameObjectMeta
+                    {
+                        DefName = defName,
+                        Label = label,
+                        Description = label
+                    });
+                }
+            }
+
+            if (_categories.TryGetValue("CharvestablePlantsList", out var plants) && plants.Items.Count == 0)
+            {
+                foreach (var (defName, label) in StandardPlants)
+                {
+                    plants.Items.Add(new GameObjectMeta
+                    {
+                        DefName = defName,
+                        Label = label,
+                        Description = label
+                    });
+                }
+            }
         }
 
         private static void TryAdd(string categoryId, ThingDef thingDef)
@@ -202,5 +353,34 @@ namespace RimTelligence.DataSnapshots
 
         public static List<string> GetAllowedDefs(string categoryId) =>
             GetList(categoryId).Select(m => m.DefName).ToList();
+
+        private static readonly Random _categoryRandom = new Random();
+
+        public static string DrawRandomCategory()
+        {
+            var candidates = _categories.Values
+                .Where(c => c.Weight > 0f && c.Items.Count > 0)
+                .ToList();
+
+            if (candidates.Count == 0)
+                candidates = _categories.Values.Where(c => c.Items.Count > 0).ToList();
+
+            if (candidates.Count == 0)
+                return "Resources_Components";
+
+            float total = candidates.Sum(c => c.Weight);
+            if (total <= 0f) return candidates[0].Id;
+
+            float roll = (float)(_categoryRandom.NextDouble() * total);
+            float cursor = 0f;
+            foreach (var category in candidates)
+            {
+                cursor += category.Weight;
+                if (roll <= cursor)
+                    return category.Id;
+            }
+
+            return candidates.Last().Id;
+        }
     }
 }

@@ -1,4 +1,6 @@
+using Newtonsoft.Json;
 using RimWorld;
+using System;
 using System.Collections.Generic;
 
 namespace RimTelligence.DataSnapshots
@@ -18,11 +20,10 @@ namespace RimTelligence.DataSnapshots
 
         // other inhibitants
         public int colonyAnimalCount;
-        public List<AnimalSnapshot> colonyAnimals;
+        public List<GameObjectMeta> colonyAnimals;
         public List<PawnSnapshot> prisoners;
         public List<PawnSnapshot> slaves;
         public List<PawnSnapshot> visitors;
-        // add information about prisoners, slaves, visitors
 
         // threats & story
         public float wealthTotal;
@@ -38,11 +39,12 @@ namespace RimTelligence.DataSnapshots
         // environment
         public string currentWeather;
         public float temperature;
-        public Dictionary<AnimalSnapshot, int> wildAnimals;
-        public Dictionary<PlantSnapshot, int> cultivatedPlants;
+
+        public List<CountedMeta> wildAnimals;
+        public List<CountedMeta> cultivatedPlants;
 
         // resources
-        public ResourceSnapshot colonyResources;
+        public List<CountedMeta> colonyResources;
 
         // world & diplomacy 
         public Dictionary<string, int> factionRelations;
@@ -92,16 +94,12 @@ namespace RimTelligence.DataSnapshots
         public bool is_downed;
         public float pain_level;
 
-        public List<string> missing_body_parts;
-        public List<string> injuries;
-        public List<string> diseases; // name and description
-        public List<string> implants;
-        public List<string> chronic_conditions;  // scars, permanent
-        public List<string> other;
-    }
-    public class ResourceSnapshot
-    {
-        public Dictionary<string, int> allResources;
+        public List<GameObjectMeta> missing_body_parts;
+        public List<GameObjectMeta> injuries;
+        public List<GameObjectMeta> diseases;
+        public List<GameObjectMeta> implants;
+        public List<GameObjectMeta> chronic_conditions;  // scars, permanent
+        public List<GameObjectMeta> other;
     }
 
     public class EventSnapshot
@@ -109,19 +107,6 @@ namespace RimTelligence.DataSnapshots
         public string title;
         public string description;
 
-    }
-    public class AnimalSnapshot 
-    {
-        public string name;
-        public string description;
-
-        
-    }
-
-    public class PlantSnapshot
-    {
-        public string name;
-        public string description;
     }
 }
 

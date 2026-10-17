@@ -21,7 +21,7 @@ namespace RimTelligence.Benchmark
         {
             ProviderConfig providerConfig = BuildProviderConfig(provider, model);
 
-            BenchmarkResult result = new BenchmarkResult
+            BenchmarkResult warmup = new BenchmarkResult
             {
                 providerName = provider.name,
                 providerId = providerConfig.providerId,
@@ -29,7 +29,62 @@ namespace RimTelligence.Benchmark
                 model = model
             };
 
-            await WakeUpAsync(providerConfig, model, result);
+            await WakeUpAsync(providerConfig, model, warmup);
+
+            return await RunPromptAsync(providerConfig, provider.name, model, prompt, chosenEvents, warmup.warmUpMs);
+        }
+
+        internal static ProviderConfig BuildProviderConfig(BenchmarkProvider provider, string model)
+        {
+            string providerId = string.IsNullOrWhiteSpace(provider.providerId)
+                ? ProviderCatalog.CustomProviderId
+                : provider.providerId;
+
+            return new ProviderConfig
+            {
+                providerId = providerId,
+                apiKey = provider.apiKey ?? string.Empty,
+                chatModel = model,
+                baseUrl = provider.endpoint ?? string.Empty
+            };
+        }
+
+        internal static async Task<long> WarmUpAsync(ProviderConfig providerConfig, string model)
+        {
+            BenchmarkResult tmp = new BenchmarkResult();
+            await WakeUpAsync(providerConfig, model, tmp);
+            return tmp.warmUpMs;
+        }
+
+        internal static async Task<BenchmarkResult> RunPromptAsync(
+            ProviderConfig providerConfig,
+            string providerName,
+            string model,
+            string prompt,
+            List<IEffect> chosenEvents,
+            long warmUpMs = 0)
+        {
+            BenchmarkResult result = new BenchmarkResult
+            {
+                providerName = providerName,
+                providerId = providerConfig.providerId,
+                endpoint = providerConfig.baseUrl,
+                model = model,
+                warmUpMs = warmUpMs
+            };
+
+            if (chosenEvents != null && chosenEvents.Count == 1 && chosenEvents[0]?.Config != null)
+            {
+                result.cueEffect = chosenEvents[0].Config.EffectName;
+                result.cueEffects = new List<string> { result.cueEffect };
+                result.expectedEffectCount = 1;
+            }
+            else if (chosenEvents != null && chosenEvents.Count > 1)
+            {
+                result.cueEffects = chosenEvents.Where(e => e?.Config != null).Select(e => e.Config.EffectName).ToList();
+                result.cueEffect = string.Join(" + ", result.cueEffects);
+                result.expectedEffectCount = result.cueEffects.Count;
+            }
 
             await MeasureAsync(providerConfig, prompt, chosenEvents, result);
             return result;
@@ -81,6 +136,17 @@ namespace RimTelligence.Benchmark
                     result.effects = parsedEvent.effects?
                         .Select(effect => effect.EffectName)
                         .ToList();
+                    result.returnedEffectCount = result.effects?.Count ?? 0;
+
+                    if (result.cueEffects != null && result.cueEffects.Count > 0)
+                    {
+                        var returnedSet = new HashSet<string>(result.effects ?? Enumerable.Empty<string>(), StringComparer.OrdinalIgnoreCase);
+                        result.allCuedEffectsReturned = result.cueEffects.All(c => returnedSet.Contains(c));
+                    }
+                    else
+                    {
+                        result.allCuedEffectsReturned = true;
+                    }
                 }
             }
             catch (Exception exception)
@@ -128,21 +194,6 @@ namespace RimTelligence.Benchmark
             {
                 return "Parser threw: " + exception.Message;
             }
-        }
-
-        private static ProviderConfig BuildProviderConfig(BenchmarkProvider provider, string model)
-        {
-            string providerId = string.IsNullOrWhiteSpace(provider.providerId)
-                ? ProviderCatalog.CustomProviderId
-                : provider.providerId;
-
-            return new ProviderConfig
-            {
-                providerId = providerId,
-                apiKey = provider.apiKey ?? string.Empty,
-                chatModel = model,
-                baseUrl = provider.endpoint ?? string.Empty
-            };
         }
     }
 }

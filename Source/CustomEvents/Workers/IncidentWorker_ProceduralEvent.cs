@@ -62,8 +62,10 @@ namespace RimTelligence.CustomEvents.Workers
             {
                 List<EffectOutcome> outcomes = LlmEffectExecutor.ExecuteAll(finalEvent, map);
 
-                string summary = LlmEffectExecutor.BuildSummary(finalEvent);
+                string summary = LlmEffectExecutor.BuildSummary(finalEvent, outcomes);
                 string fullText = $"{finalEvent.letterText ?? "Something happened."}\n\n{summary}";
+
+                var validTargets = outcomes.Where(o => o.Target.IsValid).Select(o => o.Target).ToList();
 
                 var letter = new ChoiceLetter_Procedural
                 {
@@ -71,8 +73,8 @@ namespace RimTelligence.CustomEvents.Workers
                     ID = Find.UniqueIDsManager.GetNextLetterID(),
                     Label = finalEvent.letterTitle ?? "Strange Event",
                     Text = fullText,
-                    lookTargets = outcomes.Count > 0
-                        ? new LookTargets(outcomes.Select(o => o.Target).ToList())
+                    lookTargets = validTargets.Count > 0
+                        ? new LookTargets(validTargets)
                         : null,
                     jumpLabels = outcomes.Select(o => o.Label).ToList(),
                     jumpTargets = outcomes.Select(o => o.Target).ToList()

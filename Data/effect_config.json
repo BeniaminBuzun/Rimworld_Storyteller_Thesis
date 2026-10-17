@@ -68,7 +68,7 @@
         "baseWeight": 3,
         "alignment": "Bad",
         "isDefRequired": true,
-        "usesSeverity": false,
+        "usesSeverity": true,
         "usesTargetPawn": true
     },
     {

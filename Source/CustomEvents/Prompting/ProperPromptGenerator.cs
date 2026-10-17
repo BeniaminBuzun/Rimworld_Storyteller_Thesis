@@ -96,16 +96,30 @@ namespace RimTelligence.CustomEvents.Prompting
             AppendStoryContextPrompts(sb, snapshot);
 
             //  Effect rules 
+            sb.AppendLine("RESPONSE JSON SCHEMA (the entire output MUST follow this exact structure):");
+            sb.AppendLine("{");
+            sb.AppendLine("  \"letterTitle\": \"<2-4 words>\",");
+            sb.AppendLine($"  \"letterText\": \"<{maxSentences} sentences telling the story>\",");
+            sb.AppendLine("  \"effects\": [");
+            sb.AppendLine("    {");
+            sb.AppendLine("      \"effectName\": \"<exact effect name from cue>\",");
+            sb.AppendLine("      \"selectedDefName\": [\"<defName>\"],");
+            sb.AppendLine("      \"severity\": \"LOW|MEDIUM|HIGH|EXTREME\",");
+            sb.AppendLine("      \"targetPawn\": \"<colonist name>\"");
+            sb.AppendLine("    }");
+            sb.AppendLine("  ]");
+            sb.AppendLine("}");
+            sb.AppendLine();
             sb.AppendLine("EFFECT RULES:");
-            sb.AppendLine("- The 'effects' array MUST contain exactly the effects from the cue, and MUST NOT be empty.");
-            sb.AppendLine("- Every effect MUST set 'effectName' to the EXACT name given in the cue / Allowed Values below.");
-            sb.AppendLine("- 'selectedDefName' must come strictly from that effect's Allowed Values below.");
+            sb.AppendLine("- The top-level 'effects' array is MANDATORY and MUST contain exactly the effects from the cue, and MUST NOT be empty.");
+            sb.AppendLine("- Every effect object in 'effects' MUST set 'effectName' to the EXACT name given in the cue / Allowed Values below.");
+            sb.AppendLine("- 'selectedDefName' MUST be a JSON array of strings strictly matching the structure specified for that effect in Allowed Values below:");
+            sb.AppendLine("    * For single-defName effects: exactly 1 element, e.g. [\"<defName>\"].");
+            sb.AppendLine("    * For multi-defName effects (e.g. DamagePawn requiring 2): exactly the required number of elements in order, e.g. [\"<1st defName>\", \"<2nd defName>\"].");
+            sb.AppendLine("    * For effects that do not require defs: use [] or omit.");
+            sb.AppendLine("- Every defName in 'selectedDefName' must come strictly from that effect's Allowed Values below.");
             sb.AppendLine("- Include 'severity' only for effects that show 'severity:' in Allowed Values. Use LOW/MEDIUM/HIGH/EXTREME.");
             sb.AppendLine("- Include 'targetPawn' only for effects that show 'targetPawn:' in Allowed Values.");
-            sb.AppendLine();
-            sb.AppendLine("EFFECT JSON SCHEMA (the ONLY allowed keys):");
-            sb.AppendLine("{\n  \"effectName\": \"<exact effect name from cue>\",\n  \"selectedDefName\": [\"<defName>\"] | [\"<defName>\", \"<second defName>\"],\n  \"severity\": \"LOW|MEDIUM|HIGH|EXTREME\",\n  \"targetPawn\": \"<colonist name>\"\n}");
-            sb.AppendLine("- 'severity' and 'targetPawn' are optional; include them only when that effect's Allowed Values say so.");
             sb.AppendLine();
 
             //  Allowed values 
@@ -121,13 +135,34 @@ namespace RimTelligence.CustomEvents.Prompting
                 if (contract.UsesTargetPawn)
                     sb.AppendLine("    targetPawn: one of the colonists available in colony state");
 
-                if (contract.IsDefRequired && contract.AllowedDefs.Count > 0)
-                    sb.AppendLine($"    allowed defName: {FormatDefList(contract.AllowedDefs)}");
-                else if (contract.IsDefRequired)
-                    sb.AppendLine("    allowed defName: any defName chosen by you (free text)");
+                if (contract.DefCount > 1)
+                {
+                    string primaryLabel = GetDefSlotLabel(contract.RelatedDefList, "1st defName");
+                    string secondaryLabel = GetDefSlotLabel(contract.SecondaryRelatedDefList, "2nd defName");
 
-                if (contract.SecondaryAllowedDefs.Count > 0)
-                    sb.AppendLine($"    second defName (body part): {FormatDefList(contract.SecondaryAllowedDefs)}");
+                    sb.AppendLine($"    selectedDefName structure: [\"<{primaryLabel}>\", \"<{secondaryLabel}>\"] (MUST contain exactly {contract.DefCount} elements in this order)");
+                    if (contract.AllowedDefs.Count > 0)
+                        sb.AppendLine($"      - 1st defName ({primaryLabel}): {FormatDefList(contract.AllowedDefs)}");
+                    else if (contract.IsDefRequired)
+                        sb.AppendLine($"      - 1st defName ({primaryLabel}): any valid defName chosen by you");
+
+                    if (contract.SecondaryAllowedDefs.Count > 0)
+                        sb.AppendLine($"      - 2nd defName ({secondaryLabel}): {FormatDefList(contract.SecondaryAllowedDefs)}");
+                    else if (contract.IsDefRequired)
+                        sb.AppendLine($"      - 2nd defName ({secondaryLabel}): any valid defName chosen by you");
+                }
+                else if (contract.IsDefRequired)
+                {
+                    sb.AppendLine("    selectedDefName structure: [\"<defName>\"] (MUST contain exactly 1 element)");
+                    if (contract.AllowedDefs.Count > 0)
+                        sb.AppendLine($"    allowed defName: {FormatDefList(contract.AllowedDefs)}");
+                    else
+                        sb.AppendLine("    allowed defName: any defName chosen by you (free text)");
+                }
+                else
+                {
+                    sb.AppendLine("    selectedDefName: not required (omit or use [])");
+                }
 
                 sb.AppendLine();
             }
@@ -162,9 +197,22 @@ namespace RimTelligence.CustomEvents.Prompting
             sb.AppendLine();
         }
 
+        private static string GetDefSlotLabel(string listId, string defaultLabel)
+        {
+            if (string.IsNullOrEmpty(listId)) return defaultLabel;
+            if (listId.IndexOf("Damage", StringComparison.OrdinalIgnoreCase) >= 0) return "damage type";
+            if (listId.IndexOf("BodyPart", StringComparison.OrdinalIgnoreCase) >= 0) return "body part";
+            if (listId.IndexOf("Skill", StringComparison.OrdinalIgnoreCase) >= 0) return "skill";
+            if (listId.IndexOf("Disease", StringComparison.OrdinalIgnoreCase) >= 0) return "disease";
+            if (listId.IndexOf("Weather", StringComparison.OrdinalIgnoreCase) >= 0) return "weather";
+            if (listId.IndexOf("Animal", StringComparison.OrdinalIgnoreCase) >= 0) return "animal";
+            if (listId.IndexOf("Plant", StringComparison.OrdinalIgnoreCase) >= 0) return "plant";
+            return defaultLabel;
+        }
+
         private static string FormatDefList(List<GameObjectMeta> defs)
         {
-            const int MaxDefs = 5;
+            const int MaxDefs = 6;
 
             List<GameObjectMeta> sample = defs.Count > MaxDefs
                 ? defs.OrderBy(_ => _random.Next()).Take(MaxDefs).ToList()

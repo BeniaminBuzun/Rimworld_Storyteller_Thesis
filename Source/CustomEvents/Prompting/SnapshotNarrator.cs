@@ -61,7 +61,7 @@ namespace RimTelligence.CustomEvents.Prompting
             // Colony animals
             if (!string.IsNullOrWhiteSpace(snapshot.colonyAnimals?.ToString()))
             {
-                var animalList = snapshot.colonyAnimals ?? new List<AnimalSnapshot>();
+                var animalList = snapshot.colonyAnimals ?? new List<GameObjectMeta>();
                 if (animalList.Count > 0)
                     sb.AppendLine($"Colony animals ({snapshot.colonyAnimalCount}): {string.Join(", ", animalList)}.");
                 else
@@ -93,9 +93,9 @@ namespace RimTelligence.CustomEvents.Prompting
             if (snapshot.wildAnimals != null && snapshot.wildAnimals.Count > 0)
             {
                 var sample = snapshot.wildAnimals
-                    .OrderByDescending(kv => kv.Value)
+                    .OrderByDescending(entry => entry.count)
                     .Take(6)
-                    .Select(kv => $"{kv.Value}x {kv.Key}")
+                    .Select(entry => $"{entry.count}x {entry.meta}")
                     .ToList();
                 sb.AppendLine($"Wildlife nearby: {string.Join(", ", sample)}.");
             }
@@ -104,23 +104,23 @@ namespace RimTelligence.CustomEvents.Prompting
             if (snapshot.cultivatedPlants != null && snapshot.cultivatedPlants.Count > 0)
             {
                 var crops = snapshot.cultivatedPlants
-                    .Select(kv => $"{kv.Value}x {kv.Key}")
+                    .Select(entry => $"{entry.count}x {entry.meta}")
                     .ToList();
                 sb.AppendLine($"Crops: {string.Join(", ", crops)}.");
             }
 
             // Resources
-            if (snapshot.colonyResources?.allResources != null && snapshot.colonyResources.allResources.Count > 0)
-            {
-                var topResources = snapshot.colonyResources.allResources
-                    .OrderByDescending(kv => kv.Value)
-                    .Take(MaxResourceEntries)
-                    .Select(kv => $"{kv.Key}: {kv.Value}");
-                string suffix = snapshot.colonyResources.allResources.Count > MaxResourceEntries
-                    ? $" (+ {snapshot.colonyResources.allResources.Count - MaxResourceEntries} more)"
-                    : "";
-                sb.AppendLine($"Resources: {string.Join(", ", topResources)}{suffix}.");
-            }
+            //if (snapshot.colonyResources?.allResources != null && snapshot.colonyResources.allResources.Count > 0)
+            //{
+            //    var topResources = snapshot.colonyResources.allResources
+            //        .OrderByDescending(kv => kv.Value)
+            //        .Take(MaxResourceEntries)
+            //        .Select(kv => $"{kv.Key}: {kv.Value}");
+            //    string suffix = snapshot.colonyResources.allResources.Count > MaxResourceEntries
+            //        ? $" (+ {snapshot.colonyResources.allResources.Count - MaxResourceEntries} more)"
+            //        : "";
+            //    sb.AppendLine($"Resources: {string.Join(", ", topResources)}{suffix}.");
+            //}
 
             // Faction relations
             if (snapshot.factionRelations != null && snapshot.factionRelations.Count > 0)

@@ -12,7 +12,7 @@ using System.Collections.Generic;
 
 namespace RimTelligence.Source.CustomEvents.Handlers
 {
-    internal static class EffectFactory
+    public static class EffectFactory
     {
         private static readonly Dictionary<string, Func<IEffect>> Registry =
             new Dictionary<string, Func<IEffect>>(StringComparer.OrdinalIgnoreCase);

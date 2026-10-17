@@ -8,6 +8,11 @@ namespace RimTelligence.Benchmark
         public string providerId;
         public string endpoint;
         public string model;
+        public string cueEffect;
+        public List<string> cueEffects;
+        public int expectedEffectCount;
+        public int returnedEffectCount;
+        public bool allCuedEffectsReturned;
         public long warmUpMs;
         public bool success;
         public long elapsedMs;

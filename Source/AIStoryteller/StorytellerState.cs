@@ -1,4 +1,4 @@
-﻿using RimTelligence.DataSnapshots;
+using RimTelligence.DataSnapshots;
 using RimTelligence.Llm;
 using RimTelligence.Source.CustomEvents.Prompting;
 using RimWorld;
@@ -20,20 +20,45 @@ namespace RimTelligence.Source.AIStoryteller
         public override void ExposeData()
         {
             base.ExposeData();
-            Scribe_Values.Look(ref incidentQueue, "incidentQueue", new Queue<FiringIncident>());
 
-            // Save/load state data here
+            List<FiringIncident> list = null;
+            if (Scribe.mode == LoadSaveMode.Saving)
+            {
+                list = incidentQueue != null ? incidentQueue.ToList() : new List<FiringIncident>();
+            }
+
+            try
+            {
+                Scribe_Collections.Look(ref list, "incidentQueue", LookMode.Deep);
+            }
+            catch (System.Exception ex)
+            {
+                ModLogger.Warning($"Failed to expose incidentQueue: {ex.Message}");
+                list = null;
+            }
+
+            if (Scribe.mode == LoadSaveMode.LoadingVars || Scribe.mode == LoadSaveMode.PostLoadInit)
+            {
+                incidentQueue = list != null
+                    ? new Queue<FiringIncident>(list.Where(x => x != null))
+                    : new Queue<FiringIncident>();
+            }
         }
+
         public FiringIncident GetNextIncident(IIncidentTarget target, StorytellerComp comp)
         {
+            if (incidentQueue == null)
+            {
+                incidentQueue = new Queue<FiringIncident>();
+            }
+
             if (incidentQueue.Count == 0)
             {
                 generateNewEvents(target, comp);
                 ModLogger.Message($"incidents left: {incidentQueue.Count}");
-
             }
-            return incidentQueue.Dequeue();
 
+            return incidentQueue.Count > 0 ? incidentQueue.Dequeue() : null;
         }
         private void generateNewEvents(IIncidentTarget target, StorytellerComp comp)
         {

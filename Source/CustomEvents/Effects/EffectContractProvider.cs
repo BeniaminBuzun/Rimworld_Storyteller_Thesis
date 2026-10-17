@@ -2,6 +2,7 @@ using RimTelligence.DataSnapshots;
 using RimTelligence.Source.CustomEvents.Handlers;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace RimTelligence.CustomEvents.Handlers
 {
@@ -29,7 +30,13 @@ namespace RimTelligence.CustomEvents.Handlers
 
             if (config.IsDefRequired)
             {
-                primary = ResolveDefs(config.RelatedDefList, snapshot);
+                string primaryList = config.RelatedDefList;
+                if (string.IsNullOrEmpty(primaryList) && (string.Equals(config.EffectName, "ResourcePodCrash", StringComparison.OrdinalIgnoreCase) || string.Equals(config.EffectName, "PawnFoundItems", StringComparison.OrdinalIgnoreCase)))
+                {
+                    primaryList = ItemCategoryRegistry.DrawRandomCategory();
+                }
+
+                primary = ResolveDefs(primaryList, snapshot);
                 if (!string.IsNullOrEmpty(config.SecondaryRelatedDefList))
                     secondary = ResolveDefs(config.SecondaryRelatedDefList, snapshot);
             }
@@ -80,42 +87,33 @@ namespace RimTelligence.CustomEvents.Handlers
             if (string.IsNullOrEmpty(categoryId))
                 return new List<GameObjectMeta>();
 
+            // First ones are not static, based on current snapshot
             switch (categoryId)
             {
                 case DiseaseListId:
-                    return SnapshotHealthList(snapshot, health => health.diseases);
+                    var diseases = SnapshotHealthList(snapshot, health => health.diseases);
+                    return diseases.Count > 0 ? diseases : ItemCategoryRegistry.GetList("DiseaseList");
                 case ChronicConditionListId:
-                    return SnapshotHealthList(snapshot, health => health.chronic_conditions);
+                    var chronic = SnapshotHealthList(snapshot, health => health.chronic_conditions);
+                    return chronic.Count > 0 ? chronic : ItemCategoryRegistry.GetList("DiseaseList");
                 case MissingBodyPartListId:
-                    return SnapshotHealthList(snapshot, health => health.missing_body_parts);
+                    var missing = SnapshotHealthList(snapshot, health => health.missing_body_parts);
+                    return missing.Count > 0 ? missing : ItemCategoryRegistry.GetList("BodyPartList");
                 case WildAnimalListId:
-                    return SnapshotWildAnimalList(snapshot);
+                    if (snapshot?.wildAnimals != null && snapshot.wildAnimals.Count > 0)
+                        return snapshot.wildAnimals.Select(entry => entry.meta).ToList();
+                    return ItemCategoryRegistry.GetList("AnimalList");
                 case ColonyResourcesListId:
-                    return SnapshotResourceList(snapshot);
+                    if (snapshot?.colonyResources != null && snapshot.colonyResources.Count > 0)
+                        return snapshot.colonyResources.Select(entry => entry.meta).ToList();
+                    return ItemCategoryRegistry.GetList("Resources_Metals");
                 default:
                     return ItemCategoryRegistry.GetList(categoryId);
             }
         }
 
-        // later fix so this is already in snapshoot as dict <GameObjectMeta, int>
-        private static List<GameObjectMeta> SnapshotWildAnimalList(ColonySnapshot snapshot)
-        {
-            List<GameObjectMeta> result = new List<GameObjectMeta>();
-            if (snapshot?.wildAnimals == null || snapshot.wildAnimals.Count == 0)
-                return result;
-
-            foreach (AnimalSnapshot animal in snapshot.wildAnimals.Keys)
-            {
-                result.Add(new GameObjectMeta { DefName = animal.name, Label = animal.name, Description = animal.description });
-            }
-
-            result.Sort((a, b) => string.Compare(a.DefName, b.DefName, StringComparison.Ordinal));
-            return result;
-        }
-
         private static List<GameObjectMeta> SnapshotHealthList(
-            ColonySnapshot snapshot,
-            Func<HealthSnapshot, List<string>> selector)
+            ColonySnapshot snapshot, Func<HealthSnapshot, List<GameObjectMeta>> getEntries)
         {
             List<GameObjectMeta> result = new List<GameObjectMeta>();
             if (snapshot?.colonists == null)
@@ -124,33 +122,12 @@ namespace RimTelligence.CustomEvents.Handlers
             HashSet<string> seen = new HashSet<string>();
             foreach (PawnSnapshot colonist in snapshot.colonists)
             {
-                List<string> entries = colonist?.health != null ? selector(colonist.health) : null;
-                if (entries == null)
-                    continue;
-
-                foreach (string entry in entries)
+                foreach (GameObjectMeta entry in getEntries(colonist.health))
                 {
-                    if (string.IsNullOrEmpty(entry) || !seen.Add(entry))
+                    if (string.IsNullOrEmpty(entry.DefName) || !seen.Add(entry.DefName))
                         continue;
-                    result.Add(new GameObjectMeta { DefName = entry, Label = entry, Description = string.Empty });
+                    result.Add(entry);
                 }
-            }
-
-            result.Sort((a, b) => string.Compare(a.DefName, b.DefName, StringComparison.Ordinal));
-            return result;
-        }
-
-        private static List<GameObjectMeta> SnapshotResourceList(ColonySnapshot snapshot)
-        {
-            List<GameObjectMeta> result = new List<GameObjectMeta>();
-            if (snapshot?.colonyResources?.allResources == null || snapshot.colonyResources.allResources.Count == 0)
-                return result;
-
-            foreach (string resourceName in snapshot.colonyResources.allResources.Keys)
-            {
-                if (string.IsNullOrEmpty(resourceName))
-                    continue;
-                result.Add(new GameObjectMeta { DefName = resourceName, Label = resourceName, Description = string.Empty });
             }
 
             result.Sort((a, b) => string.Compare(a.DefName, b.DefName, StringComparison.Ordinal));

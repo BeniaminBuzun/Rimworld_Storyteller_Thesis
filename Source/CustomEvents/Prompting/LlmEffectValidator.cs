@@ -58,10 +58,27 @@ namespace RimTelligence.CustomEvents.Prompting
                     string.IsNullOrWhiteSpace(effect.SelectedDefName[0]))
                     return $"type '{effect.EffectName}' requires a defName but got empty string";
 
-                if (handler.Config.DefCount > 1 && effect.SelectedDefName.Length < handler.Config.DefCount)
-                    return $"type '{effect.EffectName}' requires {handler.Config.DefCount} defNames but got {effect.SelectedDefName.Length}";
-
                 var contract = EffectContractProvider.GetContract(handler, null);
+
+                if (handler.Config.DefCount > 1 && effect.SelectedDefName.Length < handler.Config.DefCount)
+                {
+                    if (contract.SecondaryAllowedDefs.Count > 0)
+                    {
+                        string fallbackDef = contract.SecondaryAllowedDefs[0].DefName;
+                        List<string> expanded = effect.SelectedDefName.ToList();
+                        int originalCount = expanded.Count;
+                        while (expanded.Count < handler.Config.DefCount)
+                        {
+                            expanded.Add(fallbackDef);
+                        }
+                        effect.SelectedDefName = expanded.ToArray();
+                        ModLogger.Warning($"[Validator] Effect '{effect.EffectName}' requires {handler.Config.DefCount} defNames but got {originalCount}; filled missing slot with '{fallbackDef}'.");
+                    }
+                    else
+                    {
+                        return $"type '{effect.EffectName}' requires {handler.Config.DefCount} defNames but got {effect.SelectedDefName.Length}";
+                    }
+                }
                 for (int i = 0; i < effect.SelectedDefName.Length; i++)
                 {
                     string given = effect.SelectedDefName[i];

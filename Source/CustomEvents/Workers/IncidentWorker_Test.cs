@@ -1,4 +1,4 @@
-﻿using RimTelligence.CustomEvents.Execution;
+using RimTelligence.CustomEvents.Execution;
 using RimTelligence.CustomEvents.Prompting;
 using RimWorld;
 using RimWorld.Planet;
@@ -25,10 +25,10 @@ namespace RimTelligence.CustomEvents.Workers
             {
                 List<EffectOutcome> outcomes = LlmEffectExecutor.ExecuteAll(evt, map);
 
-                string summary = LlmEffectExecutor.BuildSummary(evt);
+                string summary = LlmEffectExecutor.BuildSummary(evt, outcomes);
                 string fullText = $"{evt.letterText ?? "Something happened."}\n\n{summary}";
 
-                List<GlobalTargetInfo> targets = outcomes.Select(o => o.Target).ToList();
+                List<GlobalTargetInfo> validTargets = outcomes.Where(o => o.Target.IsValid).Select(o => o.Target).ToList();
 
                 var letter = new ChoiceLetter_Procedural
                 {
@@ -36,9 +36,9 @@ namespace RimTelligence.CustomEvents.Workers
                     ID = Find.UniqueIDsManager.GetNextLetterID(),
                     Label = evt.letterTitle ?? "Strange Event",
                     Text = fullText,
-                    lookTargets = targets.Count > 0 ? new LookTargets(targets) : null,
+                    lookTargets = validTargets.Count > 0 ? new LookTargets(validTargets) : null,
                     jumpLabels = outcomes.Select(o => o.Label).ToList(),
-                    jumpTargets = targets
+                    jumpTargets = outcomes.Select(o => o.Target).ToList()
                 };
 
                 Find.LetterStack.ReceiveLetter(letter);
