@@ -39,7 +39,9 @@ namespace RimTelligence.DataSnapshots
                 health = CaptureHealth(pawn),
                 traits = CaptureTraits(pawn),
                 childhood = pawn.story?.Childhood?.title ?? "Unknown",
+                childhood_description = pawn.story?.Childhood?.baseDesc ?? "None",
                 adulthood = pawn.story?.Adulthood?.title ?? "None",
+                adulthood_description = pawn.story?.Adulthood?.baseDesc ?? "None",
                 skills = CaptureSkills(pawn),
                 current_action = GetCurrentAction(pawn),
                 queued_actions = GetCurrentActionQueue(pawn),
@@ -165,7 +167,7 @@ namespace RimTelligence.DataSnapshots
             catch (Exception) { return new PawnNeedsSnapshot(); }
         }
 
-        private static List<string> GetMissingParts(HediffSet hs)
+        private static List<GameObjectMeta> GetMissingParts(HediffSet hs)
         {
             var missingParts = hs.hediffs
                 .OfType<Hediff_MissingPart>()
@@ -175,7 +177,7 @@ namespace RimTelligence.DataSnapshots
 
             return missingParts
                 .Where(part => !HasMissingAncestor(part, missingParts))
-                .Select(part => part.LabelCap.ToString())
+                .Select(part => new GameObjectMeta { DefName = part.def.defName, Label = part.LabelCap.ToString(), Description = part.def.description })
                 .ToList();
         }
 
@@ -192,24 +194,24 @@ namespace RimTelligence.DataSnapshots
             return false;
         }
 
-        private static List<string> GetInjuries(HediffSet hs)
+        private static List<GameObjectMeta> GetInjuries(HediffSet hs)
         {
             return hs.hediffs
                 .OfType<Hediff_Injury>()
                 .Where(hediff => hediff.Visible && !hediff.IsPermanent())
-                .Select(hediff => hediff.def.defName)
+                .Select(hediff => new GameObjectMeta { DefName = hediff.def.defName, Label = hediff.def.label, Description = hediff.def.description })
                 .ToList();
         }
 
-        private static List<string> GetChronicConditions(HediffSet hs)
+        private static List<GameObjectMeta> GetChronicConditions(HediffSet hs)
         {
             return hs.hediffs
                 .Where(hediff => hediff.Visible && (hediff.IsPermanent() || hediff.def.chronic))
-                .Select(hediff => hediff.def.defName)
+                .Select(hediff => new GameObjectMeta { DefName = hediff.def.defName, Label = hediff.def.label, Description = hediff.def.description })
                 .ToList();
         }
 
-        private static List<string> GetDiseases(HediffSet hs)
+        private static List<GameObjectMeta> GetDiseases(HediffSet hs)
         {
             return hs.hediffs
                 .Where(hediff => hediff.Visible
@@ -221,26 +223,26 @@ namespace RimTelligence.DataSnapshots
                     && !hediff.IsPermanent()
                     && !hediff.def.chronic
                     && hediff.def.isBad)
-                .Select(hediff => hediff.def.defName)
+                .Select(hediff => new GameObjectMeta { DefName = hediff.def.defName, Label = hediff.def.label, Description = hediff.def.description })
                 .ToList();
         }
 
-        private static List<string> GetImplants(HediffSet hs)
+        private static List<GameObjectMeta> GetImplants(HediffSet hs)
         {
             return hs.hediffs
                 .Where(hediff => hediff.Visible && (hediff is Hediff_AddedPart || hediff is Hediff_Implant))
-                .Select(hediff => hediff.def.defName)
+                .Select(hediff => new GameObjectMeta { DefName = hediff.def.defName, Label = hediff.def.label, Description = hediff.def.description })
                 .ToList();
         }
 
-        private static List<string> GetOther(HediffSet hs)
+        private static List<GameObjectMeta> GetOther(HediffSet hs)
         {
             return hs.hediffs
                 .Where(hediff => hediff.Visible
                     && !hediff.def.isBad
                     && !(hediff is Hediff_AddedPart)
                     && !(hediff is Hediff_Implant))
-                .Select(hediff => hediff.def.defName)
+                .Select(hediff => new GameObjectMeta { DefName = hediff.def.defName, Label = hediff.def.label, Description = hediff.def.description })
                 .ToList();
         }
 

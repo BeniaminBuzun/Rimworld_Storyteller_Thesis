@@ -2,6 +2,8 @@ using RimTelligence.CustomEvents.Execution;
 using RimTelligence.CustomEvents.Prompting;
 using RimWorld;
 using RimWorld.Planet;
+using System.Collections.Generic;
+using System.Linq;
 using Verse;
 
 namespace RimTelligence.CustomEvents.Workers
@@ -19,22 +21,28 @@ namespace RimTelligence.CustomEvents.Workers
 
             LlmCustomEvent evt = parseResult.data;
 
-            // 5. Game Thread Execution
             LongEventHandler.ExecuteWhenFinished(() =>
             {
-                GlobalTargetInfo target = LlmEffectExecutor.ExecuteAll(evt, map);
+                List<EffectOutcome> outcomes = LlmEffectExecutor.ExecuteAll(evt, map);
 
-                string summary = LlmEffectExecutor.BuildSummary(evt);
+                string summary = LlmEffectExecutor.BuildSummary(evt, outcomes);
                 string fullText = $"{evt.letterText ?? "Something happened."}\n\n{summary}";
 
-                Find.LetterStack.ReceiveLetter(
-                    evt.letterTitle ?? "Strange Event",
-                    fullText,
-                    LetterDefOf.ThreatSmall,
-                    target.IsValid ? new LookTargets(target) : null
-                );
+                List<GlobalTargetInfo> validTargets = outcomes.Where(o => o.Target.IsValid).Select(o => o.Target).ToList();
+
+                var letter = new ChoiceLetter_Procedural
+                {
+                    def = LetterDefOf.ThreatSmall,
+                    ID = Find.UniqueIDsManager.GetNextLetterID(),
+                    Label = evt.letterTitle ?? "Strange Event",
+                    Text = fullText,
+                    lookTargets = validTargets.Count > 0 ? new LookTargets(validTargets) : null,
+                    jumpLabels = outcomes.Select(o => o.Label).ToList(),
+                    jumpTargets = outcomes.Select(o => o.Target).ToList()
+                };
+
+                Find.LetterStack.ReceiveLetter(letter);
             });
         }
     }
-
 }

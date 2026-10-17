@@ -12,7 +12,7 @@ using System.Collections.Generic;
 
 namespace RimTelligence.Source.CustomEvents.Handlers
 {
-    internal static class EffectFactory
+    public static class EffectFactory
     {
         private static readonly Dictionary<string, Func<IEffect>> Registry =
             new Dictionary<string, Func<IEffect>>(StringComparer.OrdinalIgnoreCase);
@@ -28,7 +28,7 @@ namespace RimTelligence.Source.CustomEvents.Handlers
             Register<MiracleHealDisease>("MiracleHealDisease");
             Register<MiracleHealMissingPart>("MiracleHealMissingPart");
             Register<DamagePawn>("DamagePawn");
-            Register<StartExtremeWeather>("StartExtremeWeatherHandler");
+            Register<StartExtremeWeather>("StartExtremeWeather");
             Register<ChangeWeather>("ChangeWeather");
             Register<MeteoriteImpact>("MeteoriteImpact");
             Register<AddExpPoints>("AddExpPoints");

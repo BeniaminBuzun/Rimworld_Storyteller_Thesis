@@ -18,7 +18,48 @@ namespace RimTelligence.Benchmark.Runner
                 ModLogger.Sink = Console.WriteLine;   // Verse.Log is unusable headless.
                 ModPaths.Initialize(modRoot);
 
-                CustomEvents.RunAsync(outputDirectory: Arg(args, "--out")).GetAwaiter().GetResult();
+                string benchmark = (Arg(args, "--benchmark") ?? Arg(args, "--mode") ?? "custom-events").Trim().ToLowerInvariant();
+                string configPath = Arg(args, "--config");
+                string snapshotPath = Arg(args, "--snapshot");
+                string outputDirectory = Arg(args, "--out");
+                string effectFilter = Arg(args, "--effects") ?? Arg(args, "--effect");
+                string comboFilter = Arg(args, "--combos") ?? Arg(args, "--combo");
+                string preset = Arg(args, "--preset") ?? Arg(args, "--suite");
+                int.TryParse(Arg(args, "--effects-per-prompt") ?? Arg(args, "--effects-count") ?? Arg(args, "--size"), out int effectsPerPrompt);
+                int.TryParse(Arg(args, "--cases") ?? Arg(args, "--count") ?? Arg(args, "--max-cases"), out int maxCases);
+                int.TryParse(Arg(args, "--heuristic") ?? Arg(args, "--heuristic-draws"), out int heuristicDraws);
+
+                if (benchmark == "single" || benchmark == "single-effect" || benchmark == "single-effects"
+                    || benchmark == "every-effect" || benchmark == "effects" || benchmark == "per-effect")
+                {
+                    SingleEffectBenchmark.RunAsync(
+                        outputDirectory: outputDirectory,
+                        configPath: configPath,
+                        snapshotPath: snapshotPath,
+                        effectFilter: effectFilter).GetAwaiter().GetResult();
+                }
+                else if (benchmark == "multi" || benchmark == "multi-effect" || benchmark == "multi-effects"
+                    || benchmark == "several" || benchmark == "several-effects" || benchmark == "combos" || benchmark == "combinations")
+                {
+                    MultiEffectBenchmark.RunAsync(
+                        outputDirectory: outputDirectory,
+                        configPath: configPath,
+                        snapshotPath: snapshotPath,
+                        effectFilter: effectFilter,
+                        comboFilter: comboFilter,
+                        effectsPerPrompt: effectsPerPrompt,
+                        maxCases: maxCases,
+                        heuristicDrawCount: heuristicDraws,
+                        preset: preset).GetAwaiter().GetResult();
+                }
+                else
+                {
+                    CustomEvents.RunAsync(
+                        outputDirectory: outputDirectory,
+                        configPath: configPath,
+                        snapshotPath: snapshotPath).GetAwaiter().GetResult();
+                }
+
                 return 0;
             }
             catch (Exception exception)

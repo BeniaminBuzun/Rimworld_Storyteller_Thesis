@@ -1,6 +1,14 @@
 {
   "profiles": {
     "RimTelligence.Benchmark": {
+      "commandName": "Project",
+      "commandLineArgs": "--benchmark single-effect"
+    },
+    "Multi-Effect Benchmark": {
+      "commandName": "Project",
+      "commandLineArgs": "--benchmark multi-effect"
+    },
+    "Full test": {
       "commandName": "Project"
     }
   }

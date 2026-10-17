@@ -12,22 +12,35 @@ namespace RimTelligence.CustomEvents.Handlers.Item
 
         public bool CanBeChoosen(ColonySnapshot snapshot) => true;
 
+        private string executionSummary;
+
         public GlobalTargetInfo Execute(GameEffect effect, Map map)
         {
-            ThingDef def = DefDatabase<ThingDef>.GetNamed(effect.SelectedDefName[0], errorOnFail: false);
+            ThingDef def = ResolveItemDef(effect);
             if (def == null)
             {
                 ModLogger.Warning($"{Config.EffectName}: ThingDef '{effect.DefNameText}' not found.");
+                executionSummary = "A colonist searched the area, but found nothing of value.";
                 return GlobalTargetInfo.Invalid;
             }
 
-            Pawn pawn = map.mapPawns.FreeColonists
-                .FirstOrDefault(candidate => candidate.Name.ToStringShort.Equals(
-                    effect.TargetPawn, StringComparison.OrdinalIgnoreCase));
+            var allColonists = map.mapPawns.FreeColonistsSpawned.ToList();
+            Pawn pawn = null;
+            if (!string.IsNullOrWhiteSpace(effect.TargetPawn) && !effect.TargetPawn.Equals("random", StringComparison.OrdinalIgnoreCase))
+            {
+                pawn = allColonists.FirstOrDefault(candidate =>
+                    candidate.LabelShort.Equals(effect.TargetPawn, StringComparison.OrdinalIgnoreCase));
+            }
 
             if (pawn == null)
             {
-                ModLogger.Warning($"{Config.EffectName}: colonist '{effect.TargetPawn}' not found.");
+                pawn = allColonists.RandomElementWithFallback();
+            }
+
+            if (pawn == null)
+            {
+                ModLogger.Warning($"{Config.EffectName}: no colonist found to receive items.");
+                executionSummary = $"A supply cache of {def.LabelCap.Resolve()} was spotted nearby, but no colonists were available to retrieve it.";
                 return GlobalTargetInfo.Invalid;
             }
 
@@ -38,13 +51,42 @@ namespace RimTelligence.CustomEvents.Handlers.Item
 
             GenPlace.TryPlaceThing(item, pawn.Position, map, ThingPlaceMode.Near);
 
+            string itemLabel = def.LabelCap.Resolve();
+            executionSummary = $"{pawn.LabelShort} scavenged the area and recovered {item.stackCount}x {itemLabel}!";
+
             ModLogger.Message($"{Config.EffectName}: gave {item.stackCount}x {def.defName} " +
                               $"to {pawn.LabelShort} (value={effect.Severity})");
 
             return new GlobalTargetInfo(pawn.Position, map);
         }
 
-        public string GetSummary(GameEffect effect) =>
-            $"{effect.DefNameText} found by {effect.TargetPawn} ({effect.Severity})";
+        public string GetSummary(GameEffect effect)
+        {
+            if (!string.IsNullOrEmpty(executionSummary))
+                return executionSummary;
+
+            return GetDefaultSummary(effect);
+        }
+
+        private static string GetDefaultSummary(GameEffect effect)
+        {
+            string itemLabel = ResolveItemLabel(effect);
+            string pawn = !string.IsNullOrWhiteSpace(effect.TargetPawn) ? effect.TargetPawn : "A colonist";
+            string sevStr = effect.Severity != SeverityTypes.None ? $" ({effect.Severity.ToString().ToLower()})" : "";
+            return $"{pawn} discovers a salvageable cache of {itemLabel}{sevStr}.";
+        }
+
+        private static ThingDef ResolveItemDef(GameEffect effect)
+        {
+            string defName = effect.SelectedDefName != null && effect.SelectedDefName.Length > 0 ? effect.SelectedDefName[0] : effect.DefNameText;
+            if (string.IsNullOrWhiteSpace(defName)) return null;
+            return DefDatabase<ThingDef>.GetNamed(defName, errorOnFail: false);
+        }
+
+        private static string ResolveItemLabel(GameEffect effect)
+        {
+            ThingDef def = ResolveItemDef(effect);
+            return def != null ? def.LabelCap.Resolve() : (!string.IsNullOrWhiteSpace(effect.DefNameText) ? effect.DefNameText : "supplies");
+        }
     }
 }

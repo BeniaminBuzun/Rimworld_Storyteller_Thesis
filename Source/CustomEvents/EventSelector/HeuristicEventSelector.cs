@@ -111,21 +111,7 @@ namespace RimTelligence.CustomEvents.EventSelector
 
         private static string DrawRelatetDefList()
         {
-            List<ItemCategory> candidates = ItemCategoryRegistry.AllCategories.Values
-                .ToList();
-
-            float total = candidates.Sum(category => category.Weight);
-            float roll = Rand.Value * total;
-            float cursor = 0f;
-
-            foreach (ItemCategory category in candidates)
-            {
-                cursor += category.Weight;
-                if (roll <= cursor)
-                    return category.Id;
-            }
-
-            return candidates.Last().Id;
+            return ItemCategoryRegistry.DrawRandomCategory();
         }
     }
 }

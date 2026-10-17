@@ -12,7 +12,7 @@
         "usesTargetPawn": true
     },
     {
-        "effectName": "StartExtremeWeatherHandler",
+        "effectName": "StartExtremeWeather",
         "narrativeDescription": "An event where an extreame weather condition starts.",
         "RelatedDefList": "GameConditionList",
         "SecondaryRelatedDefList": "",
@@ -68,7 +68,7 @@
         "baseWeight": 3,
         "alignment": "Bad",
         "isDefRequired": true,
-        "usesSeverity": false,
+        "usesSeverity": true,
         "usesTargetPawn": true
     },
     {

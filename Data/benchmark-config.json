@@ -6,7 +6,7 @@
             "endpoint": "http://10.0.0.1:11434",
             "apiKey": "",
             "models": [
-                "tobestyledintro/minicpm5-2b:latest",
+                //"tobestyledintro/minicpm5-2b:latest",
                 "qwen3.5:0.8b",
                 "granite4.2:3b",
                 "qwen3.5:4b",

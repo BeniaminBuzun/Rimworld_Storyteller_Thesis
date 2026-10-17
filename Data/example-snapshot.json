@@ -1,227 +1,70 @@
 {
-  "colonyName": "LongTestColony",
-  "day": 47,
-  "time": "12",
-  "season": "Winter",
-  "biome": "BorealForest",
+  "colonyName": "Hiomeni Pact",
+  "day": 14,
+  "time": "05",
+  "season": "PermanentSummer",
+  "biome": "TropicalRainforest",
   "colonistCount": 3,
   "colonists": [
     {
-      "name": "Misha",
+      "name": "Oliver",
       "current_action": "Resting.",
       "queued_actions": [],
       "current_location": "Bedroom",
       "is_drafted": false,
-      "primary_weapon": "Gun_Autopistol",
-      "age": 25,
+      "primary_weapon": "Gun_Revolver",
+      "age": 21,
       "health": {
-        "overall_health": 1.0,
+        "overall_health": 0.70895797,
         "is_downed": false,
-        "pain_level": 0.2,
+        "pain_level": 0.290331662,
         "missing_body_parts": [],
-        "injuries": [],
-        "diseases": [
-          "Plague"
+        "injuries": [
+          {
+            "DefName": "Bruise",
+            "Label": "bruise",
+            "Description": "A bruise.",
+            "MarketValue": 0.0,
+            "TechLevel": 0
+          },
+          {
+            "DefName": "Crack",
+            "Label": "crack",
+            "Description": "A crack.",
+            "MarketValue": 0.0,
+            "TechLevel": 0
+          },
+          {
+            "DefName": "Bruise",
+            "Label": "bruise",
+            "Description": "A bruise.",
+            "MarketValue": 0.0,
+            "TechLevel": 0
+          },
+          {
+            "DefName": "Crack",
+            "Label": "crack",
+            "Description": "A crack.",
+            "MarketValue": 0.0,
+            "TechLevel": 0
+          }
         ],
-        "implants": [],
-        "chronic_conditions": [],
-        "other": []
-      },
-      "traits": [
-        "Undergrounder",
-        "Industriousness"
-      ],
-      "childhood": "caveworld tender",
-      "adulthood": "starship janitor",
-      "skills": [
-        "Construction:7",
-        "Mining:7",
-        "Plants:7"
-      ],
-      "relations": {
-        "lovers": [],
-        "rivals": [],
-        "bonded_animal": "None"
-      },
-      "needs": {
-        "mood": 0.26,
-        "mental_state": "None",
-        "food_level": 0.9159998,
-        "rest_level": 0.9882498,
-        "recreation_level": 0.19952476
-      }
-    },
-    {
-      "name": "Lumi",
-      "current_action": "Hauling wood x19 to Stockpile zone 1.",
-      "queued_actions": [],
-      "current_location": "Workshop",
-      "is_drafted": false,
-      "primary_weapon": "MeleeWeapon_Knife",
-      "age": 67,
-      "health": {
-        "overall_health": 1.0,
-        "is_downed": false,
-        "pain_level": 0.0,
-        "missing_body_parts": [],
-        "injuries": [],
-        "diseases": [],
-        "implants": [],
-        "chronic_conditions": [
-          "Scratch"
-        ],
-        "other": []
-      },
-      "traits": [
-        "Brawler"
-      ],
-      "childhood": "caravan child",
-      "adulthood": "bounty hunter",
-      "skills": [
-        "Melee:13",
-        "Social:10",
-        "Artistic:7"
-      ],
-      "relations": {
-        "lovers": [],
-        "rivals": [],
-        "bonded_animal": "None"
-      },
-      "needs": {
-        "mood": 0.5444,
-        "mental_state": "None",
-        "food_level": 0.8119996,
-        "rest_level": 0.8622496,
-        "recreation_level": 0.6789676
-      }
-    },
-    {
-      "name": "Vladimir",
-      "current_action": "Harvesting pine tree.",
-      "queued_actions": [],
-      "current_location": "Kitchen",
-      "is_drafted": false,
-      "primary_weapon": "Gun_ChargeBlasterHeavy",
-      "age": 51,
-      "health": {
-        "overall_health": 1.0,
-        "is_downed": false,
-        "pain_level": 0.0,
-        "missing_body_parts": [],
-        "injuries": [],
         "diseases": [],
         "implants": [],
         "chronic_conditions": [],
         "other": []
       },
       "traits": [
-        "Greedy"
-      ],
-      "childhood": "urbworld criminal",
-      "adulthood": "urbworld politican",
-      "skills": [
-        "Social:12",
-        "Animals:10",
-        "Shooting:9"
-      ],
-      "relations": {
-        "lovers": [
-          "Calvino"
-        ],
-        "rivals": [],
-        "bonded_animal": "None"
-      },
-      "needs": {
-        "mood": 0.496,
-        "mental_state": "None",
-        "food_level": 0.983999968,
-        "rest_level": 0.636031151,
-        "recreation_level": 0.48098743
-      }
-    }
-  ],
-  "colonyAnimalCount": 1,
-  "colonyAnimals": [
-    "Rat x1"
-  ],
-  "prisoners": [],
-  "slaves": [],
-  "visitors": [
-    {
-      "name": "Rivera",
-      "current_action": "Moving.",
-      "queued_actions": [],
-      "current_location": "Outside",
-      "is_drafted": false,
-      "primary_weapon": "None",
-      "age": 44,
-      "health": {
-        "overall_health": 1.0,
-        "is_downed": false,
-        "pain_level": 0.0,
-        "missing_body_parts": [],
-        "injuries": [],
-        "diseases": [],
-        "implants": [],
-        "chronic_conditions": [],
-        "other": []
-      },
-      "traits": [
-        "TorturedArtist",
-        "DrugDesire"
-      ],
-      "childhood": "organ farm",
-      "adulthood": "bartender",
-      "skills": [
-        "Medicine:10",
-        "Animals:8",
-        "Social:7"
-      ],
-      "relations": {
-        "lovers": [],
-        "rivals": [],
-        "bonded_animal": "None"
-      },
-      "needs": {
-        "mood": 0.48,
-        "mental_state": "None",
-        "food_level": 0.9479999,
-        "rest_level": 0.924173355,
-        "recreation_level": 0.0
-      }
-    },
-    {
-      "name": "Vivis",
-      "current_action": "Moving.",
-      "queued_actions": [],
-      "current_location": "Outside",
-      "is_drafted": false,
-      "primary_weapon": "MeleeWeapon_Knife",
-      "age": 36,
-      "health": {
-        "overall_health": 1.0,
-        "is_downed": false,
-        "pain_level": 0.0,
-        "missing_body_parts": [],
-        "injuries": [],
-        "diseases": [],
-        "implants": [],
-        "chronic_conditions": [
-          "Stab",
-          "Scratch"
-        ],
-        "other": []
-      },
-      "traits": [
-        "Pyromaniac",
         "Beauty"
       ],
-      "childhood": "pyromaniac",
-      "adulthood": "counselor",
+      "childhood": "child spy",
+      "childhood_description": "None",
+      "adulthood": "model",
+      "adulthood_description": "None",
       "skills": [
-        "Social:11",
-        "Animals:4",
-        "Artistic:4"
+        "Social:12",
+        "Artistic:10",
+        "Animals:9"
       ],
       "relations": {
         "lovers": [],
@@ -229,21 +72,21 @@
         "bonded_animal": "None"
       },
       "needs": {
-        "mood": 0.586400032,
+        "mood": 0.41,
         "mental_state": "None",
-        "food_level": 0.9519999,
-        "rest_level": 0.8817909,
-        "recreation_level": 0.0
+        "food_level": 0.335998654,
+        "rest_level": 0.9482497,
+        "recreation_level": 0.72399807
       }
     },
     {
-      "name": "Stars",
-      "current_action": "Moving.",
+      "name": "Griff",
+      "current_action": "Resting.",
       "queued_actions": [],
-      "current_location": "Outside",
+      "current_location": "Bedroom",
       "is_drafted": false,
-      "primary_weapon": "Gun_ChainShotgun",
-      "age": 45,
+      "primary_weapon": "Gun_BoltActionRifle",
+      "age": 39,
       "health": {
         "overall_health": 1.0,
         "is_downed": false,
@@ -251,68 +94,38 @@
         "missing_body_parts": [],
         "injuries": [],
         "diseases": [],
-        "implants": [
-          "Joywire"
-        ],
-        "chronic_conditions": [
-          "Gunshot",
-          "Bite"
-        ],
-        "other": []
-      },
-      "traits": [
-        "Neurotic"
-      ],
-      "childhood": "coma child",
-      "adulthood": "drifter",
-      "skills": [
-        "Cooking:9",
-        "Social:8",
-        "Shooting:6"
-      ],
-      "relations": {
-        "lovers": [],
-        "rivals": [],
-        "bonded_animal": "None"
-      },
-      "needs": {
-        "mood": 0.593600035,
-        "mental_state": "None",
-        "food_level": 0.9479999,
-        "rest_level": 0.900686562,
-        "recreation_level": 0.0
-      }
-    },
-    {
-      "name": "Dennis",
-      "current_action": "Moving.",
-      "queued_actions": [],
-      "current_location": "Outside",
-      "is_drafted": false,
-      "primary_weapon": "Gun_LMG",
-      "age": 35,
-      "health": {
-        "overall_health": 1.0,
-        "is_downed": false,
-        "pain_level": 0.0,
-        "missing_body_parts": [],
-        "injuries": [],
-        "diseases": [],
         "implants": [],
-        "chronic_conditions": [],
+        "chronic_conditions": [
+          {
+            "DefName": "Bite",
+            "Label": "bite",
+            "Description": "A bite wound.",
+            "MarketValue": 0.0,
+            "TechLevel": 0
+          },
+          {
+            "DefName": "Stab",
+            "Label": "stab",
+            "Description": "A stab wound.",
+            "MarketValue": 0.0,
+            "TechLevel": 0
+          }
+        ],
         "other": []
       },
       "traits": [
-        "Jealous",
-        "PsychicSensitivity",
-        "Industriousness"
+        "Psychopath",
+        "NightOwl",
+        "Wimp"
       ],
-      "childhood": "shop kid",
-      "adulthood": "bodyguard",
+      "childhood": "urbworld urchin",
+      "childhood_description": "None",
+      "adulthood": "torturer",
+      "adulthood_description": "None",
       "skills": [
+        "Melee:12",
         "Shooting:7",
-        "Melee:7",
-        "Social:7"
+        "Plants:6"
       ],
       "relations": {
         "lovers": [],
@@ -320,225 +133,53 @@
         "bonded_animal": "None"
       },
       "needs": {
-        "mood": 0.586400032,
+        "mood": 0.5111999,
         "mental_state": "None",
-        "food_level": 0.9519999,
-        "rest_level": 0.9050677,
-        "recreation_level": 0.0
+        "food_level": 0.275998533,
+        "rest_level": 0.8902,
+        "recreation_level": 0.586488068
       }
     },
     {
-      "name": "Orca",
-      "current_action": "Moving.",
+      "name": "Pepper",
+      "current_action": "Consuming nutrient paste dispenser.",
       "queued_actions": [],
-      "current_location": "Outside",
+      "current_location": "Dining room",
       "is_drafted": false,
-      "primary_weapon": "Gun_MachinePistol",
-      "age": 43,
-      "health": {
-        "overall_health": 1.0,
-        "is_downed": false,
-        "pain_level": 0.0,
-        "missing_body_parts": [],
-        "injuries": [],
-        "diseases": [],
-        "implants": [],
-        "chronic_conditions": [
-          "Gunshot"
-        ],
-        "other": []
-      },
-      "traits": [
-        "Gay",
-        "Tough",
-        "Jealous"
-      ],
-      "childhood": "coma child",
-      "adulthood": "escaped convict",
-      "skills": [
-        "Shooting:5",
-        "Mining:5",
-        "Crafting:5"
-      ],
-      "relations": {
-        "lovers": [],
-        "rivals": [],
-        "bonded_animal": "None"
-      },
-      "needs": {
-        "mood": 0.586400032,
-        "mental_state": "None",
-        "food_level": 0.9519999,
-        "rest_level": 0.9675329,
-        "recreation_level": 0.0
-      }
-    },
-    {
-      "name": "Hiroko",
-      "current_action": "Moving.",
-      "queued_actions": [],
-      "current_location": "Outside",
-      "is_drafted": false,
-      "primary_weapon": "Gun_MachinePistol",
-      "age": 15,
-      "health": {
-        "overall_health": 1.0,
-        "is_downed": false,
-        "pain_level": 0.0833333358,
-        "missing_body_parts": [],
-        "injuries": [],
-        "diseases": [],
-        "implants": [],
-        "chronic_conditions": [
-          "Bite"
-        ],
-        "other": []
-      },
-      "traits": [
-        "Neurotic",
-        "CreepyBreathing",
-        "SpeedOffset"
-      ],
-      "childhood": "sickly child",
-      "adulthood": "None",
-      "skills": [
-        "Medicine:9",
-        "Intellectual:7",
-        "Shooting:3"
-      ],
-      "relations": {
-        "lovers": [],
-        "rivals": [],
-        "bonded_animal": "None"
-      },
-      "needs": {
-        "mood": 0.57,
-        "mental_state": "None",
-        "food_level": 0.9519999,
-        "rest_level": 0.8831026,
-        "recreation_level": 0.0
-      }
-    },
-    {
-      "name": "Doctor",
-      "current_action": "Moving.",
-      "queued_actions": [],
-      "current_location": "Outside",
-      "is_drafted": false,
-      "primary_weapon": "Gun_BoltActionRifle",
-      "age": 49,
-      "health": {
-        "overall_health": 1.0,
-        "is_downed": false,
-        "pain_level": 0.0,
-        "missing_body_parts": [],
-        "injuries": [],
-        "diseases": [],
-        "implants": [],
-        "chronic_conditions": [],
-        "other": []
-      },
-      "traits": [
-        "Beauty",
-        "PsychicSensitivity",
-        "ShootingAccuracy"
-      ],
-      "childhood": "coma child",
-      "adulthood": "colony settler",
-      "skills": [
-        "Plants:10",
-        "Social:10",
-        "Construction:6"
-      ],
-      "relations": {
-        "lovers": [
-          "Jahan"
-        ],
-        "rivals": [],
-        "bonded_animal": "None"
-      },
-      "needs": {
-        "mood": 0.586400032,
-        "mental_state": "None",
-        "food_level": 0.9519999,
-        "rest_level": 0.894790351,
-        "recreation_level": 0.0
-      }
-    },
-    {
-      "name": "Raymond",
-      "current_action": "Moving.",
-      "queued_actions": [],
-      "current_location": "Outside",
-      "is_drafted": false,
-      "primary_weapon": "Weapon_GrenadeMolotov",
+      "primary_weapon": "None",
       "age": 20,
       "health": {
         "overall_health": 1.0,
         "is_downed": false,
-        "pain_level": 0.0,
-        "missing_body_parts": [],
-        "injuries": [],
-        "diseases": [],
-        "implants": [],
-        "chronic_conditions": [],
-        "other": []
-      },
-      "traits": [
-        "SlowLearner"
-      ],
-      "childhood": "mute",
-      "adulthood": "escaped convict",
-      "skills": [
-        "Animals:7",
-        "Crafting:6",
-        "Mining:5"
-      ],
-      "relations": {
-        "lovers": [],
-        "rivals": [],
-        "bonded_animal": "None"
-      },
-      "needs": {
-        "mood": 0.586400032,
-        "mental_state": "None",
-        "food_level": 0.9519999,
-        "rest_level": 0.884314537,
-        "recreation_level": 0.0
-      }
-    },
-    {
-      "name": "Rat",
-      "current_action": "Moving.",
-      "queued_actions": [],
-      "current_location": "Outside",
-      "is_drafted": false,
-      "primary_weapon": "Gun_PumpShotgun",
-      "age": 31,
-      "health": {
-        "overall_health": 1.0,
-        "is_downed": false,
-        "pain_level": 0.0,
+        "pain_level": 0.075,
         "missing_body_parts": [],
         "injuries": [],
         "diseases": [],
         "implants": [],
         "chronic_conditions": [
-          "Scratch"
+          {
+            "DefName": "Bite",
+            "Label": "bite",
+            "Description": "A bite wound.",
+            "MarketValue": 0.0,
+            "TechLevel": 0
+          }
         ],
         "other": []
       },
       "traits": [
-        "Pyromaniac",
-        "DrugDesire",
-        "SlowLearner"
+        "Undergrounder",
+        "QuickSleeper",
+        "Immunity"
       ],
-      "childhood": "wreckage explorer",
-      "adulthood": "slaughterer",
+      "childhood": "caveworld tunneler",
+      "childhood_description": "None",
+      "adulthood": "crop farmer",
+      "adulthood_description": "None",
       "skills": [
-        "Animals:12",
-        "Shooting:5",
-        "Intellectual:5"
+        "Mining:11",
+        "Plants:10",
+        "Construction:5"
       ],
       "relations": {
         "lovers": [],
@@ -546,170 +187,261 @@
         "bonded_animal": "None"
       },
       "needs": {
-        "mood": 0.586400032,
+        "mood": 0.414400041,
         "mental_state": "None",
-        "food_level": 0.9519999,
-        "rest_level": 0.905459046,
-        "recreation_level": 0.0
-      }
-    },
-    {
-      "name": "Gage",
-      "current_action": "Moving.",
-      "queued_actions": [],
-      "current_location": "Outside",
-      "is_drafted": false,
-      "primary_weapon": "Gun_LMG",
-      "age": 41,
-      "health": {
-        "overall_health": 1.0,
-        "is_downed": false,
-        "pain_level": 0.225000009,
-        "missing_body_parts": [],
-        "injuries": [],
-        "diseases": [],
-        "implants": [],
-        "chronic_conditions": [
-          "Gunshot"
-        ],
-        "other": []
-      },
-      "traits": [
-        "PsychicSensitivity",
-        "NaturalMood",
-        "Industriousness"
-      ],
-      "childhood": "coma child",
-      "adulthood": "civil servant",
-      "skills": [
-        "Social:12",
-        "Animals:7",
-        "Intellectual:7"
-      ],
-      "relations": {
-        "lovers": [],
-        "rivals": [],
-        "bonded_animal": "None"
-      },
-      "needs": {
-        "mood": 0.459999979,
-        "mental_state": "None",
-        "food_level": 0.9479999,
-        "rest_level": 0.887944341,
-        "recreation_level": 0.0
-      }
-    },
-    {
-      "name": "Aoba",
-      "current_action": "Moving.",
-      "queued_actions": [],
-      "current_location": "Outside",
-      "is_drafted": false,
-      "primary_weapon": "Gun_HeavySMG",
-      "age": 54,
-      "health": {
-        "overall_health": 1.0,
-        "is_downed": false,
-        "pain_level": 0.112500004,
-        "missing_body_parts": [
-          "Right thumb"
-        ],
-        "injuries": [],
-        "diseases": [],
-        "implants": [],
-        "chronic_conditions": [
-          "Stab"
-        ],
-        "other": []
-      },
-      "traits": [
-        "Pyromaniac"
-      ],
-      "childhood": "pyromaniac",
-      "adulthood": "colony settler",
-      "skills": [
-        "Construction:9",
-        "Plants:9",
-        "Mining:8"
-      ],
-      "relations": {
-        "lovers": [],
-        "rivals": [],
-        "bonded_animal": "None"
-      },
-      "needs": {
-        "mood": 0.57,
-        "mental_state": "None",
-        "food_level": 0.9519999,
-        "rest_level": 0.922674358,
-        "recreation_level": 0.0
+        "food_level": 0.193998411,
+        "rest_level": 0.8503746,
+        "recreation_level": 0.6830709
       }
     }
   ],
-  "wealthTotal": 31968.0488,
-  "wealthItems": 16991.82,
-  "wealthBuildings": 10906.2285,
-  "wealthPawns": 4070.0,
+  "colonyAnimalCount": 1,
+  "colonyAnimals": [
+    {
+      "DefName": "Alpaca",
+      "Label": "alpaca",
+      "Description": "A medium-sized ungulate closely related to the llama, the alpaca is usually raised for its remarkably soft and insulating wool. Alpacas have also been used as pack animals since they hauled cargo on the rugged mountain trails of ancient South America.",
+      "MarketValue": 215.0,
+      "TechLevel": 0
+    }
+  ],
+  "prisoners": [],
+  "slaves": [],
+  "visitors": [],
+  "wealthTotal": 16493.8027,
+  "wealthItems": 7537.682,
+  "wealthBuildings": 5351.12061,
+  "wealthPawns": 3605.0,
   "currentTechLevel": "Industrial",
   "daysSinceLastRaid": 0,
   "activeConditions": [],
-  "totalNutrition": 97.3999939,
+  "totalNutrition": 39.45,
   "isUnderAttck": true,
-  "currentWeather": "SnowGentle",
-  "temperature": -11.8817387,
-  "wildAnimals": {
-    "Thrumbo": 1,
-    "Warg": 2,
-    "Rat": 6,
-    "Fox_Arctic": 1,
-    "Cougar": 1,
-    "Elk": 7,
-    "Raccoon": 2,
-    "Hare": 2,
-    "Lynx": 1
-  },
-  "cultivatedPlants": {},
-  "colonyResources": {
-    "allResources": {
-      "Silver": 1121,
-      "Milk": 75,
-      "EggCassowaryUnfertilized": 34,
-      "MedicineIndustrial": 73,
-      "ComponentIndustrial": 16,
-      "RawPotatoes": 272,
-      "RawRice": 75,
-      "Steel": 344,
-      "WoodLog": 294,
-      "Jade": 1,
-      "Leather_Plain": 174,
-      "Leather_Panthera": 18,
-      "Leather_Bear": 46,
-      "Leather_Pig": 5,
-      "Leather_Light": 11,
-      "BlocksMarble": 230,
-      "Meat_Bear_Grizzly": 135,
-      "Meat_Lynx": 25,
-      "Meat_Elk": 75,
-      "Meat_Horse": 96,
-      "Meat_Pig": 161,
-      "Meat_Deer": 225,
-      "Meat_Rat": 19,
-      "SmokeleafJoint": 5,
-      "MealSurvivalPack": 15,
-      "MealSimple": 10
+  "currentWeather": "Rain",
+  "temperature": 17.7416115,
+  "wildAnimals": [
+    {
+      "meta": {
+        "DefName": "Cobra",
+        "Label": "cobra",
+        "Description": "A large predatory snake. Cobras can be highly aggressive if provoked, and their bite injects toxic venom into the victim.",
+        "MarketValue": 150.0,
+        "TechLevel": 0
+      },
+      "count": 2
+    },
+    {
+      "meta": {
+        "DefName": "WildBoar",
+        "Label": "wild boar",
+        "Description": "This hairy omnivore is descended from escaped pigs and evolved for living in the wild.\n\nIts tusks make it a better fighter than its domesticated pig cousins. Unfortunately, it is too unruly to be trained in the most complex tasks.",
+        "MarketValue": 200.0,
+        "TechLevel": 0
+      },
+      "count": 5
+    },
+    {
+      "meta": {
+        "DefName": "Rhinoceros",
+        "Label": "rhinoceros",
+        "Description": "Despite being herbivorous, this large mammal is very easy to enrage. Once angered, its massive strength and sharp horn make it a brutal opponent. It has more muscle in one leg than most humans do in their whole body.",
+        "MarketValue": 700.0,
+        "TechLevel": 0
+      },
+      "count": 2
+    },
+    {
+      "meta": {
+        "DefName": "Alpaca",
+        "Label": "alpaca",
+        "Description": "A medium-sized ungulate closely related to the llama, the alpaca is usually raised for its remarkably soft and insulating wool. Alpacas have also been used as pack animals since they hauled cargo on the rugged mountain trails of ancient South America.",
+        "MarketValue": 350.0,
+        "TechLevel": 0
+      },
+      "count": 9
+    },
+    {
+      "meta": {
+        "DefName": "Cassowary",
+        "Label": "cassowary",
+        "Description": "A large flightless bird with brightly-colored feathers. While it looks beautiful, its kick is vicious. It's known for being quick to aggression when harmed by violence or confronted by incompetent animal tamers.",
+        "MarketValue": 186.0,
+        "TechLevel": 0
+      },
+      "count": 4
+    },
+    {
+      "meta": {
+        "DefName": "Elephant",
+        "Label": "elephant",
+        "Description": "The largest unmodified land animal. Elephants have a long trunk they use to manipulate objects, and sharp tusks they use to gore attackers. A dead elephant's valuable tusks can be recovered by butchering it.\n\nIntelligent creatures with complex social relationships, elephants can be used as pack animals or trained to carry out the most complex of tasks. They live a long time, and are known to remember events and relationships from many decades before.",
+        "MarketValue": 600.0,
+        "TechLevel": 0
+      },
+      "count": 9
+    },
+    {
+      "meta": {
+        "DefName": "Tortoise",
+        "Label": "tortoise",
+        "Description": "This heavily armored land-dwelling reptile is known for its slow moving speed and surprisingly vicious bite. Because of its natural armor, it is tough to kill and can do serious damage during drawn-out melee fights.",
+        "MarketValue": 200.0,
+        "TechLevel": 0
+      },
+      "count": 1
+    },
+    {
+      "meta": {
+        "DefName": "Boomalope",
+        "Label": "boomalope",
+        "Description": "Engineered for chemicals production, the boomalope grows a large sac of volatile chemicals on its back. Though it is weak and fragile for its size, other animals have learned to avoid it because of the huge explosion it produces when it dies. It can be milked to produce chemfuel - very carefully.",
+        "MarketValue": 350.0,
+        "TechLevel": 0
+      },
+      "count": 2
+    },
+    {
+      "meta": {
+        "DefName": "Cat",
+        "Label": "cat",
+        "Description": "One of mankind's first pets, the cat is a small mammal which hunts vermin. Known for their aloofness, cats are nevertheless popular companions because of their independence, calm disposition, and fine, pettable fur.",
+        "MarketValue": 100.0,
+        "TechLevel": 0
+      },
+      "count": 4
     }
-  },
+  ],
+  "cultivatedPlants": [
+    {
+      "meta": {
+        "DefName": "Plant_Healroot",
+        "Label": "healroot",
+        "Description": "A slow-growing plant which yields herbal medicine when harvested. Sowing and harvesting healroot are both very labor-intensive tasks because of its delicate shoots.\n\nHealroot was selectively bred for centuries by settlers. It is sometimes also called \"healer's hand\" by tribespeople - a nickname it owes to its five major medicinal virtues.",
+        "MarketValue": 0.0,
+        "TechLevel": 0
+      },
+      "count": 12
+    },
+    {
+      "meta": {
+        "DefName": "Plant_Rice",
+        "Label": "rice plant",
+        "Description": "A short, fast-growing crop that yields small edible grains. Its great nutritional output and ease of cultivation has made it the economic core of many great civilizations. While rice grows quickly, it is sensitive to soil fertility and will not fare well in poor soil.",
+        "MarketValue": 0.0,
+        "TechLevel": 0
+      },
+      "count": 69
+    },
+    {
+      "meta": {
+        "DefName": "Plant_Dandelion",
+        "Label": "dandelions",
+        "Description": "A tiny yellow flower which grows in large clusters. Though it is often considered a weed, dandelions in bloom are quite beautiful.",
+        "MarketValue": 0.0,
+        "TechLevel": 0
+      },
+      "count": 42
+    }
+  ],
+  "colonyResources": [
+    {
+      "meta": {
+        "DefName": "Silver",
+        "Label": "silver",
+        "Description": "This metal is mostly used as a commodity currency. It can also be used for making decorations.",
+        "MarketValue": 1.0,
+        "TechLevel": 0
+      },
+      "count": 839
+    },
+    {
+      "meta": {
+        "DefName": "EggEmuUnfertilized",
+        "Label": "emu egg (unfert.)",
+        "Description": "An unfertilized emu egg. It can be eaten raw, but it's much better cooked.",
+        "MarketValue": 12.0,
+        "TechLevel": 0
+      },
+      "count": 9
+    },
+    {
+      "meta": {
+        "DefName": "MedicineIndustrial",
+        "Label": "medicine",
+        "Description": "A kit of industrial-era medical equipment. It contains basic drugs, tools for suturing and bone setting, diagnostic devices, and various pads and fluids.",
+        "MarketValue": 18.0,
+        "TechLevel": 0
+      },
+      "count": 7
+    },
+    {
+      "meta": {
+        "DefName": "ComponentIndustrial",
+        "Label": "component",
+        "Description": "Miscellaneous gears, capacitors, circuit boards, tubes, wheels, sensors, wires, chips, processors, and other electronic and industrial parts. Necessary for assembling complex machines or electronics.",
+        "MarketValue": 32.0,
+        "TechLevel": 0
+      },
+      "count": 20
+    },
+    {
+      "meta": {
+        "DefName": "RawRice",
+        "Label": "rice",
+        "Description": "Raw rice.",
+        "MarketValue": 1.1,
+        "TechLevel": 0
+      },
+      "count": 681
+    },
+    {
+      "meta": {
+        "DefName": "RawBerries",
+        "Label": "berries",
+        "Description": "Assorted berries. Nice to eat, even when raw.",
+        "MarketValue": 1.2,
+        "TechLevel": 0
+      },
+      "count": 18
+    },
+    {
+      "meta": {
+        "DefName": "Steel",
+        "Label": "steel",
+        "Description": "An iron-carbon metal alloy used for building a huge variety of structures, weapons, and machines.",
+        "MarketValue": 1.9,
+        "TechLevel": 0
+      },
+      "count": 38
+    },
+    {
+      "meta": {
+        "DefName": "WoodLog",
+        "Label": "wood",
+        "Description": "Wood from trees or other fibrous plants. Useful for building structures and weapons. It is a good fuel for campfires and generators, and can be refined into chemfuel. In a pinch, a piece of wood can be used as a weapon or a leg.",
+        "MarketValue": 1.2,
+        "TechLevel": 0
+      },
+      "count": 2
+    },
+    {
+      "meta": {
+        "DefName": "Leather_Bear",
+        "Label": "bearskin",
+        "Description": "The strong furry leather of a bear. Compared to most leather, it is quite a bit tougher and a bit better at all kinds of temperature regulation.",
+        "MarketValue": 3.4,
+        "TechLevel": 0
+      },
+      "count": 75
+    }
+  ],
   "factionRelations": {
-    "Hadberon": 0,
-    "Notistan": -80,
-    "The Crica People": 0,
-    "The Toxo Union": -80,
-    "Leseami Union": -100,
-    "The Ash Sickles": -100
+    "Banforla Concord": 0,
+    "Herhaonbium League": -80,
+    "Tasvego Treaty": 0,
+    "The Tona Union": -80,
+    "Bique Confederacy": -100,
+    "The Black Goblins": -100
   },
-  "activeQuests": [
-    "Ship to the Stars",
-    "Breaking Zebo Out",
-    "Rego's Shack of Goodies"
-  ]
+  "activeQuests": []
 }

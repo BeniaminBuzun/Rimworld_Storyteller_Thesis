@@ -13,12 +13,15 @@ namespace RimTelligence.CustomEvents.Handlers.Item
 
         public bool CanBeChoosen(ColonySnapshot snapshot) => true;
 
+        private string executionSummary;
+
         public GlobalTargetInfo Execute(GameEffect effect, Map map)
         {
-            ThingDef def = DefDatabase<ThingDef>.GetNamed(effect.SelectedDefName[0], errorOnFail: false);
+            ThingDef def = ResolveItemDef(effect);
             if (def == null)
             {
                 ModLogger.Warning($"ResourcePodCrash: ThingDef '{effect.DefNameText}' not found.");
+                executionSummary = "Debris from orbit burnt up high in the atmosphere before reaching the surface.";
                 return GlobalTargetInfo.Invalid;
             }
 
@@ -29,14 +32,42 @@ namespace RimTelligence.CustomEvents.Handlers.Item
             IntVec3 cell = DropCellFinder.RandomDropSpot(map);
             DropPodUtility.DropThingsNear(cell, map, items);
 
+            string itemLabel = def.LabelCap.Resolve();
+            executionSummary = $"Cargo pods crashed down from orbit, scattering {quantity}x {itemLabel} across {pods} container{(pods == 1 ? "" : "s")}!";
+
             ModLogger.Message($"{Config.EffectName}: dropped {quantity}x {def.defName} " +
                               $"(value={effect.Severity}, pods={pods})");
 
             return new GlobalTargetInfo(cell, map);
         }
 
-        public string GetSummary(GameEffect effect) =>
-            $"{effect.DefNameText} dropped via pod ({effect.Severity})";
+        public string GetSummary(GameEffect effect)
+        {
+            if (!string.IsNullOrEmpty(executionSummary))
+                return executionSummary;
+
+            return GetDefaultSummary(effect);
+        }
+
+        private static string GetDefaultSummary(GameEffect effect)
+        {
+            string itemLabel = ResolveItemLabel(effect);
+            string sevStr = effect.Severity != SeverityTypes.None ? $" ({effect.Severity.ToString().ToLower()})" : "";
+            return $"Cargo pods carrying {itemLabel} hurtle down from orbit{sevStr}.";
+        }
+
+        private static ThingDef ResolveItemDef(GameEffect effect)
+        {
+            string defName = effect.SelectedDefName != null && effect.SelectedDefName.Length > 0 ? effect.SelectedDefName[0] : effect.DefNameText;
+            if (string.IsNullOrWhiteSpace(defName)) return null;
+            return DefDatabase<ThingDef>.GetNamed(defName, errorOnFail: false);
+        }
+
+        private static string ResolveItemLabel(GameEffect effect)
+        {
+            ThingDef def = ResolveItemDef(effect);
+            return def != null ? def.LabelCap.Resolve() : (!string.IsNullOrWhiteSpace(effect.DefNameText) ? effect.DefNameText : "supplies");
+        }
 
         private static List<Thing> SplitIntoStacks(ThingDef def, int total, int pods)
         {

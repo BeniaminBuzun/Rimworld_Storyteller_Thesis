@@ -1,4 +1,4 @@
-﻿using RimTelligence.DataSnapshots;
+using RimTelligence.DataSnapshots;
 using RimTelligence.Llm;
 using RimTelligence.Source.CustomEvents.Prompting;
 using RimWorld;
@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using Verse;
-using Verse.Noise;
 namespace RimTelligence.Source.AIStoryteller
 {
     internal class StorytellerState : GameComponent
@@ -54,7 +53,7 @@ namespace RimTelligence.Source.AIStoryteller
             //create a list of human readable labels of events
             List<string> defLabels = DefDatabase<IncidentDef>.AllDefsListForReading
             .Where(def => def.targetTags != null && def.targetTags.Contains(IncidentTargetTagDefOf.Map_PlayerHome))
-            .Select(def => "name: " + def.label+ ", description: " + def.description)
+            .Select(def => "name: " + def.label + ", description: " + def.description)
             .ToList();
 
             //create a dictionary of event labels and their corresponding defNames
@@ -84,9 +83,9 @@ namespace RimTelligence.Source.AIStoryteller
             //string step2Provider = llmResult?.providerId ?? "unknown";
             //string step2Model = llmResult?.model ?? "unknown";
             string responseRaw = llmResult.responseText;
-            
+
             ModLogger.Message($"llm 1st stage response: {responseRaw}");
-            string conversionPrompt = "Convert following rimworld events to JSON format: {events:[ {eventName: <name of event>, message:<message displayed when executing event>, waitTime:<how many hours should pass between last event and this one>} ] }\r\n"+
+            string conversionPrompt = "Convert following rimworld events to JSON format: {events:[ {eventName: <name of event>, message:<message displayed when executing event>, waitTime:<how many hours should pass between last event and this one>} ] }\r\n" +
                 "Available events: " + string.Join(", ", defLabels) + "\r\n" +
                 "story: " + responseRaw;
 

@@ -17,11 +17,10 @@ namespace RimTelligence.DataSnapshots
 
         // other inhibitants
         public int colonyAnimalCount;
-        public List<string> colonyAnimals;
+        public List<GameObjectMeta> colonyAnimals;
         public List<PawnSnapshot> prisoners;
         public List<PawnSnapshot> slaves;
         public List<PawnSnapshot> visitors;
-        // add information about prisoners, slaves, visitors
 
         // threats & story
         public float wealthTotal;
@@ -37,11 +36,12 @@ namespace RimTelligence.DataSnapshots
         // environment
         public string currentWeather;
         public float temperature;
-        public Dictionary<string, int> wildAnimals;
-        public Dictionary<string, int> cultivatedPlants;
+
+        public List<CountedMeta> wildAnimals;
+        public List<CountedMeta> cultivatedPlants;
 
         // resources
-        public ResourceSnapshot colonyResources;
+        public List<CountedMeta> colonyResources;
 
         // world & diplomacy 
         public Dictionary<string, int> factionRelations;
@@ -61,7 +61,9 @@ namespace RimTelligence.DataSnapshots
         public HealthSnapshot health;
         public List<string> traits;
         public string childhood;
+        public string childhood_description;
         public string adulthood;
+        public string adulthood_description;
         public List<string> skills;
         public PawnRelationsSnapshot relations;
         public PawnNeedsSnapshot needs;
@@ -89,16 +91,12 @@ namespace RimTelligence.DataSnapshots
         public bool is_downed;
         public float pain_level;
 
-        public List<string> missing_body_parts;
-        public List<string> injuries;
-        public List<string> diseases;
-        public List<string> implants;
-        public List<string> chronic_conditions;  // scars, permanent
-        public List<string> other;
-    }
-    public class ResourceSnapshot
-    {
-        public Dictionary<string, int> allResources;
+        public List<GameObjectMeta> missing_body_parts;
+        public List<GameObjectMeta> injuries;
+        public List<GameObjectMeta> diseases;
+        public List<GameObjectMeta> implants;
+        public List<GameObjectMeta> chronic_conditions;  // scars, permanent
+        public List<GameObjectMeta> other;
     }
 
     public class EventSnapshot

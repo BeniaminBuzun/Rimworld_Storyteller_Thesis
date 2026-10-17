@@ -24,6 +24,15 @@ namespace RimTelligence.Memory
             }
 
             ModLogger.Message("SQLite RAG store ready at " + DbPath);
+
+            try
+            {
+                DataSnapshots.GameObjectsCapturer.EnsurePopulatedOnStartup();
+            }
+            catch (System.Exception ex)
+            {
+                ModLogger.Error("RAG startup population check failed: " + ex.Message);
+            }
         }
     }
 }

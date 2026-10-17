@@ -60,15 +60,29 @@ namespace RimTelligence.DataSnapshots
 
                 wildAnimals = map.mapPawns.AllPawnsSpawned
                                     .Where(animal => animal.RaceProps.Animal && animal.Faction == null && !animal.InMentalState)
-                                    .GroupBy(animal => animal.def.defName)
-                                    .ToDictionary(group => group.Key, group => group.Count()),
+                                    .GroupBy(animal => new GameObjectMeta
+                                    {
+                                        DefName = animal.def.defName,
+                                        Label = animal.def.label,
+                                        Description = animal.def.description,
+                                        MarketValue = animal.MarketValue,
+                                    })
+                                    .Select(group => new CountedMeta { meta = group.Key, count = group.Count() })
+                                    .ToList(),
 
                 cultivatedPlants = map.listerThings
                     .ThingsInGroup(ThingRequestGroup.Plant)
                     .OfType<Plant>()
                     .Where(plant => plant.DeliberatelyCultivated())
-                    .GroupBy(plant => plant.def.defName)
-                    .ToDictionary(group => group.Key, group => group.Count()),
+                    .GroupBy(plant => new GameObjectMeta
+                    {
+                        DefName = plant.def.defName,
+                        Label = plant.def.label,
+                        Description = plant.def.description,
+                        MarketValue = plant.MarketValue,
+                    })
+                    .Select(group => new CountedMeta { meta = group.Key, count = group.Count() })
+                    .ToList(),
 
                 colonyResources = CaptureResources(map),
                 currentTechLevel = Faction.OfPlayer.def.techLevel.ToString(),
@@ -83,16 +97,22 @@ namespace RimTelligence.DataSnapshots
             };
         }
 
-        private static List<string> CaptureColonyAnimals(Map map)
+        private static List<GameObjectMeta> CaptureColonyAnimals(Map map)
         {
             try
             {
                 return map.mapPawns.SpawnedColonyAnimals
-                    .GroupBy(animal => animal.def.LabelCap.ToString())
-                    .Select(group => $"{group.Key} x{group.Count()}")
+                    .GroupBy(animal => new GameObjectMeta
+                    {
+                        DefName = animal.def.defName,
+                        Label = animal.def.label,
+                        Description = animal.def.description,
+                        MarketValue = animal.MarketValue,
+                    })
+                    .Select(group => group.Key)
                     .ToList();
             }
-            catch (Exception) { return new List<string>(); }
+            catch (Exception) { return new List<GameObjectMeta>(); }
         }
 
         private static Dictionary<string, int> CaptureFactionRelations()
@@ -142,24 +162,31 @@ namespace RimTelligence.DataSnapshots
         }
 
         //Resources
-        private static ResourceSnapshot CaptureResources(Map map)
+        private static List<CountedMeta> CaptureResources(Map map)
         {
-            var filtered = new Dictionary<string, int>();
+            var filtered = new List<CountedMeta>();
 
             try
             {
                 foreach (var kvp in map.resourceCounter.AllCountedAmounts)
                 {
                     if (kvp.Value <= 0) continue;
-                    filtered[kvp.Key.defName] = kvp.Value;
+                    filtered.Add(new CountedMeta
+                    {
+                        meta = new GameObjectMeta
+                        {
+                            DefName = kvp.Key.defName,
+                            Label = kvp.Key.label,
+                            Description = kvp.Key.description,
+                            MarketValue = kvp.Key.BaseMarketValue
+                        },
+                        count = kvp.Value
+                    });
                 }
             }
             catch (Exception) { }
 
-            return new ResourceSnapshot
-            {
-                allResources = filtered
-            };
+            return filtered;
         }
 
         private static List<EventSnapshot> GetLastEvents()

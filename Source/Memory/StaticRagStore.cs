@@ -33,6 +33,21 @@ namespace RimTelligence.Memory
             }
         }
 
+        public int Count()
+        {
+            using (var conn = OpenConnection())
+            {
+                var cmd = conn.CreateCommand();
+                cmd.CommandText = "SELECT COUNT(*) FROM static_chunks";
+                return System.Convert.ToInt32(cmd.ExecuteScalar());
+            }
+        }
+
+        public bool IsEmpty()
+        {
+            return Count() == 0;
+        }
+
         public List<RagResult> Query(float[] queryEmbedding, int topK = 5, string categoryFilter = null)
         {
             var results = new List<RagResult>();

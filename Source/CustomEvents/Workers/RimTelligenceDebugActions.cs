@@ -162,7 +162,16 @@ namespace RimTelligence.CustomEvents.Workers
                 return;
             }
 
-            float[] embedding = GameObjectsCapturer.EmbeddingProvider.Embed(queryBuf);
+            var queryProvider = GameObjectsCapturer.ResolveEmbeddingProvider();
+            float[] embedding;
+            try
+            {
+                embedding = queryProvider.Embed(queryBuf);
+            }
+            finally
+            {
+                (queryProvider as IDisposable)?.Dispose();
+            }
             var store = new StaticRagStore(RagBootstrap.DbPath);
             lastResults = store.Query(embedding, topK: topK);
             resultsScroll = Vector2.zero;
@@ -189,7 +198,16 @@ namespace RimTelligence.CustomEvents.Workers
                 return;
             }
 
-            float[] embedding = GameObjectsCapturer.EmbeddingProvider.Embed(queryBuf);
+            var dynamicQueryProvider = GameObjectsCapturer.ResolveEmbeddingProvider();
+            float[] embedding;
+            try
+            {
+                embedding = dynamicQueryProvider.Embed(queryBuf);
+            }
+            finally
+            {
+                (dynamicQueryProvider as IDisposable)?.Dispose();
+            }
             var store = new DynamicRagStore(RagBootstrap.DbPath, component.SaveId);
             lastResults = store.Query(embedding, topK: topK);
             resultsScroll = Vector2.zero;
