@@ -3,7 +3,6 @@ using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
 using RimTelligence.CustomEvents.Handlers;
 using RimTelligence.DataSnapshots;
-using RimTelligence.Source.CustomEvents.Handlers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -91,7 +90,7 @@ namespace RimTelligence.CustomEvents.Prompting
 
             // If the model put effect properties at the top level instead of inside effects array:
             // e.g. { "letterTitle": "...", "letterText": "...", "effectName": "ResourcePodCrash", "selectedDefName": [...] }
-            if ((obj["effects"] == null || (obj["effects"] is JArray arr && arr.Count == 0)) 
+            if ((obj["effects"] == null || (obj["effects"] is JArray arr && arr.Count == 0))
                 && (obj["effectName"] != null || obj["type"] != null))
             {
                 var rootEffect = new JObject();

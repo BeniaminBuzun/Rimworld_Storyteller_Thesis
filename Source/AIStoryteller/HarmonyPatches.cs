@@ -1,10 +1,8 @@
 using HarmonyLib;
 using RimWorld;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection.Emit;
-using RimTelligence.CustomEvents.Handlers.Pawns.Debuffs;
 using UnityEngine;
 using Verse;
 

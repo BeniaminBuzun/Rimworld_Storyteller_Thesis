@@ -5,7 +5,6 @@ using RimTelligence.CustomEvents.Prompting;
 using RimTelligence.DataSnapshots;
 using RimTelligence.Llm;
 using RimWorld;
-using RimWorld.Planet;
 using System;
 using System.Collections.Generic;
 using System.Linq;

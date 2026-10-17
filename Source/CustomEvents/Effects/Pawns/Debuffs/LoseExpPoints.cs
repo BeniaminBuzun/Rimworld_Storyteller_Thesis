@@ -1,4 +1,3 @@
-using RimTelligence.CustomEvents.Handlers.Pawns.Buffs;
 using RimTelligence.DataSnapshots;
 using RimTelligence.Source.CustomEvents.Handlers.Pawns;
 using RimWorld;

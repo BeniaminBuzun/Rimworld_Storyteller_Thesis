@@ -31,7 +31,7 @@
       <NativeFiles Include="$(PkgMicrosoft_ML_OnnxRuntime)\runtimes\win-x64\native\onnxruntime.dll" />
       <NativeFiles Include="$(PkgMicrosoft_ML_OnnxRuntime)\runtimes\win-x64\native\onnxruntime_providers_shared.dll" />
     </ItemGroup>
-    <Copy SourceFiles="@(NativeFiles)" DestinationFolder="$(MSBuildProjectDirectory)\Native"/>
+    <Copy SourceFiles="@(NativeFiles)" DestinationFolder="$(MSBuildProjectDirectory)\Native" />
     <RemoveDir Directories="$(OutDir)x64;$(OutDir)x86;$(OutDir)runtimes" />
   </Target>
 

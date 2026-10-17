@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using Verse;
-using Verse.Noise;
 namespace RimTelligence.Source.AIStoryteller
 {
     internal class StorytellerState : GameComponent
@@ -20,45 +19,20 @@ namespace RimTelligence.Source.AIStoryteller
         public override void ExposeData()
         {
             base.ExposeData();
+            Scribe_Values.Look(ref incidentQueue, "incidentQueue", new Queue<FiringIncident>());
 
-            List<FiringIncident> list = null;
-            if (Scribe.mode == LoadSaveMode.Saving)
-            {
-                list = incidentQueue != null ? incidentQueue.ToList() : new List<FiringIncident>();
-            }
-
-            try
-            {
-                Scribe_Collections.Look(ref list, "incidentQueue", LookMode.Deep);
-            }
-            catch (System.Exception ex)
-            {
-                ModLogger.Warning($"Failed to expose incidentQueue: {ex.Message}");
-                list = null;
-            }
-
-            if (Scribe.mode == LoadSaveMode.LoadingVars || Scribe.mode == LoadSaveMode.PostLoadInit)
-            {
-                incidentQueue = list != null
-                    ? new Queue<FiringIncident>(list.Where(x => x != null))
-                    : new Queue<FiringIncident>();
-            }
+            // Save/load state data here
         }
-
         public FiringIncident GetNextIncident(IIncidentTarget target, StorytellerComp comp)
         {
-            if (incidentQueue == null)
-            {
-                incidentQueue = new Queue<FiringIncident>();
-            }
-
             if (incidentQueue.Count == 0)
             {
                 generateNewEvents(target, comp);
                 ModLogger.Message($"incidents left: {incidentQueue.Count}");
-            }
 
-            return incidentQueue.Count > 0 ? incidentQueue.Dequeue() : null;
+            }
+            return incidentQueue.Dequeue();
+
         }
         private void generateNewEvents(IIncidentTarget target, StorytellerComp comp)
         {
@@ -79,7 +53,7 @@ namespace RimTelligence.Source.AIStoryteller
             //create a list of human readable labels of events
             List<string> defLabels = DefDatabase<IncidentDef>.AllDefsListForReading
             .Where(def => def.targetTags != null && def.targetTags.Contains(IncidentTargetTagDefOf.Map_PlayerHome))
-            .Select(def => "name: " + def.label+ ", description: " + def.description)
+            .Select(def => "name: " + def.label + ", description: " + def.description)
             .ToList();
 
             //create a dictionary of event labels and their corresponding defNames
@@ -109,9 +83,9 @@ namespace RimTelligence.Source.AIStoryteller
             //string step2Provider = llmResult?.providerId ?? "unknown";
             //string step2Model = llmResult?.model ?? "unknown";
             string responseRaw = llmResult.responseText;
-            
+
             ModLogger.Message($"llm 1st stage response: {responseRaw}");
-            string conversionPrompt = "Convert following rimworld events to JSON format: {events:[ {eventName: <name of event>, message:<message displayed when executing event>, waitTime:<how many hours should pass between last event and this one>} ] }\r\n"+
+            string conversionPrompt = "Convert following rimworld events to JSON format: {events:[ {eventName: <name of event>, message:<message displayed when executing event>, waitTime:<how many hours should pass between last event and this one>} ] }\r\n" +
                 "Available events: " + string.Join(", ", defLabels) + "\r\n" +
                 "story: " + responseRaw;
 

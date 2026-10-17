@@ -10,6 +10,20 @@ semver section when a version is released.
 
 ## [Unreleased]
 
+## [0.18.0] - 2026.10.17
+
+### Changed
+- `ColonySnapshot.cs` - now uses `GameObjectMeta.cs` for **missing_body_parts**, **injuries**, **diseases**, **implants**, **chronic_conditions**, **other**
+- `ColonySnapshot.cs` - updated **colony_animals**, **wildAnimals**, **wildAnimals**, **colonyResources** uses new `CountedMeta` class wrapper for proper object counting and later converting for json
+
+### Added
+- `ColonySnapshot.cs` - added new fields **childhood_description**, **adulthood_description**
+- Automatic population of the database on startup if not populated
+- Custom `ChoiceLetter_Procedural` popup window that links every effect to a place where it happened
+
+### Fixed
+- `Mood buff/debuff` is now persistent between save and load
+
 ## [0.17.0] - 2026-10-14
 
 ### Changed

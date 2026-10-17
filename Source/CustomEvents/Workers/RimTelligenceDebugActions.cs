@@ -11,7 +11,6 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using Verse;
-using RimTelligence.CustomEvents.Execution;
 
 namespace RimTelligence.CustomEvents.Workers
 {
