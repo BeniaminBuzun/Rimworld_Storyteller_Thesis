@@ -1,7 +1,10 @@
-﻿using RimTelligence.DataSnapshots;
+﻿using LlmTornado.Chat;
+using RimTelligence.CustomEvents.Prompting;
+using RimTelligence.DataSnapshots;
 using RimTelligence.Llm;
 using RimTelligence.Source.CustomEvents.Prompting;
 using RimWorld;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
@@ -12,6 +15,8 @@ namespace RimTelligence.Source.AIStoryteller
     internal class StorytellerState : GameComponent
     {
         private Queue<FiringIncident> incidentQueue = new Queue<FiringIncident>();
+        private Conversation generationChat = null;
+        private Conversation conversionChat = null;
 
         public StorytellerState(Game game)
         {
@@ -21,6 +26,7 @@ namespace RimTelligence.Source.AIStoryteller
         {
             base.ExposeData();
             Scribe_Values.Look(ref incidentQueue, "incidentQueue", new Queue<FiringIncident>());
+            //Scribe_Values.Look(ref chat, "Conversation", null);
 
             // Save/load state data here
         }
@@ -47,16 +53,42 @@ namespace RimTelligence.Source.AIStoryteller
         }
         private async void LlmCall(Map target)
         {
-
-            ColonySnapshot snapshot = ColonySnapshotCapturer.Capture(target);
-
-
-            //create a list of human readable labels of events
+            //Cretion
             List<string> defLabels = DefDatabase<IncidentDef>.AllDefsListForReading
             .Where(def => def.targetTags != null && def.targetTags.Contains(IncidentTargetTagDefOf.Map_PlayerHome))
-            .Select(def => "name: " + def.label+ ", description: " + def.description)
+            .Select(def => "name: " + def.label + ", description: " + def.description)
             .ToList();
 
+            //Conversation for generating new events
+            if (generationChat == null)
+            {
+                ModLogger.Message($"Starting new conversation");
+                LLMCommunicationHandler com = new LLMCommunicationHandler();
+                generationChat = com.StartNewConversation();
+
+                string systemPrompt = "You ara a rimworld storyteller. Create short self-contained story consisting multiple consecutive events. Events should work together as a story connecting one to the other. Story should have a clear beginning, middle, and end. Avoid repetitive or predictable content. Resolve all mysteries you create. Use only available events.\r\n" +
+                "Use only available events. Available events: " + string.Join(", ", defLabels);
+                generationChat.AppendSystemMessage(systemPrompt);
+
+
+            }
+            //Conversation for converting events to JSON
+            if (conversionChat == null)
+            {
+                ModLogger.Message($"Starting new conversation");
+                LLMCommunicationHandler com = new LLMCommunicationHandler();
+                conversionChat = com.StartNewConversation();
+                string conversionPrompt = "You ara a rimworld storyteller. Create short self-contained story consisting multiple consecutive events. Events should work together as a story connecting one to the other. Story should have a clear beginning, middle, and end. Avoid repetitive or predictable content. Resolve all mysteries you create. Use only available events.\r\n" +
+                "Use only available events. Available events: " + string.Join(", ", defLabels);
+                conversionChat.AppendSystemMessage(conversionPrompt);
+
+            }
+
+
+
+            //ColonySnapshot snapshot = ColonySnapshotCapturer.Capture(target);
+
+            //ProperPromptGenerator promptGenerator = new ProperPromptGenerator();
             //create a dictionary of event labels and their corresponding defNames
             Dictionary<string, string> defDict = DefDatabase<IncidentDef>.AllDefsListForReading
             .Where(def => !string.IsNullOrEmpty(def.label)) //delete missing labels
@@ -67,35 +99,30 @@ namespace RimTelligence.Source.AIStoryteller
                 group => group.First().defName
             );
 
-            string prompt = "You ara a rimworld storyteller. Create short self-contained story consisting multiple consecutive events. Events should work together as a story connecting one to the other. Story should have a clear beginning, middle, and end. Avoid repetitive or predictable content. Resolve all mysteries you create. Use only available events.\r\n" +
-            "Use only available events. Available events: " + string.Join(", ", defLabels);
 
-            ModLogger.Message($"LLM request sent");
-            ModLogger.Message($"{prompt}");
 
-            LLMCommunicationHandler com = new LLMCommunicationHandler();
-            LlmConnectionResult llmResult = await com.GetLlmResponseWithDetailsAsync(prompt);
-            if (llmResult == null || !llmResult.isSuccess)
+            //LLMCommunicationHandler com = new LLMCommunicationHandler();
+            //LlmConnectionResult llmResult = await com.GetLlmResponseWithDetailsAsync(prompt);
+            //if (llmResult == null || !llmResult.isSuccess)
             // in case there is an error
-            {
-                ModLogger.Message($"LLM error");
+            //{
+            //ModLogger.Message($"LLM error");
 
-            }
+            //}
             //string step2Provider = llmResult?.providerId ?? "unknown";
             //string step2Model = llmResult?.model ?? "unknown";
-            string responseRaw = llmResult.responseText;
+            //generationChat.AppendUserInput("generate events");
+
+            string responseRaw = await generationChat.GetResponse();
             
             ModLogger.Message($"llm 1st stage response: {responseRaw}");
-            string conversionPrompt = "Convert following rimworld events to JSON format: {events:[ {eventName: <name of event>, message:<message displayed when executing event>, waitTime:<how many hours should pass between last event and this one>} ] }\r\n"+
-                "Available events: " + string.Join(", ", defLabels) + "\r\n" +
-                "story: " + responseRaw;
 
+            conversionChat.AppendUserInput(responseRaw);
 
+            string llmConversionResult = await conversionChat.GetResponse();
+            ModLogger.Message($"llm 2nd stage response: {llmConversionResult}");
 
-            LlmConnectionResult llmConversionResult = await com.GetLlmResponseWithDetailsAsync(conversionPrompt);
-            ModLogger.Message($"llm 2nd stage response: {llmConversionResult.responseText}");
-
-            LlmMultipleEventResponse receivedData = JsonSerializer.Deserialize<LlmMultipleEventResponse>(llmConversionResult.responseText);
+            LlmMultipleEventResponse receivedData = JsonSerializer.Deserialize<LlmMultipleEventResponse>(llmConversionResult);
 
             for (int i = 0; i < receivedData.events.Count; i++)
             {

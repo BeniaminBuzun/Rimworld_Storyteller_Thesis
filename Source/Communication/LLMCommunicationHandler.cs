@@ -2,19 +2,26 @@ using LlmTornado;
 using LlmTornado.Chat;
 using LlmTornado.Code;
 using RimTelligence.AIStoryteller;
+using RimWorld;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
+using UnityEngine.Profiling;
+using Verse;
 
 namespace RimTelligence.Llm
 {
     public class LLMCommunicationHandler
     {
-        TornadoApi api = new TornadoApi("your-api-key");
 
-        public async void StartNewConversation()
+        public Conversation StartNewConversation()
         {
-            
+            ProviderConfig config = AIStorytellerMod.Settings?.ActiveProvider;
+            LLmProviders provider = ProviderCatalog.ResolveProvider(config.providerId);
+            TornadoApi api = BuildApi(config, provider);
+            Conversation chat = api.Chat.CreateConversation(new ChatRequest { Model = ProviderCatalog.BuildChatModel(config) });
+            return chat;
         }
 
 
