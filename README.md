@@ -1,34 +1,43 @@
-Based on the code you’ve provided, here is a professional **README.md** summarizing the work done.
-
 ***
 
 # RimTelligence: AI Storyteller
 
-I will use Readme as a file to documment progress RimTelligence (Development Name) V0.1
+RimTelligence (Development Name) is an AI-driven storyteller mod for RimWorld.
+Version history is tracked in [CHANGELOG.md](CHANGELOG.md).
 
-# Verion0.1 - proof of concept
+## Things that are currently broken, missing or additional features:
+- Rag is not wired into any relevant logic
 
-### 1. Added selection for basic story generation on storyteller selection
-*   Still buggy but it works
-*   Preset System: Includes 5 built-in personality presets in mod settings way for user to type in his own preset
+## Benchmarking
 
-### 2. LLM Integration (Powered by LlmTornado)
-*   Basic very basic and not universal mostly for testing and vailidating idea (BasicCom.cs class)
-*   LlmTornado should be enought for our use it simplifies a lot 
+Run headless model evaluations and benchmarks using `BenchmarkRunner`:
 
-### 3. Mod Settings
-*   menu for mod settings 
-*   paste there inside game menu your Grok api key (Only free one I've found for now)
-*   textbox for user to input his custom storyteller description
+```bash
+# Multi-effect benchmark (testing several effects at once per prompt)
+.\BenchmarkRunner\bin\Debug\net472\RimTelligence.Benchmark.exe --benchmark multi
 
-### 3. Custom event Test
-*   Asks llm for event text and displays it 
+# Multi-effect benchmark with custom effect combinations
+.\BenchmarkRunner\bin\Debug\net472\RimTelligence.Benchmark.exe --benchmark multi --combos "DamagePawn+AddDisease, ResourcePodCrash+MeteoriteImpact"
 
+# Multi-effect benchmark testing prompts of size N (e.g., pairs or trios)
+.\BenchmarkRunner\bin\Debug\net472\RimTelligence.Benchmark.exe --benchmark multi --effects-per-prompt 2 --cases 5
 
----
+# Multi-effect benchmark using dynamic storyteller heuristic draws
+.\BenchmarkRunner\bin\Debug\net472\RimTelligence.Benchmark.exe --benchmark multi --heuristic 5
+
+# Single-effect benchmark (testing each effect in isolation)
+.\BenchmarkRunner\bin\Debug\net472\RimTelligence.Benchmark.exe --benchmark single
+```
+
+Reports, execution metrics (latency, token usage, retention rate), and generated story samples are written to `BenchmarkOutput/multi-effect/` and `BenchmarkOutput/single-effect/`.
+
 
 ## Installation / Setup
 1.  Clone the repository into your `RimWorld/Mods` folder.
-2.  Ensure `LlmTornado.dll` and its dependencies are in the `/Assemblies` folder.
-3.  Open the solution in Visual Studio and update references to point to your local `Assembly-CSharp.dll`.
-4.  Build the project and enable **RimTelligence** in the RimWorld Mod Menu.
+2.  Ensure you have installed Krafs.Rimworld.Ref, Lib.Harmony, LlmTornado and its dependencies are in the `/Assemblies` folder.
+3.  Build the project and enable **RimTelligence** in the RimWorld Mod Menu.
+
+
+## Development
+1. If you encounter weird errors on startup go to `C:\Users\User\AppData\LocalLow\Ludeon Studios\RimWorld by Ludeon Studios\Config` and delete `Mod_Rimworld_Storyteller_Thesis_AIStorytellerMod` 
+2. Delete files in Assemblies folder and rebuild the project.

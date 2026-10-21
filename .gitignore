@@ -16,12 +16,31 @@ obj/
 /Assemblies/*.dll
 /Assemblies/*.pdb
 /Assemblies/*.xml
+*.dll
+
 
 /References/
 /Libs/
 
 .DS_Store
 Thumbs.db
+*.tmp
+*.swp
+.vscode/
+.idea/
+
+
+# NuGet
+packages/
+*.nupkg
+
+# Runtime data (regenerated per session)
+*.db
+[Dd]ata/*.db
+[Dd]ata/*.db-shm
+[Dd]ata/*.db-wal
 
 /[Aa]ssets/[Aa]ssetBundles/
 /[Aa]ssets/[Aa]ssetBundles.meta
+
+/BenchmarkOutput/*

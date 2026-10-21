@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net472</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>RimTelligence.Benchmark</AssemblyName>
+    <RootNamespace>RimTelligence.Benchmark.Runner</RootNamespace>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\RimTelligence.csproj" />
+  </ItemGroup>
+
+  <Target Name="RemoveRimWorldReferenceAssemblies" AfterTargets="Build">
+    <ItemGroup>
+      <RimWorldReferenceAssemblies Include="$(OutDir)Assembly-CSharp.dll" />
+      <RimWorldReferenceAssemblies Include="$(OutDir)Assembly-CSharp-firstpass.dll" />
+      <RimWorldReferenceAssemblies Include="$(OutDir)UnityEngine*.dll" />
+      <RimWorldReferenceAssemblies Include="$(OutDir)Unity.*.dll" />
+    </ItemGroup>
+    <Delete Files="@(RimWorldReferenceAssemblies)" ContinueOnError="true" />
+  </Target>
+
+</Project>
