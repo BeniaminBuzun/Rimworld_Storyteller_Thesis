@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+	<IncidentDef>
+		<defName>LlmEvent</defName>
+		<label>Event based on Llm response</label>
+		<workerClass>RimTelligence.CustomEvents.Workers.IncidentWorker_ProceduralEvent</workerClass>
+		<category>Misc</category>
+		<targetTags>
+			<li>Map_PlayerHome</li>
+		</targetTags>
+	</IncidentDef>
+</Defs>

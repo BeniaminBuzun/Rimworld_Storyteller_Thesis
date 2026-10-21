@@ -1,0 +1,447 @@
+{
+  "colonyName": "Hiomeni Pact",
+  "day": 14,
+  "time": "05",
+  "season": "PermanentSummer",
+  "biome": "TropicalRainforest",
+  "colonistCount": 3,
+  "colonists": [
+    {
+      "name": "Oliver",
+      "current_action": "Resting.",
+      "queued_actions": [],
+      "current_location": "Bedroom",
+      "is_drafted": false,
+      "primary_weapon": "Gun_Revolver",
+      "age": 21,
+      "health": {
+        "overall_health": 0.70895797,
+        "is_downed": false,
+        "pain_level": 0.290331662,
+        "missing_body_parts": [],
+        "injuries": [
+          {
+            "DefName": "Bruise",
+            "Label": "bruise",
+            "Description": "A bruise.",
+            "MarketValue": 0.0,
+            "TechLevel": 0
+          },
+          {
+            "DefName": "Crack",
+            "Label": "crack",
+            "Description": "A crack.",
+            "MarketValue": 0.0,
+            "TechLevel": 0
+          },
+          {
+            "DefName": "Bruise",
+            "Label": "bruise",
+            "Description": "A bruise.",
+            "MarketValue": 0.0,
+            "TechLevel": 0
+          },
+          {
+            "DefName": "Crack",
+            "Label": "crack",
+            "Description": "A crack.",
+            "MarketValue": 0.0,
+            "TechLevel": 0
+          }
+        ],
+        "diseases": [],
+        "implants": [],
+        "chronic_conditions": [],
+        "other": []
+      },
+      "traits": [
+        "Beauty"
+      ],
+      "childhood": "child spy",
+      "childhood_description": "None",
+      "adulthood": "model",
+      "adulthood_description": "None",
+      "skills": [
+        "Social:12",
+        "Artistic:10",
+        "Animals:9"
+      ],
+      "relations": {
+        "lovers": [],
+        "rivals": [],
+        "bonded_animal": "None"
+      },
+      "needs": {
+        "mood": 0.41,
+        "mental_state": "None",
+        "food_level": 0.335998654,
+        "rest_level": 0.9482497,
+        "recreation_level": 0.72399807
+      }
+    },
+    {
+      "name": "Griff",
+      "current_action": "Resting.",
+      "queued_actions": [],
+      "current_location": "Bedroom",
+      "is_drafted": false,
+      "primary_weapon": "Gun_BoltActionRifle",
+      "age": 39,
+      "health": {
+        "overall_health": 1.0,
+        "is_downed": false,
+        "pain_level": 0.0375,
+        "missing_body_parts": [],
+        "injuries": [],
+        "diseases": [],
+        "implants": [],
+        "chronic_conditions": [
+          {
+            "DefName": "Bite",
+            "Label": "bite",
+            "Description": "A bite wound.",
+            "MarketValue": 0.0,
+            "TechLevel": 0
+          },
+          {
+            "DefName": "Stab",
+            "Label": "stab",
+            "Description": "A stab wound.",
+            "MarketValue": 0.0,
+            "TechLevel": 0
+          }
+        ],
+        "other": []
+      },
+      "traits": [
+        "Psychopath",
+        "NightOwl",
+        "Wimp"
+      ],
+      "childhood": "urbworld urchin",
+      "childhood_description": "None",
+      "adulthood": "torturer",
+      "adulthood_description": "None",
+      "skills": [
+        "Melee:12",
+        "Shooting:7",
+        "Plants:6"
+      ],
+      "relations": {
+        "lovers": [],
+        "rivals": [],
+        "bonded_animal": "None"
+      },
+      "needs": {
+        "mood": 0.5111999,
+        "mental_state": "None",
+        "food_level": 0.275998533,
+        "rest_level": 0.8902,
+        "recreation_level": 0.586488068
+      }
+    },
+    {
+      "name": "Pepper",
+      "current_action": "Consuming nutrient paste dispenser.",
+      "queued_actions": [],
+      "current_location": "Dining room",
+      "is_drafted": false,
+      "primary_weapon": "None",
+      "age": 20,
+      "health": {
+        "overall_health": 1.0,
+        "is_downed": false,
+        "pain_level": 0.075,
+        "missing_body_parts": [],
+        "injuries": [],
+        "diseases": [],
+        "implants": [],
+        "chronic_conditions": [
+          {
+            "DefName": "Bite",
+            "Label": "bite",
+            "Description": "A bite wound.",
+            "MarketValue": 0.0,
+            "TechLevel": 0
+          }
+        ],
+        "other": []
+      },
+      "traits": [
+        "Undergrounder",
+        "QuickSleeper",
+        "Immunity"
+      ],
+      "childhood": "caveworld tunneler",
+      "childhood_description": "None",
+      "adulthood": "crop farmer",
+      "adulthood_description": "None",
+      "skills": [
+        "Mining:11",
+        "Plants:10",
+        "Construction:5"
+      ],
+      "relations": {
+        "lovers": [],
+        "rivals": [],
+        "bonded_animal": "None"
+      },
+      "needs": {
+        "mood": 0.414400041,
+        "mental_state": "None",
+        "food_level": 0.193998411,
+        "rest_level": 0.8503746,
+        "recreation_level": 0.6830709
+      }
+    }
+  ],
+  "colonyAnimalCount": 1,
+  "colonyAnimals": [
+    {
+      "DefName": "Alpaca",
+      "Label": "alpaca",
+      "Description": "A medium-sized ungulate closely related to the llama, the alpaca is usually raised for its remarkably soft and insulating wool. Alpacas have also been used as pack animals since they hauled cargo on the rugged mountain trails of ancient South America.",
+      "MarketValue": 215.0,
+      "TechLevel": 0
+    }
+  ],
+  "prisoners": [],
+  "slaves": [],
+  "visitors": [],
+  "wealthTotal": 16493.8027,
+  "wealthItems": 7537.682,
+  "wealthBuildings": 5351.12061,
+  "wealthPawns": 3605.0,
+  "currentTechLevel": "Industrial",
+  "daysSinceLastRaid": 0,
+  "activeConditions": [],
+  "totalNutrition": 39.45,
+  "isUnderAttck": true,
+  "currentWeather": "Rain",
+  "temperature": 17.7416115,
+  "wildAnimals": [
+    {
+      "meta": {
+        "DefName": "Cobra",
+        "Label": "cobra",
+        "Description": "A large predatory snake. Cobras can be highly aggressive if provoked, and their bite injects toxic venom into the victim.",
+        "MarketValue": 150.0,
+        "TechLevel": 0
+      },
+      "count": 2
+    },
+    {
+      "meta": {
+        "DefName": "WildBoar",
+        "Label": "wild boar",
+        "Description": "This hairy omnivore is descended from escaped pigs and evolved for living in the wild.\n\nIts tusks make it a better fighter than its domesticated pig cousins. Unfortunately, it is too unruly to be trained in the most complex tasks.",
+        "MarketValue": 200.0,
+        "TechLevel": 0
+      },
+      "count": 5
+    },
+    {
+      "meta": {
+        "DefName": "Rhinoceros",
+        "Label": "rhinoceros",
+        "Description": "Despite being herbivorous, this large mammal is very easy to enrage. Once angered, its massive strength and sharp horn make it a brutal opponent. It has more muscle in one leg than most humans do in their whole body.",
+        "MarketValue": 700.0,
+        "TechLevel": 0
+      },
+      "count": 2
+    },
+    {
+      "meta": {
+        "DefName": "Alpaca",
+        "Label": "alpaca",
+        "Description": "A medium-sized ungulate closely related to the llama, the alpaca is usually raised for its remarkably soft and insulating wool. Alpacas have also been used as pack animals since they hauled cargo on the rugged mountain trails of ancient South America.",
+        "MarketValue": 350.0,
+        "TechLevel": 0
+      },
+      "count": 9
+    },
+    {
+      "meta": {
+        "DefName": "Cassowary",
+        "Label": "cassowary",
+        "Description": "A large flightless bird with brightly-colored feathers. While it looks beautiful, its kick is vicious. It's known for being quick to aggression when harmed by violence or confronted by incompetent animal tamers.",
+        "MarketValue": 186.0,
+        "TechLevel": 0
+      },
+      "count": 4
+    },
+    {
+      "meta": {
+        "DefName": "Elephant",
+        "Label": "elephant",
+        "Description": "The largest unmodified land animal. Elephants have a long trunk they use to manipulate objects, and sharp tusks they use to gore attackers. A dead elephant's valuable tusks can be recovered by butchering it.\n\nIntelligent creatures with complex social relationships, elephants can be used as pack animals or trained to carry out the most complex of tasks. They live a long time, and are known to remember events and relationships from many decades before.",
+        "MarketValue": 600.0,
+        "TechLevel": 0
+      },
+      "count": 9
+    },
+    {
+      "meta": {
+        "DefName": "Tortoise",
+        "Label": "tortoise",
+        "Description": "This heavily armored land-dwelling reptile is known for its slow moving speed and surprisingly vicious bite. Because of its natural armor, it is tough to kill and can do serious damage during drawn-out melee fights.",
+        "MarketValue": 200.0,
+        "TechLevel": 0
+      },
+      "count": 1
+    },
+    {
+      "meta": {
+        "DefName": "Boomalope",
+        "Label": "boomalope",
+        "Description": "Engineered for chemicals production, the boomalope grows a large sac of volatile chemicals on its back. Though it is weak and fragile for its size, other animals have learned to avoid it because of the huge explosion it produces when it dies. It can be milked to produce chemfuel - very carefully.",
+        "MarketValue": 350.0,
+        "TechLevel": 0
+      },
+      "count": 2
+    },
+    {
+      "meta": {
+        "DefName": "Cat",
+        "Label": "cat",
+        "Description": "One of mankind's first pets, the cat is a small mammal which hunts vermin. Known for their aloofness, cats are nevertheless popular companions because of their independence, calm disposition, and fine, pettable fur.",
+        "MarketValue": 100.0,
+        "TechLevel": 0
+      },
+      "count": 4
+    }
+  ],
+  "cultivatedPlants": [
+    {
+      "meta": {
+        "DefName": "Plant_Healroot",
+        "Label": "healroot",
+        "Description": "A slow-growing plant which yields herbal medicine when harvested. Sowing and harvesting healroot are both very labor-intensive tasks because of its delicate shoots.\n\nHealroot was selectively bred for centuries by settlers. It is sometimes also called \"healer's hand\" by tribespeople - a nickname it owes to its five major medicinal virtues.",
+        "MarketValue": 0.0,
+        "TechLevel": 0
+      },
+      "count": 12
+    },
+    {
+      "meta": {
+        "DefName": "Plant_Rice",
+        "Label": "rice plant",
+        "Description": "A short, fast-growing crop that yields small edible grains. Its great nutritional output and ease of cultivation has made it the economic core of many great civilizations. While rice grows quickly, it is sensitive to soil fertility and will not fare well in poor soil.",
+        "MarketValue": 0.0,
+        "TechLevel": 0
+      },
+      "count": 69
+    },
+    {
+      "meta": {
+        "DefName": "Plant_Dandelion",
+        "Label": "dandelions",
+        "Description": "A tiny yellow flower which grows in large clusters. Though it is often considered a weed, dandelions in bloom are quite beautiful.",
+        "MarketValue": 0.0,
+        "TechLevel": 0
+      },
+      "count": 42
+    }
+  ],
+  "colonyResources": [
+    {
+      "meta": {
+        "DefName": "Silver",
+        "Label": "silver",
+        "Description": "This metal is mostly used as a commodity currency. It can also be used for making decorations.",
+        "MarketValue": 1.0,
+        "TechLevel": 0
+      },
+      "count": 839
+    },
+    {
+      "meta": {
+        "DefName": "EggEmuUnfertilized",
+        "Label": "emu egg (unfert.)",
+        "Description": "An unfertilized emu egg. It can be eaten raw, but it's much better cooked.",
+        "MarketValue": 12.0,
+        "TechLevel": 0
+      },
+      "count": 9
+    },
+    {
+      "meta": {
+        "DefName": "MedicineIndustrial",
+        "Label": "medicine",
+        "Description": "A kit of industrial-era medical equipment. It contains basic drugs, tools for suturing and bone setting, diagnostic devices, and various pads and fluids.",
+        "MarketValue": 18.0,
+        "TechLevel": 0
+      },
+      "count": 7
+    },
+    {
+      "meta": {
+        "DefName": "ComponentIndustrial",
+        "Label": "component",
+        "Description": "Miscellaneous gears, capacitors, circuit boards, tubes, wheels, sensors, wires, chips, processors, and other electronic and industrial parts. Necessary for assembling complex machines or electronics.",
+        "MarketValue": 32.0,
+        "TechLevel": 0
+      },
+      "count": 20
+    },
+    {
+      "meta": {
+        "DefName": "RawRice",
+        "Label": "rice",
+        "Description": "Raw rice.",
+        "MarketValue": 1.1,
+        "TechLevel": 0
+      },
+      "count": 681
+    },
+    {
+      "meta": {
+        "DefName": "RawBerries",
+        "Label": "berries",
+        "Description": "Assorted berries. Nice to eat, even when raw.",
+        "MarketValue": 1.2,
+        "TechLevel": 0
+      },
+      "count": 18
+    },
+    {
+      "meta": {
+        "DefName": "Steel",
+        "Label": "steel",
+        "Description": "An iron-carbon metal alloy used for building a huge variety of structures, weapons, and machines.",
+        "MarketValue": 1.9,
+        "TechLevel": 0
+      },
+      "count": 38
+    },
+    {
+      "meta": {
+        "DefName": "WoodLog",
+        "Label": "wood",
+        "Description": "Wood from trees or other fibrous plants. Useful for building structures and weapons. It is a good fuel for campfires and generators, and can be refined into chemfuel. In a pinch, a piece of wood can be used as a weapon or a leg.",
+        "MarketValue": 1.2,
+        "TechLevel": 0
+      },
+      "count": 2
+    },
+    {
+      "meta": {
+        "DefName": "Leather_Bear",
+        "Label": "bearskin",
+        "Description": "The strong furry leather of a bear. Compared to most leather, it is quite a bit tougher and a bit better at all kinds of temperature regulation.",
+        "MarketValue": 3.4,
+        "TechLevel": 0
+      },
+      "count": 75
+    }
+  ],
+  "factionRelations": {
+    "Banforla Concord": 0,
+    "Herhaonbium League": -80,
+    "Tasvego Treaty": 0,
+    "The Tona Union": -80,
+    "Bique Confederacy": -100,
+    "The Black Goblins": -100
+  },
+  "activeQuests": []
+}

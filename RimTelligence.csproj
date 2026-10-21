@@ -46,8 +46,34 @@
     <Compile Include="Source\AIStoryteller\Settings.cs" />
     <Compile Include="Source\AIStoryteller\Patch_Page_SelectStoryteller.cs" />
     <Compile Include="Source\AIStoryteller\Presets.cs" />
+    <Compile Include="Source\Communication\LLMCommunicationHandler.cs" />
+    <Compile Include="Source\Communication\LlmConnectionResult.cs" />
+    <Compile Include="Source\Communication\ProviderCatalog.cs" />
+    <Compile Include="Source\Communication\ProviderConfig.cs" />
     <Compile Include="Source\CustomEvents\FlavourEvent.cs" />
+    <Compile Include="Source\DataSnapshots\ColonySnapshot.cs" />
+    <Compile Include="Source\DataSnapshots\ColonySnapshotCapturer.cs" />
+    <Compile Include="Source\DataSnapshots\DataExporter.cs" />
+    <Compile Include="Source\DataSnapshots\GameObjectMeta.cs" />
+    <Compile Include="Source\DataSnapshots\GameObjectsCapturer.cs" />
+    <Compile Include="Source\DataSnapshots\ItemCategoryRegistry.cs" />
+    <Compile Include="Source\DataSnapshots\PawnSnapshotCapturer.cs" />
     <Compile Include="Source\LlmCom\BasicCom.cs" />
+    <Compile Include="Source\Memory\BertTokenizer.cs" />
+    <Compile Include="Source\Memory\DynamicRagStore.cs" />
+    <Compile Include="Source\Memory\Helpers.cs" />
+    <Compile Include="Source\Memory\IEmbeddingProvider.cs" />
+    <Compile Include="Source\Memory\LlmEmbeddingProvider.cs" />
+    <Compile Include="Source\Memory\NativeDependencyLoader.cs" />
+    <Compile Include="Source\Memory\OnnxEmbeddingProvider.cs" />
+    <Compile Include="Source\Memory\RagBootstrap.cs" />
+    <Compile Include="Source\Memory\RagMigration.cs" />
+    <Compile Include="Source\Memory\RagStoreBase.cs" />
+    <Compile Include="Source\Memory\SaveScopeComponent.cs" />
+    <Compile Include="Source\Memory\StaticRagStore.cs" />
+    <Compile Include="Source\ModLogger.cs" />
+    <Compile Include="Source\ModPaths.cs" />
+    <Compile Include="Source\Settings.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Krafs.Rimworld.Ref">
@@ -59,9 +85,11 @@
     <PackageReference Include="LlmTornado" Version="3.8.54" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include=".gitignore" />
     <Content Include="About\About.xml" />
     <Content Include="Defs\IncidentDefs\CustomTextEvent.xml" />
     <Content Include="Defs\StorytellerDefs\AIStoryteller.xml" />
+    <Content Include="Source\Memory\Models\vocab.txt" />
     <Content Include="Textures\Placeholder.dds" />
     <Content Include="Textures\Placeholder.png" />
     <Content Include="Textures\PlaceholderTiny.dds" />
@@ -72,6 +100,16 @@
     <Folder Include="Languages\" />
     <Folder Include="Patches\" />
     <Folder Include="Sounds\" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="CHANGELOG.md" />
+    <None Include="Data\benchmark-config.json" />
+    <None Include="Data\effect_config.json" />
+    <None Include="Data\example-snapshot.json" />
+    <None Include="Data\item-categories.json" />
+    <None Include="Data\rag.db" />
+    <None Include="README.md" />
+    <None Include="Source\Memory\Models\model.onnx" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
