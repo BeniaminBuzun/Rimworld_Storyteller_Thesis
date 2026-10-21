@@ -1,4 +1,4 @@
-﻿using RimTelligence.CustomEvents.EventSelector;
+using RimTelligence.CustomEvents.EventSelector;
 using RimTelligence.CustomEvents.Handlers;
 using RimTelligence.CustomEvents.Prompting;
 using RimTelligence.DataSnapshots;
@@ -17,7 +17,8 @@ namespace RimTelligence.Benchmark
         public static async Task RunAsync(
             string configPath = null,
             string snapshotPath = null,
-            string outputDirectory = null)
+            string outputDirectory = null,
+            int repeatCount = 1)
         {
             string resolvedConfigPath = configPath ?? ModPaths.Resolve(Path.Combine("Data", ConfigFileName));
             string resolvedSnapshotPath = snapshotPath ?? ModPaths.Resolve(Path.Combine("Data", SnapshotFileName));
@@ -38,6 +39,8 @@ namespace RimTelligence.Benchmark
 
             ModLogger.Message($"[Benchmark] Snapshot '{snapshot.colonyName}' -> prompt of {prompt.Length} chars.");
             ModLogger.Message($"[Benchmark] Cue: {string.Join(", ", chosenEvents.Select(effect => effect.Config.EffectName))}");
+            if (repeatCount > 1)
+                ModLogger.Message($"[Benchmark] Repeating each model {repeatCount} time(s) with the same prompt.");
 
             Directory.CreateDirectory(resolvedOutputDirectory);
             File.WriteAllText(Path.Combine(resolvedOutputDirectory, "benchmark-prompt.txt"), prompt);
@@ -57,15 +60,20 @@ namespace RimTelligence.Benchmark
                     if (string.IsNullOrWhiteSpace(model))
                         continue;
 
-                    ModLogger.Message($"[Benchmark] === {provider.name} / {model} ===");
+                    for (int run = 1; run <= repeatCount; run++)
+                    {
+                        string runLabel = repeatCount > 1 ? $" (run {run}/{repeatCount})" : "";
+                        ModLogger.Message($"[Benchmark] === {provider.name} / {model}{runLabel} ===");
 
-                    BenchmarkResult result =
-                        await ModelBenchmark.RunAsync(provider, model, prompt, chosenEvents);
-                    results.Add(result);
+                        BenchmarkResult result =
+                            await ModelBenchmark.RunAsync(provider, model, prompt, chosenEvents);
+                        result.run = run;
+                        results.Add(result);
 
-                    ModLogger.Message(result.success
-                        ? $"[Benchmark] PASS {model} in {result.elapsedMs} ms (P={result.promptTokens} C={result.completionTokens} R={result.reasoningTokens})"
-                        : $"[Benchmark] FAIL {model} in {result.elapsedMs} ms: {result.error}");
+                        ModLogger.Message(result.success
+                            ? $"[Benchmark] PASS {model}{runLabel} in {result.elapsedMs} ms (P={result.promptTokens} C={result.completionTokens} R={result.reasoningTokens})"
+                            : $"[Benchmark] FAIL {model}{runLabel} in {result.elapsedMs} ms: {result.error}");
+                    }
                 }
             }
 

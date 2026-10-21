@@ -12,10 +12,10 @@ namespace RimTelligence.CustomEvents.EventSelector.Modifiers
             if (snapshot.daysSinceLastRaid > 20)
             {
                 if (entry.Config.EffectName == "AnimalInsanity") multiplier *= 2.0f;
-                if (entry.Config.EffectName == "StartExtremeWeatherEvent") multiplier *= 1.3f;
+                if (entry.Config.EffectName == "StartExtremeWeather") multiplier *= 1.3f;
                 if (entry.Config.EffectName == "DamagePawn") multiplier *= 2.5f;
             }
-            if (snapshot.daysSinceLastRaid <= 2)
+            if (snapshot.daysSinceLastRaid <= 2 && snapshot.daysSinceLastRaid > 0)
             {
                 // Fresh raid — lean toward aftermath events
                 if (entry.Config.EffectName == "MiracleHealDisease") multiplier *= 1.4f;

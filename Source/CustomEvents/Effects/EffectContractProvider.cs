@@ -8,11 +8,13 @@ namespace RimTelligence.CustomEvents.Handlers
 {
     public static class EffectContractProvider
     {
-        private const string DiseaseListId = "ColonistsDiseaseList";
-        private const string ChronicConditionListId = "ColonistsChronicConditionList";
-        private const string MissingBodyPartListId = "ColonistsMissingBodyPartsList";
-        private const string WildAnimalListId = "WildAnimals";
-        private const string ColonyResourcesListId = "ColonyResources";
+        private const string DiseaseListId = "Colonists_Diseases";
+        private const string ChronicConditionListId = "Colonists_Chronic_Conditions";
+        private const string MissingBodyPartListId = "Colonists_Missing_Body_Parts";
+        private const string WildAnimalListId = "Wild_Animals";
+        private const string ColonyResourcesListId = "Colony_Resources";
+
+        private const string Colony_Charvestable_Crops = "Colony_Charvestable_Crops";
 
         public static EffectConfig GetContract(IEffect effect)
         {
@@ -92,21 +94,21 @@ namespace RimTelligence.CustomEvents.Handlers
             {
                 case DiseaseListId:
                     var diseases = SnapshotHealthList(snapshot, health => health.diseases);
-                    return diseases.Count > 0 ? diseases : ItemCategoryRegistry.GetList("DiseaseList");
+                    return diseases.Count > 0 ? diseases : ItemCategoryRegistry.GetList("Diseases");
                 case ChronicConditionListId:
                     var chronic = SnapshotHealthList(snapshot, health => health.chronic_conditions);
-                    return chronic.Count > 0 ? chronic : ItemCategoryRegistry.GetList("DiseaseList");
+                    return chronic.Count > 0 ? chronic : ItemCategoryRegistry.GetList("Diseases");
                 case MissingBodyPartListId:
                     var missing = SnapshotHealthList(snapshot, health => health.missing_body_parts);
-                    return missing.Count > 0 ? missing : ItemCategoryRegistry.GetList("BodyPartList");
+                    return missing.Count > 0 ? missing : ItemCategoryRegistry.GetList("Pawn_Body_Parts");
                 case WildAnimalListId:
                     if (snapshot?.wildAnimals != null && snapshot.wildAnimals.Count > 0)
                         return snapshot.wildAnimals.Select(entry => entry.meta).ToList();
-                    return ItemCategoryRegistry.GetList("AnimalList");
+                    return ItemCategoryRegistry.GetList("All_Animals");
                 case ColonyResourcesListId:
                     if (snapshot?.colonyResources != null && snapshot.colonyResources.Count > 0)
                         return snapshot.colonyResources.Select(entry => entry.meta).ToList();
-                    return ItemCategoryRegistry.GetList("Resources_Metals");
+                    return ItemCategoryRegistry.GetList("Metals");
                 default:
                     return ItemCategoryRegistry.GetList(categoryId);
             }

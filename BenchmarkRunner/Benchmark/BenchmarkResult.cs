@@ -4,6 +4,7 @@ namespace RimTelligence.Benchmark
 {
     internal class BenchmarkResult
     {
+        public int run;
         public string providerName;
         public string providerId;
         public string endpoint;

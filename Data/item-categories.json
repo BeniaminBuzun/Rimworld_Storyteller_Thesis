@@ -1,26 +1,26 @@
 [
     {
-        "id": "WeaponsTribal",
+        "id": "Weapons_Tribal",
         "weight": 3.0
     },
     {
-        "id": "WeaponsIndustrial",
+        "id": "Weapons_Industrial",
         "weight": 2.5
     },
     {
-        "id": "WeaponsSpacer",
+        "id": "Weapons_Spacer",
         "weight": 1.5
     },
     {
-        "id": "WeaponsArchotech",
+        "id": "Weapons_Archotech",
         "weight": 0.5
     },
     {
-        "id": "WeaponsUltra",
+        "id": "Weapons_Ultra",
         "weight": 0.5
     },
     {
-        "id": "WeaponsOther",
+        "id": "Weapons_Other",
         "weight": 0.8
     },
     {
@@ -28,23 +28,19 @@
         "weight": 3.5
     },
     {
-        "id": "Food_RawPlant",
+        "id": "Food_Raw_Plant",
         "weight": 3.0
     },
     {
-        "id": "Food_RawMeat",
+        "id": "Food_Raw_Meat",
         "weight": 3.0
     },
     {
-        "id": "Food_RawSpecial",
+        "id": "Food_Raw_Special",
         "weight": 1.5
     },
     {
-        "id": "Food_AnimalFeed",
-        "weight": 1.0
-    },
-    {
-        "id": "Food_AnimalProducts",
+        "id": "Food_Animal_Products",
         "weight": 1.5
     },
     {
@@ -52,43 +48,39 @@
         "weight": 1.0
     },
     {
-        "id": "Resources_Metals",
+        "id": "Metals",
         "weight": 2.5
     },
     {
-        "id": "Resources_Stone",
+        "id": "Stone",
         "weight": 2.0
     },
     {
-        "id": "Resources_Textile_Leathers",
+        "id": "Textile_Leathers",
         "weight": 2.0
     },
     {
-        "id": "Resources_Textile_Fabrics",
+        "id": "Textile_Fabrics",
         "weight": 1.5
     },
     {
-        "id": "Resources_Textile_Wools",
-        "weight": 1.0
-    },
-    {
-        "id": "Resources_Chemical_Raw",
+        "id": "Chemical_Raw",
         "weight": 2.0
     },
     {
-        "id": "Resources_Components",
+        "id": "Components",
         "weight": 3.0
     },
     {
-        "id": "Apparel_Clothing",
+        "id": "Clothing",
         "weight": 2.5
     },
     {
-        "id": "MedicineList",
+        "id": "Medicine",
         "weight": 2.5
     },
     {
-        "id": "DrugsList",
+        "id": "Drugs",
         "weight": 2.0
     }
 ]

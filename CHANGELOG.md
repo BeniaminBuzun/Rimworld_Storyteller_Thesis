@@ -10,6 +10,16 @@ semver section when a version is released.
 
 ## [Unreleased]
 
+## [0.18.0] - 2026-10-21
+
+### Changed
+- `Mod settings` - api keys are now hidden behind additional show button
+- `Benchmark` - improved final report
+
+### Added
+- Proper graphics for storyteller and mod main mod thumbnail
+
+
 ## [0.17.0] - 2026-10-17
 
 ### Added

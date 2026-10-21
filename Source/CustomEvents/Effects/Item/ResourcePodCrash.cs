@@ -18,9 +18,9 @@ namespace RimTelligence.CustomEvents.Handlers.Item
         public GlobalTargetInfo Execute(GameEffect effect, Map map)
         {
             ThingDef def = ResolveItemDef(effect);
-            if (def == null)
+            if (def == null || !ItemHandlerSupport.IsSpawnable(def))
             {
-                ModLogger.Warning($"ResourcePodCrash: ThingDef '{effect.DefNameText}' not found.");
+                ModLogger.Warning($"ResourcePodCrash: '{effect.DefNameText}' is missing or not spawnable.");
                 executionSummary = "Debris from orbit burnt up high in the atmosphere before reaching the surface.";
                 return GlobalTargetInfo.Invalid;
             }
@@ -28,6 +28,7 @@ namespace RimTelligence.CustomEvents.Handlers.Item
             int quantity = ItemHandlerSupport.ResolveQuantity(def, effect.Severity, map);
             int pods = Rand.RangeInclusive(1, 4);
             var items = SplitIntoStacks(def, quantity, pods);
+            pods = Math.Min(pods, items.Count);
 
             IntVec3 cell = DropCellFinder.RandomDropSpot(map);
             DropPodUtility.DropThingsNear(cell, map, items);
@@ -80,8 +81,7 @@ namespace RimTelligence.CustomEvents.Handlers.Item
                 int left = baseCount + (index < remainder ? 1 : 0);
                 while (left > 0)
                 {
-                    var thing = ThingMaker.MakeThing(def);
-                    thing.stackCount = Math.Min(left, def.stackLimit);
+                    Thing thing = ItemHandlerSupport.MakeItem(def, left);
                     items.Add(thing);
                     left -= thing.stackCount;
                 }

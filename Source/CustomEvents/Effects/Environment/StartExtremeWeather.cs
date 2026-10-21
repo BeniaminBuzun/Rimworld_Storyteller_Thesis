@@ -20,7 +20,7 @@ namespace RimTelligence.CustomEvents.Handlers.Environment
             GameConditionDef def = ResolveCondition(effect);
             if (def == null)
             {
-                ModLogger.Warning($"StartExtremeWeatherEvent: GameConditionDef '{effect.DefNameText}' not found.");
+                ModLogger.Warning($"StartExtremeWeather: GameConditionDef '{effect.DefNameText}' not found.");
                 executionSummary = "An ominous atmospheric anomaly loomed over the horizon, but dissipated without incident.";
                 return GlobalTargetInfo.Invalid;
             }

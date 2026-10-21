@@ -18,7 +18,7 @@ namespace RimTelligence.CustomEvents.Prompting
             {
                 ["type"] = "array",
                 ["minItems"] = 1,
-                ["items"] = new Dictionary<string, object> { ["oneOf"] = effectSchemas }
+                ["items"] = new Dictionary<string, object> { ["anyOf"] = effectSchemas }
             };
 
             Dictionary<string, object> properties = new Dictionary<string, object>

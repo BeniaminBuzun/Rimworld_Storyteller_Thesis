@@ -25,7 +25,8 @@ namespace RimTelligence.Benchmark
             string configPath = null,
             string snapshotPath = null,
             string outputDirectory = null,
-            string effectFilter = null)
+            string effectFilter = null,
+            int repeatCount = 1)
         {
             string resolvedConfigPath = configPath ?? ModPaths.Resolve(Path.Combine("Data", ConfigFileName));
             string resolvedSnapshotPath = snapshotPath ?? ModPaths.Resolve(Path.Combine("Data", SnapshotFileName));
@@ -77,6 +78,10 @@ namespace RimTelligence.Benchmark
                     continue;
                 }
 
+                // Item effects have no RelatedDefList in effect-config.json: give them an item category from the DB.
+                if (IsItemEffect(effectName))
+                    effect.Config.RelatedDefList = ItemCategoryRegistry.DrawRandomCategory();
+
                 var chosen = new List<IEffect> { effect };
                 string prompt;
                 try
@@ -95,6 +100,8 @@ namespace RimTelligence.Benchmark
             }
 
             ModLogger.Message($"[Benchmark][single] Snapshot '{snapshot.colonyName}' -> {cases.Count} single-effect prompts.");
+            if (repeatCount > 1)
+                ModLogger.Message($"[Benchmark][single] Repeating each case {repeatCount} time(s) with the same prompts.");
 
             var results = new List<BenchmarkResult>();
 
@@ -118,20 +125,32 @@ namespace RimTelligence.Benchmark
 
                     foreach (SingleEffectCase testCase in cases)
                     {
-                        ModLogger.Message($"[Benchmark][single] {model} x {testCase.EffectName} ({testCase.Prompt.Length} chars)");
+                        for (int run = 1; run <= repeatCount; run++)
+                        {
+                            string runLabel = repeatCount > 1 ? $" run {run}/{repeatCount}" : "";
+                            ModLogger.Message($"[Benchmark][single] {model} x {testCase.EffectName}{runLabel} ({testCase.Prompt.Length} chars)");
 
-                        BenchmarkResult result = await ModelBenchmark.RunPromptAsync(
-                            providerConfig, provider.name, model, testCase.Prompt, testCase.Chosen, warmUpMs);
-                        results.Add(result);
+                            BenchmarkResult result = await ModelBenchmark.RunPromptAsync(
+                                providerConfig, provider.name, model, testCase.Prompt, testCase.Chosen, warmUpMs);
+                            result.run = run;
+                            results.Add(result);
 
-                        ModLogger.Message(result.success
-                            ? $"[Benchmark][single] PASS {model} x {testCase.EffectName} in {result.elapsedMs} ms"
-                            : $"[Benchmark][single] FAIL {model} x {testCase.EffectName} in {result.elapsedMs} ms: {result.error}");
+                            ModLogger.Message(result.success
+                                ? $"[Benchmark][single] PASS {model} x {testCase.EffectName}{runLabel} in {result.elapsedMs} ms"
+                                : $"[Benchmark][single] FAIL {model} x {testCase.EffectName}{runLabel} in {result.elapsedMs} ms: {result.error}");
+                        }
                     }
                 }
             }
 
             BenchmarkReport.WriteSingleEffect(resolvedOutputDirectory, results);
+        }
+
+        private static bool IsItemEffect(string effectName)
+        {
+            return string.Equals(effectName, "ResourcePodCrash", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(effectName, "PawnFoundItems", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(effectName, "LoseItems", StringComparison.OrdinalIgnoreCase);
         }
 
         private static HashSet<string> ParseFilter(string effectFilter)

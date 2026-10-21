@@ -1,3 +1,5 @@
+using RimTelligence.Memory;
+
 namespace RimTelligence.CustomEvents
 {
 
@@ -10,6 +12,10 @@ namespace RimTelligence.CustomEvents
         public string errorMessage;
 
         public string responsePreview;
+
+        public bool wasRepaired;
+
+        public bool wasMergedFromMultipleObjects;
 
         public static LlmParseResult<T> Success(T data)
         {

@@ -94,7 +94,7 @@ namespace RimTelligence.CustomEvents.Prompting
             chosenEvents = chosenEvents ?? new List<IEffect>();
 
             var tone = _tones[_random.Next(_tones.Length)];
-            int sentences = Math.Min(chosenEvents.Count + 3, 4);   // 1 event = 2, 2 = 3, 3+ = 4
+            int sentences = Math.Min(chosenEvents.Count + 2, 6);   // 1 event = 2, 2 = 3, 3+ = 4
 
             var sb = new StringBuilder();
 
