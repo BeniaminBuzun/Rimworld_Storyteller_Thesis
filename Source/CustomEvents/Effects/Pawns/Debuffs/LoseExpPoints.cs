@@ -11,7 +11,9 @@ namespace RimTelligence.CustomEvents.Handlers.Pawns.Debuffs
 {
     internal class LoseExpPoints : IEffect
     {
-        public EffectConfig Config => EffectConfigRegistry.Get("LoseExpPoints");
+        private readonly EffectConfig _config = EffectConfigRegistry.Get("LoseExpPoints");
+
+        public EffectConfig Config => _config;
 
         public bool CanBeChoosen(ColonySnapshot snapshot) => true;
 

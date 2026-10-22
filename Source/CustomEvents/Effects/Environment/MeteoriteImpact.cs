@@ -9,7 +9,9 @@ namespace RimTelligence.CustomEvents.Handlers.Environment
 {
     internal class MeteoriteImpact : IEffect
     {
-        public EffectConfig Config => EffectConfigRegistry.Get("MeteoriteImpact");
+        private readonly EffectConfig _config = EffectConfigRegistry.Get("MeteoriteImpact");
+
+        public EffectConfig Config => _config;
 
         public bool CanBeChoosen(ColonySnapshot snapshot) => true;
 

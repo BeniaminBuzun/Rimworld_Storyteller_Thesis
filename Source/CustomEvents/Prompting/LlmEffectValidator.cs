@@ -23,7 +23,13 @@ namespace RimTelligence.CustomEvents.Prompting
 
             foreach (GameEffect effect in effects)
             {
-                string reason = GetRejectionReason(effect, allowedCounts);
+                IEffect cue = chosenEvents == null
+                    ? null
+                    : chosenEvents.FirstOrDefault(
+                        e => e != null && e.Config != null &&
+                        string.Equals(e.Config.EffectName, effect.EffectName, StringComparison.OrdinalIgnoreCase));
+
+                string reason = GetRejectionReason(effect, allowedCounts, cue);
                 if (reason != null)
                 {
                     ModLogger.Warning($"[Validator] Dropping effect type='{effect.EffectName}' defName='{effect.DefNameText}': {reason}");
@@ -34,7 +40,7 @@ namespace RimTelligence.CustomEvents.Prompting
             return valid;
         }
 
-        private static string GetRejectionReason(GameEffect effect, Dictionary<string, int> allowedCounts)
+        private static string GetRejectionReason(GameEffect effect, Dictionary<string, int> allowedCounts, IEffect cue)
         {
             if (effect == null) return "effect is null";
             if (string.IsNullOrWhiteSpace(effect.EffectName)) return "type is blank";
@@ -56,7 +62,9 @@ namespace RimTelligence.CustomEvents.Prompting
                     string.IsNullOrWhiteSpace(effect.SelectedDefName[0]))
                     return $"type '{effect.EffectName}' requires a defName but got empty string";
 
-                var contract = EffectContractProvider.GetContract(fullEffect, null);
+                // Use the chosen effect when available so item-based effects validate
+                // against the drawn category the prompt and schema used.
+                var contract = EffectContractProvider.GetContract(cue ?? fullEffect, null);
 
                 if (fullEffect.Config.DefCount > 1 && effect.SelectedDefName.Length < fullEffect.Config.DefCount)
                 {

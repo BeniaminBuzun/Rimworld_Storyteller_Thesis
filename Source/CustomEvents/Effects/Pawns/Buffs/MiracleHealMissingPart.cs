@@ -8,7 +8,9 @@ namespace RimTelligence.CustomEvents.Handlers.Pawns.Miracles
 {
     internal class MiracleHealMissingPart : IEffect
     {
-        public EffectConfig Config => EffectConfigRegistry.Get("MiracleHealMissingPart");
+        private readonly EffectConfig _config = EffectConfigRegistry.Get("MiracleHealMissingPart");
+
+        public EffectConfig Config => _config;
 
         public bool CanBeChoosen(ColonySnapshot snapshot) => snapshot.colonists.Any(colonist =>
                     colonist.health?.missing_body_parts?.Count > 0);

@@ -10,7 +10,9 @@ namespace RimTelligence.CustomEvents.Handlers.Pawns.Debuffs
 {
     public class DamagePawn : IEffect
     {
-        public EffectConfig Config => EffectConfigRegistry.Get("DamagePawn");
+        private readonly EffectConfig _config = EffectConfigRegistry.Get("DamagePawn");
+
+        public EffectConfig Config => _config;
 
         public bool CanBeChoosen(ColonySnapshot snapshot) => true;
 

@@ -32,7 +32,6 @@ namespace RimTelligence.CustomEvents.Handlers.Item
         {
             return def != null
                 && def.category == ThingCategory.Item
-                && !def.IsCorpse
                 && !def.IsBlueprint
                 && !def.IsFrame
                 && !def.isUnfinishedThing;

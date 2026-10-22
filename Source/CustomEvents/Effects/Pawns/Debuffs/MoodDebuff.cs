@@ -12,7 +12,9 @@ namespace RimTelligence.Source.CustomEvents.Handlers.Pawns.Debuffs
 {
     internal class MoodDebuff : IEffect
     {
-        public EffectConfig Config => EffectConfigRegistry.Get("MoodDebuff");
+        private readonly EffectConfig _config = EffectConfigRegistry.Get("MoodDebuff");
+
+        public EffectConfig Config => _config;
 
         public bool CanBeChoosen(ColonySnapshot snapshot) => true;
 

@@ -87,7 +87,7 @@ namespace RimTelligence.CustomEvents.Handlers
             {
                 case "Colonists_Diseases":
                     return SnapshotHealthList(snapshot, health => health.diseases); ;
-                case "Colonists_ChronicConditions":
+                case "Colonists_Chronic_Conditions":
                     return SnapshotHealthList(snapshot, health => health.chronic_conditions); ;
                 case "Colonists_Missing_Body_Parts":
                     return SnapshotHealthList(snapshot, health => health.missing_body_parts);

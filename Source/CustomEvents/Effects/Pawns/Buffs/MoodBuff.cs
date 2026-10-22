@@ -13,7 +13,9 @@ namespace RimTelligence.Source.CustomEvents.Handlers.Pawns.Buffs
 {
     internal class MoodBuff : IEffect
     {
-        public EffectConfig Config => EffectConfigRegistry.Get("MoodBuff");
+        private readonly EffectConfig _config = EffectConfigRegistry.Get("MoodBuff");
+
+        public EffectConfig Config => _config;
 
         public bool CanBeChoosen(ColonySnapshot snapshot) => true;
 

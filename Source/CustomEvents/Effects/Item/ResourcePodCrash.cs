@@ -9,7 +9,9 @@ namespace RimTelligence.CustomEvents.Handlers.Item
 {
     public class ResourcePodCrash : IEffect
     {
-        public EffectConfig Config => EffectConfigRegistry.Get("ResourcePodCrash");
+        private readonly EffectConfig _config = EffectConfigRegistry.Get("ResourcePodCrash");
+
+        public EffectConfig Config => _config;
 
         public bool CanBeChoosen(ColonySnapshot snapshot) => true;
 
