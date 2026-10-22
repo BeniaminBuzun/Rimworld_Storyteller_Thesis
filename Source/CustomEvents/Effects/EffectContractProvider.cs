@@ -8,14 +8,6 @@ namespace RimTelligence.CustomEvents.Handlers
 {
     public static class EffectContractProvider
     {
-        private const string DiseaseListId = "Colonists_Diseases";
-        private const string ChronicConditionListId = "Colonists_Chronic_Conditions";
-        private const string MissingBodyPartListId = "Colonists_Missing_Body_Parts";
-        private const string WildAnimalListId = "Wild_Animals";
-        private const string ColonyResourcesListId = "Colony_Resources";
-
-        private const string Colony_Charvestable_Crops = "Colony_Charvestable_Crops";
-
         public static EffectConfig GetContract(IEffect effect)
         {
             return GetContract(effect, null);
@@ -33,9 +25,10 @@ namespace RimTelligence.CustomEvents.Handlers
             if (config.IsDefRequired)
             {
                 string primaryList = config.RelatedDefList;
+                // for effects that are item based
                 if (string.IsNullOrEmpty(primaryList) && (string.Equals(config.EffectName, "ResourcePodCrash", StringComparison.OrdinalIgnoreCase) || string.Equals(config.EffectName, "PawnFoundItems", StringComparison.OrdinalIgnoreCase)))
                 {
-                    primaryList = ItemCategoryRegistry.DrawRandomCategory();
+                    primaryList = ItemCategoryRegistry.DrawRandomCategory(); // draw random item category
                 }
 
                 primary = ResolveDefs(primaryList, snapshot);
@@ -84,36 +77,32 @@ namespace RimTelligence.CustomEvents.Handlers
             return ResolveDefs(effect.Config.RelatedDefList, null);
         }
 
-        private static List<GameObjectMeta> ResolveDefs(string categoryId, ColonySnapshot snapshot)
+        private static List<GameObjectMeta> ResolveDefs(string categoryName, ColonySnapshot snapshot)
         {
-            if (string.IsNullOrEmpty(categoryId))
+            if (string.IsNullOrEmpty(categoryName))
                 return new List<GameObjectMeta>();
 
-            // First ones are not static, based on current snapshot
-            switch (categoryId)
+            // Are not static, based on current snapshot
+            switch (categoryName)
             {
-                case DiseaseListId:
-                    var diseases = SnapshotHealthList(snapshot, health => health.diseases);
-                    return diseases.Count > 0 ? diseases : ItemCategoryRegistry.GetList("Diseases");
-                case ChronicConditionListId:
-                    var chronic = SnapshotHealthList(snapshot, health => health.chronic_conditions);
-                    return chronic.Count > 0 ? chronic : ItemCategoryRegistry.GetList("Diseases");
-                case MissingBodyPartListId:
-                    var missing = SnapshotHealthList(snapshot, health => health.missing_body_parts);
-                    return missing.Count > 0 ? missing : ItemCategoryRegistry.GetList("Pawn_Body_Parts");
-                case WildAnimalListId:
-                    if (snapshot?.wildAnimals != null && snapshot.wildAnimals.Count > 0)
+                case "Colonists_Diseases":
+                    return SnapshotHealthList(snapshot, health => health.diseases); ;
+                case "Colonists_ChronicConditions":
+                    return SnapshotHealthList(snapshot, health => health.chronic_conditions); ;
+                case "Colonists_Missing_Body_Parts":
+                    return SnapshotHealthList(snapshot, health => health.missing_body_parts);
+                case "Wild_Animals":
                         return snapshot.wildAnimals.Select(entry => entry.meta).ToList();
-                    return ItemCategoryRegistry.GetList("All_Animals");
-                case ColonyResourcesListId:
-                    if (snapshot?.colonyResources != null && snapshot.colonyResources.Count > 0)
-                        return snapshot.colonyResources.Select(entry => entry.meta).ToList();
-                    return ItemCategoryRegistry.GetList("Metals");
+                case "Colony_Resources":
+                    return snapshot.colonyResources.Select(entry => entry.meta).ToList();
+                case "Colony_Charvestable_Crops":
+                    return snapshot.cultivatedPlants.Select(entry => entry.meta).ToList();
                 default:
-                    return ItemCategoryRegistry.GetList(categoryId);
+                    return ItemCategoryRegistry.GetList(categoryName);
             }
         }
 
+        // helper to extract all health based conditions on the map 
         private static List<GameObjectMeta> SnapshotHealthList(
             ColonySnapshot snapshot, Func<HealthSnapshot, List<GameObjectMeta>> getEntries)
         {

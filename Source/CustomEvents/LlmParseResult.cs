@@ -1,5 +1,3 @@
-using RimTelligence.Memory;
-
 namespace RimTelligence.CustomEvents
 {
 

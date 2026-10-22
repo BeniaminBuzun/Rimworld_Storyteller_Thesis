@@ -14,7 +14,7 @@ namespace RimTelligence.AIStoryteller
         public static Settings Settings { get; private set; }
         private static Harmony harmony;
         private Vector2 mainScroll;
-        private float viewHeight = 1000f; 
+        private float viewHeight = 1000f;
 
         public AIStorytellerMod(ModContentPack content) : base(content)
         {

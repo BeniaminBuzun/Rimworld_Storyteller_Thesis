@@ -15,10 +15,15 @@ semver section when a version is released.
 ### Changed
 - `Mod settings` - api keys are now hidden behind additional show button
 - `Benchmark` - improved final report
+- `Effects/items lists` uses consistent naming schema
+- 
 
 ### Added
 - Proper graphics for storyteller and mod main mod thumbnail
 
+### Fixed
+- `Item spawning effects ` whould not spawn items `stuff` != null
+- 
 
 ## [0.17.0] - 2026-10-17
 
