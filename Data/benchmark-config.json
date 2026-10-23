@@ -7,15 +7,15 @@
             "apiKey": "",
             "models": [
                 //"tobestyledintro/minicpm5-2b:latest",
-                "qwen3.5:0.8b",
-                "granite4.2:3b",
-                "qwen3.5:4b",
-                "ministral-3:3b",
-                "gemma4:e4b",
+                //"qwen3.5:0.8b",
+                //"granite4.2:3b",
+                //"qwen3.5:4b",
+                //"ministral-3:3b",
+                //"gemma4:e4b",
                 "granite4.2:8b",
-                "qwen3.5:9b",
-                "ministral-3:14b",
-                "phi4:14b"
+                //"qwen3.5:9b",
+                //"ministral-3:14b",
+                //"phi4:14b"
             ]
         }
     ]

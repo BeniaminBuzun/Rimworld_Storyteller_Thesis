@@ -30,19 +30,20 @@ namespace RimTelligence.CustomEvents.Workers
 
             ColonySnapshot snapshot = ColonySnapshotCapturer.Capture(map);
             string prompt = BuildPrompt(snapshot, out List<IEffect> chosenEvents);
-
-            // Built on the main thread, from the same cued effects used in the prompt.
             object schema = EventJsonSchemaBuilder.Build(chosenEvents, snapshot);
 
-            _ = RunEventAsync(prompt, schema, chosenEvents, map);
+            _ = RunEventAsync(prompt, schema, chosenEvents, map, snapshot);   // pass it
             return true;
         }
 
-        private async Task RunEventAsync(string prompt, object schema, List<IEffect> chosenEvents, Map map)
+
+        private async Task RunEventAsync(
+            string prompt, object schema, List<IEffect> chosenEvents, Map map, ColonySnapshot snapshot)
         {
             try
             {
-                LlmCustomEvent finalEvent = await RequestEventAsync(prompt, chosenEvents, jsonSchema: schema);
+                LlmCustomEvent finalEvent = await RequestEventAsync(
+                    prompt, chosenEvents, jsonSchema: schema, snapshot: snapshot);
                 if (finalEvent != null)
                     FireLlmEvent(finalEvent, map);
             }
@@ -69,7 +70,7 @@ namespace RimTelligence.CustomEvents.Workers
 
                 var letter = new ChoiceLetter_Procedural
                 {
-                    def = LetterDefOf.ThreatSmall,
+                    def = ChoiceLetter_Procedural.Resolve(finalEvent),
                     ID = Find.UniqueIDsManager.GetNextLetterID(),
                     Label = finalEvent.letterTitle ?? "Strange Event",
                     Text = fullText,
@@ -100,7 +101,8 @@ namespace RimTelligence.CustomEvents.Workers
            int maxAttempts = MaxAttempts,
            bool announceFailure = true,
            Action<LlmConnectionResult> onResponse = null,
-           object jsonSchema = null)
+           object jsonSchema = null,
+           ColonySnapshot snapshot= null)
         {
             LLMCommunicationHandler communication = new LLMCommunicationHandler();
 
@@ -158,7 +160,7 @@ namespace RimTelligence.CustomEvents.Workers
                 LlmParseResult<LlmCustomEvent> parseResult;
                 try
                 {
-                    parseResult = LlmResponseParser.ParseEvent(responseRaw, chosenEvents);
+                    parseResult = LlmResponseParser.ParseEvent(responseRaw, chosenEvents, snapshot);
                 }
                 catch (Exception exception)
                 {

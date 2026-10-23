@@ -10,7 +10,9 @@ namespace RimTelligence.CustomEvents.Handlers.Pawns.Buffs
 {
     internal class AddExpPoints : IEffect
     {
-        public EffectConfig Config => EffectConfigRegistry.Get("AddExpPoints");
+        private readonly EffectConfig _config = EffectConfigRegistry.Get("AddExpPoints");
+
+        public EffectConfig Config => _config;
 
         public bool CanBeChoosen(ColonySnapshot snapshot) => true;
 

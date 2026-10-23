@@ -9,7 +9,9 @@ namespace RimTelligence.CustomEvents.Handlers.Environment
     {
         private static readonly Random _random = new Random();
         private const int TICKS_PER_DAY = 60000;
-        public EffectConfig Config => EffectConfigRegistry.Get("StartExtremeWeather");
+        private readonly EffectConfig _config = EffectConfigRegistry.Get("StartExtremeWeather");
+
+        public EffectConfig Config => _config;
 
         private string executionSummary;
 
@@ -20,7 +22,7 @@ namespace RimTelligence.CustomEvents.Handlers.Environment
             GameConditionDef def = ResolveCondition(effect);
             if (def == null)
             {
-                ModLogger.Warning($"StartExtremeWeatherEvent: GameConditionDef '{effect.DefNameText}' not found.");
+                ModLogger.Warning($"StartExtremeWeather: GameConditionDef '{effect.DefNameText}' not found.");
                 executionSummary = "An ominous atmospheric anomaly loomed over the horizon, but dissipated without incident.";
                 return GlobalTargetInfo.Invalid;
             }

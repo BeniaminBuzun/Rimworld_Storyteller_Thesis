@@ -10,7 +10,9 @@ namespace RimTelligence.CustomEvents.Handlers.Animal
 {
     public class SelfTame : IEffect
     {
-        public EffectConfig Config => EffectConfigRegistry.Get("SelfTame");
+        private readonly EffectConfig _config = EffectConfigRegistry.Get("SelfTame");
+
+        public EffectConfig Config => _config;
 
         public bool CanBeChoosen(ColonySnapshot snapshot) => snapshot?.wildAnimals != null && snapshot.wildAnimals.Any();
 

@@ -32,6 +32,25 @@ namespace RimTelligence.CustomEvents.Handlers
 
         public EffectConfig() { }
 
+        public EffectConfig Clone()
+        {
+            return new EffectConfig
+            {
+                EffectName = EffectName,
+                NarrativeDescription = NarrativeDescription,
+                RelatedDefList = RelatedDefList,
+                SecondaryRelatedDefList = SecondaryRelatedDefList,
+                DefCount = DefCount,
+                BaseWeight = BaseWeight,
+                Alignment = Alignment,
+                IsDefRequired = IsDefRequired,
+                UsesSeverity = UsesSeverity,
+                UsesTargetPawn = UsesTargetPawn,
+                AllowedDefs = new List<GameObjectMeta>(AllowedDefs),
+                SecondaryAllowedDefs = new List<GameObjectMeta>(SecondaryAllowedDefs)
+            };
+        }
+
         public EffectConfig(string effectName, string narrativeDescription, string relatedDefList,
             string secondaryRelatedDefList, int defCount, float baseWeight,
             EventAlignment alignment, bool isDefRequired, bool usesSeverity, bool usesTargetPawn)

@@ -31,7 +31,8 @@ namespace RimTelligence.Benchmark
             int effectsPerPrompt = 0,
             int maxCases = 0,
             int heuristicDrawCount = 0,
-            string preset = null)
+            string preset = null,
+            int repeatCount = 1)
         {
             string resolvedConfigPath = configPath ?? ModPaths.Resolve(Path.Combine("Data", ConfigFileName));
             string resolvedSnapshotPath = snapshotPath ?? ModPaths.Resolve(Path.Combine("Data", SnapshotFileName));
@@ -66,6 +67,8 @@ namespace RimTelligence.Benchmark
                 throw new InvalidOperationException("Multi-effect benchmark has no test cases to run.");
 
             ModLogger.Message($"[Benchmark][multi] Snapshot '{snapshot.colonyName}' -> {cases.Count} multi-effect prompts.");
+            if (repeatCount > 1)
+                ModLogger.Message($"[Benchmark][multi] Repeating each case {repeatCount} time(s) with the same prompts.");
 
             List<BenchmarkResult> results = new List<BenchmarkResult>();
 
@@ -89,19 +92,24 @@ namespace RimTelligence.Benchmark
 
                     foreach (MultiEffectCase testCase in cases)
                     {
-                        ModLogger.Message($"[Benchmark][multi] {model} x {testCase.CaseName} ({testCase.EffectCount} effects, {testCase.Prompt.Length} chars)");
+                        for (int run = 1; run <= repeatCount; run++)
+                        {
+                            string runLabel = repeatCount > 1 ? $" run {run}/{repeatCount}" : "";
+                            ModLogger.Message($"[Benchmark][multi] {model} x {testCase.CaseName}{runLabel} ({testCase.EffectCount} effects, {testCase.Prompt.Length} chars)");
 
-                        BenchmarkResult result = await ModelBenchmark.RunPromptAsync(
-                            providerConfig, provider.name, model, testCase.Prompt, testCase.Chosen, warmUpMs);
-                        results.Add(result);
+                            BenchmarkResult result = await ModelBenchmark.RunPromptAsync(
+                                providerConfig, provider.name, model, testCase.Prompt, testCase.Chosen,snapshot, warmUpMs);
+                            result.run = run;
+                            results.Add(result);
 
-                        string retentionInfo = result.allCuedEffectsReturned
-                            ? "all effects retained"
-                            : $"{result.returnedEffectCount}/{result.expectedEffectCount} effects returned";
+                            string retentionInfo = result.allCuedEffectsReturned
+                                ? "all effects retained"
+                                : $"{result.returnedEffectCount}/{result.expectedEffectCount} effects returned";
 
-                        ModLogger.Message(result.success
-                            ? $"[Benchmark][multi] PASS {model} x {testCase.CaseName} in {result.elapsedMs} ms ({retentionInfo})"
-                            : $"[Benchmark][multi] FAIL {model} x {testCase.CaseName} in {result.elapsedMs} ms: {result.error}");
+                            ModLogger.Message(result.success
+                                ? $"[Benchmark][multi] PASS {model} x {testCase.CaseName}{runLabel} in {result.elapsedMs} ms ({retentionInfo})"
+                                : $"[Benchmark][multi] FAIL {model} x {testCase.CaseName}{runLabel} in {result.elapsedMs} ms: {result.error}");
+                        }
                     }
                 }
             }
@@ -169,7 +177,7 @@ namespace RimTelligence.Benchmark
                             var fillerEffect = EffectFactory.Create(filler);
                             if (fillerEffect != null)
                             {
-                                if (filler == "ResourcePodCrash" || filler == "PawnFoundItems")
+                                if (IsItemEffect(filler))
                                     fillerEffect.Config.RelatedDefList = ItemCategoryRegistry.DrawRandomCategory();
                                 drawn.Add(fillerEffect);
                             }
@@ -244,6 +252,14 @@ namespace RimTelligence.Benchmark
             return cases;
         }
 
+        /// <summary>Effects whose defs come from the items table (they have no RelatedDefList in effect-config.json).</summary>
+        private static bool IsItemEffect(string effectName)
+        {
+            return string.Equals(effectName, "ResourcePodCrash", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(effectName, "PawnFoundItems", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(effectName, "LoseItems", StringComparison.OrdinalIgnoreCase);
+        }
+
         private static MultiEffectCase CreateCase(
             string label,
             IEnumerable<string> effectNames,
@@ -272,7 +288,7 @@ namespace RimTelligence.Benchmark
                     continue;
                 }
 
-                if (name == "ResourcePodCrash" || name == "PawnFoundItems")
+                if (IsItemEffect(name))
                 {
                     effect.Config.RelatedDefList = ItemCategoryRegistry.DrawRandomCategory();
                 }
@@ -344,23 +360,23 @@ namespace RimTelligence.Benchmark
                 // 2-Effect Pairs
                 new ArchetypeDefinition("TraumaAndMood", new[] { "DamagePawn", "MoodDebuff" }, "Colonist physical damage combined with psychological distress"),
                 new ArchetypeDefinition("BiologicalCrisis", new[] { "AddDisease", "DamagePawn" }, "Infection outbreak paired with traumatic colonist injury"),
-                new ArchetypeDefinition("StormAndCropBlight", new[] { "StartExtremeWeatherHandler", "CropBlight" }, "Dangerous weather storm accompanied by crop blight"),
+                new ArchetypeDefinition("StormAndCropBlight", new[] { "StartExtremeWeather", "CropBlight" }, "Dangerous weather storm accompanied by crop blight"),
                 new ArchetypeDefinition("MeteorAndSupplyDrop", new[] { "MeteoriteImpact", "ResourcePodCrash" }, "Meteorite impact paired with cargo pod arrival"),
                 new ArchetypeDefinition("WildlifeIncident", new[] { "AnimalInsanity", "SpawnAnimals" }, "Sudden animal spawn wave accompanied by animal madness"),
                 new ArchetypeDefinition("MiracleAndRelief", new[] { "MiracleHealDisease", "MoodBuff" }, "Miraculous healing paired with colony-wide mood surge"),
                 new ArchetypeDefinition("ScavengeAndTame", new[] { "PawnFoundItems", "SelfTame" }, "Pawn finding items outside while a wild animal self-tames"),
                 new ArchetypeDefinition("SkillAndInspiration", new[] { "AddExpPoints", "MoodBuff" }, "Skill breakthrough combined with positive inspiration"),
-                new ArchetypeDefinition("WeatherShiftAndStorm", new[] { "ChangeWeather", "StartExtremeWeatherHandler" }, "Weather pattern change culminating in an extreme weather event"),
+                new ArchetypeDefinition("WeatherShiftAndStorm", new[] { "ChangeWeather", "StartExtremeWeather" }, "Weather pattern change culminating in an extreme weather event"),
                 new ArchetypeDefinition("RestorationMiracles", new[] { "MiracleHealChronicCondition", "MiracleHealMissingPart" }, "Dual healing miracle curing a chronic affliction and missing part"),
 
                 // 3-Effect Trios
                 new ArchetypeDefinition("CompoundCrisis", new[] { "DamagePawn", "AddDisease", "MoodDebuff" }, "Triple trauma: physical wound, disease contraction, and mood drop"),
                 new ArchetypeDefinition("FortuneWindfall", new[] { "ResourcePodCrash", "PawnFoundItems", "SelfTame" }, "Triple boon: crash pods, scavenged loot, and animal join"),
-                new ArchetypeDefinition("EcologicalCollapse", new[] { "StartExtremeWeatherHandler", "CropBlight", "AnimalInsanity" }, "Triple ecological crisis: storm, blighted food, and manhunting wildlife"),
+                new ArchetypeDefinition("EcologicalCollapse", new[] { "StartExtremeWeather", "CropBlight", "AnimalInsanity" }, "Triple ecological crisis: storm, blighted food, and manhunting wildlife"),
                 new ArchetypeDefinition("LossAndSetback", new[] { "LoseItems", "LoseExpPoints", "MoodDebuff" }, "Triple setback: stolen items, lost expertise, and morale collapse"),
 
                 // 4-Effect Complexes
-                new ArchetypeDefinition("ColonyCatastrophe", new[] { "DamagePawn", "LoseItems", "AddDisease", "StartExtremeWeatherHandler" }, "Quadruple disaster challenging colony survival on every front"),
+                new ArchetypeDefinition("ColonyCatastrophe", new[] { "DamagePawn", "LoseItems", "AddDisease", "StartExtremeWeather" }, "Quadruple disaster challenging colony survival on every front"),
                 new ArchetypeDefinition("TrialAndTriumph", new[] { "ResourcePodCrash", "MoodBuff", "DamagePawn", "CropBlight" }, "Quadruple mixed event delivering both gifts and severe trials")
             };
         }

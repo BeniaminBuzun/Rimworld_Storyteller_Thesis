@@ -1,4 +1,5 @@
-﻿using System;
+﻿using RimWorld;
+using System;
 using Verse;
 
 namespace RimTelligence.CustomEvents.Handlers.Item
@@ -8,6 +9,7 @@ namespace RimTelligence.CustomEvents.Handlers.Item
         private const float LowMin = 0.005f, LowMax = 0.015f;
         private const float MediumMin = 0.016f, MediumMax = 0.026f;
         private const float HighMin = 0.03f, HighMax = 0.06f;
+        private const float ExtremeMin = 0.07f, ExtremeMax = 0.1f;
         private const float FallbackWealth = 10_000f;
 
         public static int ResolveQuantity(ThingDef def, SeverityTypes value, Map map)
@@ -26,6 +28,25 @@ namespace RimTelligence.CustomEvents.Handlers.Item
             return quantity;
         }
 
+        public static bool IsSpawnable(ThingDef def)
+        {
+            return def != null
+                && def.category == ThingCategory.Item
+                && !def.IsBlueprint
+                && !def.IsFrame
+                && !def.isUnfinishedThing;
+        }
+
+        /// <summary>Creates an item with a valid stuff (if the def needs one) and a clamped stack size.</summary>
+        public static Thing MakeItem(ThingDef def, int count)
+        {
+            ThingDef stuff = def.MadeFromStuff ? GenStuff.DefaultStuffFor(def) : null;
+            Thing thing = ThingMaker.MakeThing(def, stuff);
+            int limit = def.stackLimit > 0 ? def.stackLimit : 1;
+            thing.stackCount = Math.Max(1, Math.Min(count, limit));
+            return thing;
+        }
+
         private static float GetColonyWealth(Map map)
         {
             if (map?.wealthWatcher == null)
@@ -42,6 +63,7 @@ namespace RimTelligence.CustomEvents.Handlers.Item
                 case SeverityTypes.Low: return Rand.Range(LowMin, LowMax);
                 case SeverityTypes.Medium: return Rand.Range(MediumMin, MediumMax);
                 case SeverityTypes.High: return Rand.Range(HighMin, HighMax);
+                case SeverityTypes.Extreme: return Rand.Range(ExtremeMin, ExtremeMax);
                 default: return LowMin;
             }
         }

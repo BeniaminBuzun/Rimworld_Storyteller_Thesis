@@ -8,7 +8,9 @@ namespace RimTelligence.CustomEvents.Handlers.Pawns.Miracles
 {
     internal class MiracleHealChronicCondition : IEffect
     {
-        public EffectConfig Config => EffectConfigRegistry.Get("MiracleHealChronicCondition");
+        private readonly EffectConfig _config = EffectConfigRegistry.Get("MiracleHealChronicCondition");
+
+        public EffectConfig Config => _config;
 
         public bool CanBeChoosen(ColonySnapshot snapshot) => snapshot.colonists.Any(colonist =>
                     colonist.health?.chronic_conditions?.Count > 0);

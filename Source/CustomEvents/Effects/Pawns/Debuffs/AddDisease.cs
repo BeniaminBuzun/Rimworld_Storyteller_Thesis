@@ -9,7 +9,9 @@ namespace RimTelligence.CustomEvents.Handlers.Pawns.Debuffs
 {
     public class AddDisease : IEffect
     {
-        public EffectConfig Config => EffectConfigRegistry.Get("AddDisease");
+        private readonly EffectConfig _config = EffectConfigRegistry.Get("AddDisease");
+
+        public EffectConfig Config => _config;
         private string specialSummary;
 
         public bool CanBeChoosen(ColonySnapshot snapshot) => true;

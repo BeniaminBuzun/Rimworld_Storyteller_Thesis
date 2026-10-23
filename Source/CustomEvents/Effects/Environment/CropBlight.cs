@@ -10,7 +10,9 @@ namespace RimTelligence.CustomEvents.Handlers.Environment
 {
     public class CropBlight : IEffect
     {
-        public EffectConfig Config => EffectConfigRegistry.Get("CropBlight");
+        private readonly EffectConfig _config = EffectConfigRegistry.Get("CropBlight");
+
+        public EffectConfig Config => _config;
         private string executionSummary;
 
         public bool CanBeChoosen(ColonySnapshot snapshot) => snapshot?.cultivatedPlants != null && snapshot.cultivatedPlants.Any();

@@ -12,7 +12,7 @@ namespace RimTelligence.CustomEvents.EventSelector.Modifiers
             new AnimalsModifier(),
             new HasActiveConditionModifier(),
             new SeasonWinterModifier(),
-            new DawnedColonistsModifier(),
+            new DownedColonistsModifier(),
             new RaidModifiers(),
         };
         public static float Apply(IEffect entry, ColonySnapshot snapshot)

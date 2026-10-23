@@ -10,6 +10,31 @@ semver section when a version is released.
 
 ## [Unreleased]
 
+## [0.18.0] - 2026-10-23
+
+### Changed
+- `Mod settings` - api keys are now hidden behind additional show button
+- Unified effect and category naming across configs and code (`All_Animals`, `Diseases`, `Weapons_*`, `Food_*`, …)
+- Hardened LLM parsing and validation: repairs malformed JSON and validates item effects against the drawn category and current snapshot
+- Item effects spawn safely (valid `stuff`, stack limits) and support an `Extreme` severity tier
+- Benchmark reports reworked into one consistent table layout with per-run results, retention, and summaries
+- `LoseItems` now removes items from any storage, not only stockpile zones
+
+### Added
+- Proper graphics for storyteller and mod main mod thumbnail
+- - `ChoiceLetter_Procedural.Resolve()` — letter type now follows effect alignment (positive / negative / neutral)
+
+### Fixed
+
+- `HeuristicEventSelector` mutated shared `EffectConfig` singletons between events
+- `PawnFoundItems` no longer leaks an item when no cell is free; `ResourcePodCrash` no longer creates more pods than item stacks
+
+### Removed
+
+- Obsolete `HarmonyPatches.cs` storyteller-selection transpiler
+- `static_chunks` table (migrated into `items` / `others`)
+
+
 ## [0.17.0] - 2026-10-17
 
 ### Added

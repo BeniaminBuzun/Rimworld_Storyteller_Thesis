@@ -54,10 +54,11 @@ namespace RimTelligence.CustomEvents.Handlers
             }
         }
 
+        // Returns a fresh clone so each caller owns its config; the registry stays the immutable source of truth.
         public static EffectConfig Get(string EffectName)
         {
             if (Configs.TryGetValue(EffectName, out EffectConfig config))
-                return config;
+                return config.Clone();
             throw new InvalidOperationException(
                 $"No handler config registered for EffectName '{EffectName}'. Check Data/handlers_config.json.");
         }

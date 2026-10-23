@@ -8,7 +8,9 @@ namespace RimTelligence.CustomEvents.Handlers.Animal
     public class SpawnAnimals : IEffect
     {
         private static readonly Random _random = new Random();
-        public EffectConfig Config => EffectConfigRegistry.Get("SpawnAnimals");
+        private readonly EffectConfig _config = EffectConfigRegistry.Get("SpawnAnimals");
+
+        public EffectConfig Config => _config;
 
         private string executionSummary;
 

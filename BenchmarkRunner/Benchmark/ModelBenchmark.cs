@@ -2,6 +2,7 @@ using RimTelligence.CustomEvents;
 using RimTelligence.CustomEvents.Handlers;
 using RimTelligence.CustomEvents.Prompting;
 using RimTelligence.CustomEvents.Workers;
+using RimTelligence.DataSnapshots;
 using RimTelligence.Llm;
 using System;
 using System.Collections.Generic;
@@ -17,7 +18,7 @@ namespace RimTelligence.Benchmark
             BenchmarkProvider provider,
             string model,
             string prompt,
-            List<IEffect> chosenEvents)
+            List<IEffect> chosenEvents, ColonySnapshot snapshot)
         {
             ProviderConfig providerConfig = BuildProviderConfig(provider, model);
 
@@ -31,7 +32,7 @@ namespace RimTelligence.Benchmark
 
             await WakeUpAsync(providerConfig, model, warmup);
 
-            return await RunPromptAsync(providerConfig, provider.name, model, prompt, chosenEvents, warmup.warmUpMs);
+            return await RunPromptAsync(providerConfig, provider.name, model, prompt, chosenEvents, snapshot, warmup.warmUpMs);
         }
 
         internal static ProviderConfig BuildProviderConfig(BenchmarkProvider provider, string model)
@@ -62,6 +63,7 @@ namespace RimTelligence.Benchmark
             string model,
             string prompt,
             List<IEffect> chosenEvents,
+            ColonySnapshot snapshot,
             long warmUpMs = 0)
         {
             BenchmarkResult result = new BenchmarkResult
@@ -86,7 +88,7 @@ namespace RimTelligence.Benchmark
                 result.expectedEffectCount = result.cueEffects.Count;
             }
 
-            await MeasureAsync(providerConfig, prompt, chosenEvents, result);
+            await MeasureAsync(providerConfig, prompt, chosenEvents,snapshot,result);
             return result;
         }
 
@@ -109,6 +111,7 @@ namespace RimTelligence.Benchmark
             ProviderConfig providerConfig,
             string prompt,
             List<IEffect> chosenEvents,
+            ColonySnapshot snapshot,
             BenchmarkResult result)
         {
             LlmConnectionResult lastResponse = null;
@@ -123,7 +126,8 @@ namespace RimTelligence.Benchmark
                     providerConfig,
                     maxAttempts: 1,
                     announceFailure: false,
-                    onResponse: response => lastResponse = response);
+                    onResponse: response => lastResponse = response,
+                    snapshot: snapshot);
 
                 stopwatch.Stop();
                 result.elapsedMs = stopwatch.ElapsedMilliseconds;
@@ -173,7 +177,7 @@ namespace RimTelligence.Benchmark
                 && lastResponse.isSuccess
                 && !string.IsNullOrEmpty(lastResponse.responseText))
             {
-                result.error = DescribeParseFailure(lastResponse.responseText, chosenEvents)
+                result.error = DescribeParseFailure(lastResponse.responseText, chosenEvents, snapshot)
                     ?? result.error
                     ?? "No usable event produced.";
             }
@@ -182,12 +186,12 @@ namespace RimTelligence.Benchmark
                 result.error = "No usable event produced.";
         }
 
-        private static string DescribeParseFailure(string rawResponse, List<IEffect> chosenEvents)
+        private static string DescribeParseFailure(string rawResponse, List<IEffect> chosenEvents, ColonySnapshot snapshot)
         {
             try
             {
                 LlmParseResult<LlmCustomEvent> reparse =
-                    LlmResponseParser.ParseEvent(rawResponse, chosenEvents);
+                    LlmResponseParser.ParseEvent(rawResponse, chosenEvents, snapshot);
                 return reparse.errorMessage;
             }
             catch (Exception exception)
