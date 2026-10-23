@@ -9,7 +9,7 @@ namespace RimTelligence.CustomEvents.Prompting
 {
     public static class LlmEffectValidator
     {
-        public static List<GameEffect> StripInvalid(List<GameEffect> effects, IEnumerable<IEffect> chosenEvents = null)
+        public static List<GameEffect> StripInvalid(List<GameEffect> effects, IEnumerable<IEffect> chosenEvents = null, ColonySnapshot snapshot = null)
         {
             List<GameEffect> valid = new List<GameEffect>();
             if (effects == null) return valid;
@@ -29,7 +29,7 @@ namespace RimTelligence.CustomEvents.Prompting
                         e => e != null && e.Config != null &&
                         string.Equals(e.Config.EffectName, effect.EffectName, StringComparison.OrdinalIgnoreCase));
 
-                string reason = GetRejectionReason(effect, allowedCounts, cue);
+                string reason = GetRejectionReason(effect, allowedCounts, cue, snapshot);
                 if (reason != null)
                 {
                     ModLogger.Warning($"[Validator] Dropping effect type='{effect.EffectName}' defName='{effect.DefNameText}': {reason}");
@@ -40,7 +40,7 @@ namespace RimTelligence.CustomEvents.Prompting
             return valid;
         }
 
-        private static string GetRejectionReason(GameEffect effect, Dictionary<string, int> allowedCounts, IEffect cue)
+        private static string GetRejectionReason(GameEffect effect, Dictionary<string, int> allowedCounts, IEffect cue, ColonySnapshot snapshot)
         {
             if (effect == null) return "effect is null";
             if (string.IsNullOrWhiteSpace(effect.EffectName)) return "type is blank";
@@ -64,7 +64,7 @@ namespace RimTelligence.CustomEvents.Prompting
 
                 // Use the chosen effect when available so item-based effects validate
                 // against the drawn category the prompt and schema used.
-                var contract = EffectContractProvider.GetContract(cue ?? fullEffect, null);
+                var contract = EffectContractProvider.GetContract(cue ?? fullEffect, snapshot);
 
                 if (fullEffect.Config.DefCount > 1 && effect.SelectedDefName.Length < fullEffect.Config.DefCount)
                 {

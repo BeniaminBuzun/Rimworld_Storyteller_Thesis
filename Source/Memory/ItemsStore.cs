@@ -23,16 +23,6 @@ namespace RimTelligence.Memory
             }
         }
 
-        public void ClearAll()
-        {
-            using (var conn = OpenConnection())
-            {
-                var cmd = conn.CreateCommand();
-                cmd.CommandText = "DELETE FROM static_chunks";
-                cmd.ExecuteNonQuery();
-            }
-        }
-
         public int Count()
         {
             using (var conn = OpenConnection())

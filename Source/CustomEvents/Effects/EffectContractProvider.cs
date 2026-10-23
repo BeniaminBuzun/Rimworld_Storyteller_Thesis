@@ -86,17 +86,26 @@ namespace RimTelligence.CustomEvents.Handlers
             switch (categoryName)
             {
                 case "Colonists_Diseases":
-                    return SnapshotHealthList(snapshot, health => health.diseases); ;
+                    var diseases = SnapshotHealthList(snapshot, health => health.diseases);
+                    return diseases.Count > 0 ? diseases : ItemCategoryRegistry.GetList("Diseases");
                 case "Colonists_Chronic_Conditions":
-                    return SnapshotHealthList(snapshot, health => health.chronic_conditions); ;
+                    var chronic = SnapshotHealthList(snapshot, health => health.chronic_conditions);
+                    return chronic.Count > 0 ? chronic : ItemCategoryRegistry.GetList("Diseases");
                 case "Colonists_Missing_Body_Parts":
-                    return SnapshotHealthList(snapshot, health => health.missing_body_parts);
+                    var missing = SnapshotHealthList(snapshot, health => health.missing_body_parts);
+                    return missing.Count > 0 ? missing : ItemCategoryRegistry.GetList("Pawn_Body_Parts");
                 case "Wild_Animals":
+                    if (snapshot?.wildAnimals != null && snapshot.wildAnimals.Count > 0)
                         return snapshot.wildAnimals.Select(entry => entry.meta).ToList();
+                    return ItemCategoryRegistry.GetList("All_Animals");
                 case "Colony_Resources":
-                    return snapshot.colonyResources.Select(entry => entry.meta).ToList();
+                    if (snapshot?.colonyResources != null && snapshot.colonyResources.Count > 0)
+                        return snapshot.colonyResources.Select(entry => entry.meta).ToList();
+                    return ItemCategoryRegistry.GetList("Metals");
                 case "Colony_Charvestable_Crops":
-                    return snapshot.cultivatedPlants.Select(entry => entry.meta).ToList();
+                    if (snapshot?.cultivatedPlants != null && snapshot.cultivatedPlants.Count > 0)
+                        return snapshot.cultivatedPlants.Select(entry => entry.meta).ToList();
+                    return ItemCategoryRegistry.GetList("Colony_Charvestable_Crops");
                 default:
                     return ItemCategoryRegistry.GetList(categoryName);
             }

@@ -196,7 +196,7 @@ namespace RimTelligence.CustomEvents.Prompting
             }
         }
 
-        public static LlmParseResult<LlmCustomEvent> ParseEvent(string rawResponse, IEnumerable<IEffect> chosenEvents = null)
+        public static LlmParseResult<LlmCustomEvent> ParseEvent(string rawResponse, IEnumerable<IEffect> chosenEvents = null, ColonySnapshot snapshot = null)
         {
             LlmParseResult<LlmCustomEvent> result = Parse<LlmCustomEvent>(rawResponse);
             if (!result.isSuccess || result.data == null) return result;
@@ -208,15 +208,15 @@ namespace RimTelligence.CustomEvents.Prompting
 
             try
             {
-                result.data.effects = LlmEffectValidator.StripInvalid(result.data.effects, chosenEvents);
+                result.data.effects = LlmEffectValidator.StripInvalid(result.data.effects, chosenEvents, snapshot);
 
                 if ((result.data.effects == null || result.data.effects.Count == 0) && chosenEvents != null && chosenEvents.Any())
                 {
-                    var recovered = RecoverEffectsFromNarrative(result.data.letterText, chosenEvents);
+                    var recovered = RecoverEffectsFromNarrative(result.data.letterText, chosenEvents, snapshot);
                     if (recovered.Count > 0)
                     {
                         ModLogger.Warning($"[Parser] Model omitted 'effects' block. Recovered {recovered.Count} effect(s) from letter text.");
-                        result.data.effects = LlmEffectValidator.StripInvalid(recovered, chosenEvents);
+                        result.data.effects = LlmEffectValidator.StripInvalid(recovered, chosenEvents, snapshot);
                     }
                 }
             }
@@ -240,7 +240,7 @@ namespace RimTelligence.CustomEvents.Prompting
             return result;
         }
 
-        private static List<GameEffect> RecoverEffectsFromNarrative(string letterText, IEnumerable<IEffect> chosenEvents)
+        private static List<GameEffect> RecoverEffectsFromNarrative(string letterText, IEnumerable<IEffect> chosenEvents, ColonySnapshot snapshot)
         {
             var recovered = new List<GameEffect>();
             string text = letterText ?? string.Empty;
@@ -248,7 +248,7 @@ namespace RimTelligence.CustomEvents.Prompting
             foreach (var chosen in chosenEvents)
             {
                 if (chosen?.Config == null) continue;
-                EffectConfig contract = EffectContractProvider.GetContract(chosen, null);
+                EffectConfig contract = EffectContractProvider.GetContract(chosen, snapshot);
                 var effect = new GameEffect
                 {
                     EffectName = contract.EffectName,

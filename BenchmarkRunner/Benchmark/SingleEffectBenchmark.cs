@@ -131,7 +131,7 @@ namespace RimTelligence.Benchmark
                             ModLogger.Message($"[Benchmark][single] {model} x {testCase.EffectName}{runLabel} ({testCase.Prompt.Length} chars)");
 
                             BenchmarkResult result = await ModelBenchmark.RunPromptAsync(
-                                providerConfig, provider.name, model, testCase.Prompt, testCase.Chosen, warmUpMs);
+                                providerConfig, provider.name, model, testCase.Prompt, testCase.Chosen,snapshot, warmUpMs);
                             result.run = run;
                             results.Add(result);
 

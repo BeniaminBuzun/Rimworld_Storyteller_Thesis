@@ -66,7 +66,7 @@ namespace RimTelligence.Benchmark
                         ModLogger.Message($"[Benchmark] === {provider.name} / {model}{runLabel} ===");
 
                         BenchmarkResult result =
-                            await ModelBenchmark.RunAsync(provider, model, prompt, chosenEvents);
+                            await ModelBenchmark.RunAsync(provider, model, prompt, chosenEvents, snapshot);
                         result.run = run;
                         results.Add(result);
 

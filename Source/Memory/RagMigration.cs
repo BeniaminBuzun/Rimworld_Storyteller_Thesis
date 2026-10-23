@@ -8,17 +8,6 @@ namespace RimTelligence.Memory
         public static void EnsureSchema(SQLiteConnection conn)
         {
             Exec(conn, @"
-                CREATE TABLE IF NOT EXISTS static_chunks (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    category TEXT NOT NULL,
-                    def_name TEXT NOT NULL,
-                    text TEXT NOT NULL,
-                    embedding BLOB NOT NULL,
-                    metadata TEXT
-                );");
-            Exec(conn, "CREATE INDEX IF NOT EXISTS idx_static_category ON static_chunks(category);");
-
-            Exec(conn, @"
                 CREATE TABLE IF NOT EXISTS dynamic_chunks (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     category TEXT NOT NULL,

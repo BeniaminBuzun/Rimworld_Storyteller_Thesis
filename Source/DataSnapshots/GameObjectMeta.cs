@@ -15,6 +15,7 @@ namespace RimTelligence.DataSnapshots
         {
             bool hasDef = !string.IsNullOrEmpty(DefName);
             bool hasLabel = !string.IsNullOrEmpty(Label);
+            bool hasDescription = !string.IsNullOrEmpty(Description);
 
             if (!hasDef && !hasLabel)
                 return "unknown";
@@ -25,7 +26,7 @@ namespace RimTelligence.DataSnapshots
             if (!hasDef)
                 return Label;
 
-            return DefName + " (" + Label + ")";
+            return DefName + " - description: " + Description;
         }
 
         public override bool Equals(object obj)
