@@ -26,7 +26,8 @@ namespace RimTelligence.Source.AIStoryteller
         {
             base.ExposeData();
             Scribe_Values.Look(ref incidentQueue, "incidentQueue", new Queue<FiringIncident>());
-            //Scribe_Values.Look(ref chat, "Conversation", null);
+            Scribe_Values.Look(ref generationChat, "generationChat", null);
+            Scribe_Values.Look(ref conversionChat, "conversionChat", null);
 
             // Save/load state data here
         }
@@ -78,7 +79,8 @@ namespace RimTelligence.Source.AIStoryteller
                 ModLogger.Message($"Starting new conversation");
                 LLMCommunicationHandler com = new LLMCommunicationHandler();
                 conversionChat = com.StartNewConversation();
-                string conversionPrompt = "You ara a rimworld storyteller. Create short self-contained story consisting multiple consecutive events. Events should work together as a story connecting one to the other. Story should have a clear beginning, middle, and end. Avoid repetitive or predictable content. Resolve all mysteries you create. Use only available events.\r\n" +
+                string conversionPrompt = "Convert recived events to Json format.\r\n" +
+                "Return output ONLY in JSON format: {events:[ {eventName: <name of event>,eventTitle:<title of event>, eventDescription:<message displayed when executing event>, waitTime:<how many hours should pass between last event and this one>} ] }\r\n" +
                 "Use only available events. Available events: " + string.Join(", ", defLabels);
                 conversionChat.AppendSystemMessage(conversionPrompt);
 
@@ -134,6 +136,10 @@ namespace RimTelligence.Source.AIStoryteller
                 if (defName != null)
                 {
                     IncidentDef incidentDef = DefDatabase<IncidentDef>.GetNamed(defDict[eventData.eventName]);
+                    Find.WindowStack.Add(new Dialog_MessageBox(
+                        text: eventData.eventDescription ,
+                        title: eventData.eventTitle
+                    ));
 
                     IncidentParms parms = new IncidentParms
                     {

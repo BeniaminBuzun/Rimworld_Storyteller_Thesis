@@ -32,10 +32,20 @@ namespace RimTelligence.AIStoryteller
                 if (incidentToFire != null)
                 {
                     ModLogger.Message($"Firing incident: {incidentToFire.def.defName}");
-                    //yield break;
-                    yield return incidentToFire;
+
+                    // Display a simple info dialog with an OK button
+                    Find.WindowStack.Add(new Dialog_MessageBox(
+                        text: incidentToFire.parms.customLetterText ?? "An LLM incident has occurred.",
+                        title: incidentToFire.parms.customLetterLabel ?? "LLM Incident"
+                    ));
+                    //incidentDef.Worker.TryExecute(parms);
+                    incidentToFire.def.Worker.TryExecute(incidentToFire.parms);
+                    //yield return incidentToFire;
                 }
                 else
+                {
+
+                }
                 {
                     ModLogger.Error($"Failed to locate {INCIDENT_DEFNAME} def in the DefDatabase");
                 }
