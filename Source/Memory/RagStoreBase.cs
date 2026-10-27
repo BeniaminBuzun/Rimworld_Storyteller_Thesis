@@ -1,5 +1,5 @@
 using System;
-using System.Data.SQLite;
+using Microsoft.Data.Sqlite;
 
 namespace RimTelligence.Memory
 {
@@ -12,12 +12,12 @@ namespace RimTelligence.Memory
             if (string.IsNullOrEmpty(dbPath))
                 throw new ArgumentException("dbPath must be non-empty.", nameof(dbPath));
 
-            ConnStr = "Data Source=" + dbPath + ";Version=3;";
+            ConnStr = "Data Source=" + dbPath;
         }
 
-        protected SQLiteConnection OpenConnection()
+        protected SqliteConnection OpenConnection()
         {
-            var conn = new SQLiteConnection(ConnStr);
+            var conn = new SqliteConnection(ConnStr);
             conn.Open();
             return conn;
         }

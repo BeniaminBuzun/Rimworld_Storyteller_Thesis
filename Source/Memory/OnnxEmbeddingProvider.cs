@@ -15,9 +15,7 @@ namespace RimTelligence.Memory
 
         public OnnxEmbeddingProvider()
         {
-            if (!NativeDependencyLoader.EnsureNativeLoaded("onnxruntime.dll"))
-                throw new InvalidOperationException(
-                    "onnxruntime.dll is unavailable; ONNX embeddings cannot be used.");
+            OnnxBootstrap.Init(ModPaths.Root);
 
             string modelPath = ModPaths.Resolve(Path.Combine("Source", "Memory", "Models", "model.onnx"));
             string vocabPath = ModPaths.Resolve(Path.Combine("Source", "Memory", "Models", "vocab.txt"));

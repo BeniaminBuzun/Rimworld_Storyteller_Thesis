@@ -1,4 +1,4 @@
-using System.Data.SQLite;
+using Microsoft.Data.Sqlite;
 using System.IO;
 using Verse;
 
@@ -11,13 +11,13 @@ namespace RimTelligence.Memory
 
         static RagBootstrap()
         {
-            NativeDependencyLoader.EnsureNativeLoaded("SQLite.Interop.dll");
+            SqliteBootstrap.Init(ModPaths.Root);
 
             string dataDir = ModPaths.Resolve("Data");
             Directory.CreateDirectory(dataDir);
             DbPath = Path.Combine(dataDir, "rag.db");
 
-            using (var conn = new SQLiteConnection("Data Source=" + DbPath + ";Version=3;"))
+            using (var conn = new SqliteConnection("Data Source=" + DbPath))
             {
                 conn.Open();
                 RagMigration.EnsureSchema(conn);
