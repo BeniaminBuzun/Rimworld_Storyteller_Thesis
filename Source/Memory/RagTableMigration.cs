@@ -1,5 +1,5 @@
 using RimTelligence.DataSnapshots;
-using Microsoft.Data.Sqlite;
+using System.Data.SQLite;
 using System.Linq;
 
 namespace RimTelligence.Memory
@@ -11,7 +11,7 @@ namespace RimTelligence.Memory
         /// If legacy rows use category ids that no longer exist (old naming), they are
         /// discarded instead of migrated, so the startup population rebuilds the store.
         /// </summary>
-        public static void EnsureSplitTables(SqliteConnection conn)
+        public static void EnsureSplitTables(SQLiteConnection conn)
         {
             foreach (var t in RagTables.All)
             {
@@ -56,7 +56,7 @@ namespace RimTelligence.Memory
         private static string Marks(string[] ids) =>
             string.Join(",", ids.Select((_, i) => "@p" + i));
 
-        private static void Move(SqliteConnection conn, string target, string where, string[] ids)
+        private static void Move(SQLiteConnection conn, string target, string where, string[] ids)
         {
             using (var cmd = conn.CreateCommand())
             {
@@ -67,7 +67,7 @@ namespace RimTelligence.Memory
             }
         }
 
-        private static int CountWhere(SqliteConnection conn, string where, string[] ids)
+        private static int CountWhere(SQLiteConnection conn, string where, string[] ids)
         {
             using (var cmd = conn.CreateCommand())
             {
@@ -77,7 +77,7 @@ namespace RimTelligence.Memory
             }
         }
 
-        private static bool TableExists(SqliteConnection conn, string name)
+        private static bool TableExists(SQLiteConnection conn, string name)
         {
             using (var cmd = conn.CreateCommand())
             {
@@ -87,7 +87,7 @@ namespace RimTelligence.Memory
             }
         }
 
-        private static void Exec(SqliteConnection conn, string sql)
+        private static void Exec(SQLiteConnection conn, string sql)
         {
             using (var cmd = conn.CreateCommand())
             {
