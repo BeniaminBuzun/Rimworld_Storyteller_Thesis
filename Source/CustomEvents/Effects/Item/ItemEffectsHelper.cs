@@ -14,9 +14,6 @@ namespace RimTelligence.CustomEvents.Handlers.Item
 
         public static int ResolveQuantity(ThingDef def, SeverityTypes value, Map map)
         {
-            if (value == SeverityTypes.None)
-                return 1;
-
             float wealth = GetColonyWealth(map);
             float budget = wealth * PickFraction(value);
             float price = def.BaseMarketValue > 0f ? def.BaseMarketValue : 1f;

@@ -23,11 +23,6 @@ namespace RimTelligence.Llm
         }
     }
 
-    /// <summary>
-    /// Turns an exception into a kind we can act on. LlmTornado exposes status codes only through
-    /// the exception text, so this is keyword based. Verify the keywords against the real
-    /// messages your providers produce (check the log on a deliberately wrong key / model).
-    /// </summary>
     public static class LlmErrorClassifier
     {
         private static readonly Regex RetryAfterSeconds = new Regex(
@@ -79,15 +74,15 @@ namespace RimTelligence.Llm
                 return LlmErrorKind.NotFound;
 
             // Feature rejections. Order matters: check before the generic 400.
-            if (raw.Contains("response_format") || raw.Contains("json_schema") || raw.Contains("json_object")
-                || raw.Contains("structured output") || raw.Contains("reasoning")
+            if (raw.Contains("structured output") || raw.Contains("reasoning")
                 || raw.Contains("unsupported") || raw.Contains("not supported") || raw.Contains("does not support")
                 || raw.Contains("unknown parameter") || raw.Contains("unrecognized request argument")
                 || raw.Contains("extra inputs are not permitted"))
                 return LlmErrorKind.Unsupported;
 
-            if (raw.Contains("400") || raw.Contains("422") || raw.Contains("invalid_request")
-                || raw.Contains("bad request"))
+            if (raw.Contains("400") || raw.Contains("422") || raw.Contains("failed to generate json")
+                || raw.Contains("failed to generate json")|| raw.Contains("invalid json schema")
+                || raw.Contains("discriminator_multiple_candidates"))
                 return LlmErrorKind.BadRequest;
 
             if (raw.Contains("500") || raw.Contains("502") || raw.Contains("503") || raw.Contains("504")

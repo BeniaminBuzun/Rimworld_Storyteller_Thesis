@@ -11,17 +11,6 @@ using System.Threading.Tasks;
 
 namespace RimTelligence.Llm
 {
-    /// <summary>
-    /// Sends one prompt and returns the text.
-    ///
-    /// Two separate mechanisms, deliberately kept apart:
-    ///  1. Transient retry (inside one mode): only for rate limit / network / timeout / 5xx,
-    ///     with exponential backoff + jitter, honouring Retry-After when the provider sends it.
-    ///  2. Mode fallback (Schema -> Json -> Text): only when the provider rejected the feature
-    ///     itself. Auth, quota, 404 and config errors stop immediately, because a weaker mode
-    ///     cannot fix them. What a model supports is remembered for the rest of the session,
-    ///     so later calls skip modes that are known to fail.
-    /// </summary>
     public class LLMCommunicationHandler
     {
         private enum Step { Structured, Json, Text }
@@ -56,7 +45,7 @@ namespace RimTelligence.Llm
         /// Off by default: sending ReasoningEffort to a non-reasoning model is a 400.
         /// When on, a "reasoning" rejection just drops the parameter and retries the same mode.
         /// </summary>
-        public bool PreferLowReasoning = false;
+        private bool PreferLowReasoning = false;
 
         // ------------------------------------------------------------------ public API
 
@@ -135,7 +124,7 @@ namespace RimTelligence.Llm
                             MarkUnsupported(caps, step);
 
                         ModLogger.Warning("[LLM] " + StepName(step) + " mode rejected (" + lastError.Kind
-                                          + "): " + Truncate(lastError.Raw, 300) + " Falling back.");
+                                          + "): " + lastError.Raw + " Falling back.");
                         continue;
                     }
 
@@ -277,7 +266,6 @@ namespace RimTelligence.Llm
 
         private static TimeSpan Backoff(int retryNumber)
         {
-            // 2s, 4s, 8s ... capped at 30s, plus up to 1s of jitter so parallel callers don't sync up.
             double seconds = Math.Min(30.0, Math.Pow(2.0, retryNumber));
             double jitter = new Random(Guid.NewGuid().GetHashCode()).NextDouble();
             return TimeSpan.FromSeconds(seconds + jitter);
@@ -336,12 +324,6 @@ namespace RimTelligence.Llm
                 return "API key required for " + config.providerId + ".";
             }
             return null;
-        }
-
-        private static string Truncate(string text, int max)
-        {
-            if (string.IsNullOrEmpty(text) || text.Length <= max) return text;
-            return text.Substring(0, max) + "...";
         }
 
         private static void LogResponse(ProviderConfig config, ChatRichResponse rich, string response, string modeUsed)

@@ -80,7 +80,7 @@ namespace RimTelligence.CustomEvents.Handlers.Item
         private static string GetDefaultSummary(GameEffect effect)
         {
             string itemLabel = ResolveItemLabel(effect);
-            string sevStr = effect.Severity != SeverityTypes.None ? $" ({effect.Severity.ToString().ToLower()})" : "";
+            string sevStr = $" ({effect.Severity.ToString().ToLower()})";
             return $"Stockpile loss: supplies of {itemLabel} are spoiled or destroyed{sevStr}.";
         }
 

@@ -39,17 +39,6 @@ namespace RimTelligence.Llm
         public LlmErrorKind errorKind = LlmErrorKind.None;
         public string modeUsed;
 
-        /// <summary>True when trying the same request again later could plausibly work.</summary>
-        public bool retryable
-        {
-            get
-            {
-                return errorKind == LlmErrorKind.RateLimit
-                    || errorKind == LlmErrorKind.Network
-                    || errorKind == LlmErrorKind.Timeout
-                    || errorKind == LlmErrorKind.Server;
-            }
-        }
 
         public static LlmConnectionResult Success(string providerId, string model, string responseText,
             int promptTokens = 0, int completionTokens = 0, int reasoningTokens = 0, string modeUsed = null)

@@ -3,6 +3,7 @@ using LlmTornado.Code;
 using RimTelligence.DataSnapshots;
 using RimTelligence.Llm;
 using RimTelligence.Source.Memory.Embedding;
+using RimTelligence.Source.Memory.Storage;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -20,9 +21,7 @@ namespace RimTelligence.AIStoryteller
         public AIStorytellerMod(ModContentPack content) : base(content)
         {
             ModPaths.Initialize(content.RootDir);
-            SqliteBootstrap.Log = ModLogger.Message;
             SqliteBootstrap.Init(content.RootDir);
-            OnnxBootstrap.Log = ModLogger.Message;
             OnnxBootstrap.Init(content.RootDir);
             Settings = GetSettings<Settings>();
 

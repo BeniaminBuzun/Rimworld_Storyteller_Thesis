@@ -29,8 +29,6 @@ namespace RimTelligence.Source.Memory.Embedding
         static readonly object Gate = new object();
         static bool _initialized;
 
-        public static Action<string> Log = delegate { };
-
         public static void Init(string modRootDir)
         {
             lock (Gate)
@@ -73,7 +71,7 @@ namespace RimTelligence.Source.Memory.Embedding
                         continue;
                     }
 
-                    Log("ONNX native library loaded: " + mainLibPath);
+                    ModLogger.Message("ONNX native library loaded: " + mainLibPath);
 
                     // Register with Mono's P/Invoke subsystem on non-Windows
                     if (os != Os.Windows)
@@ -103,11 +101,11 @@ namespace RimTelligence.Source.Memory.Embedding
                 // mono_dllmap_insert(IntPtr.Zero, dll, null, targetPath, null) tells Mono's JIT/PInvoke
                 // resolver globally to route [DllImport("onnxruntime")] directly to targetPath.
                 MonoNative.mono_dllmap_insert(IntPtr.Zero, dll, null, targetPath, null);
-                Log("Registered Mono dllmap: " + dll + " -> " + targetPath);
+                ModLogger.Message("Registered Mono dllmap: " + dll + " -> " + targetPath);
             }
             catch (Exception ex)
             {
-                Log("Failed to call mono_dllmap_insert: " + ex.Message);
+                ModLogger.Error("Failed to call mono_dllmap_insert: " + ex.Message);
             }
         }
 

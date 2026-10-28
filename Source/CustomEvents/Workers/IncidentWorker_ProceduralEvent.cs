@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Verse;
+using Newtonsoft.Json;
 
 namespace RimTelligence.CustomEvents.Workers
 {
@@ -43,6 +44,7 @@ namespace RimTelligence.CustomEvents.Workers
                 List<IEffect> chosenEvents = HeuristicEventSelector.Select(snapshot);
                 string prompt = await ProperPromptGenerator.BuildSystemPromptAsync(chosenEvents, snapshot);
                 object schema = EventJsonSchemaBuilder.Build(chosenEvents, snapshot);
+                ModLogger.Message($"JSON Schema for LLM:\n{JsonConvert.SerializeObject(schema)}");
                 ModLogger.Message($"Prompt: {prompt}");
 
                 LlmCustomEvent finalEvent = await RequestEventAsync(

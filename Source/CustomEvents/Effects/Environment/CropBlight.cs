@@ -75,7 +75,7 @@ namespace RimTelligence.CustomEvents.Handlers.Environment
                 ? cropDef.LabelCap.Resolve()
                 : (targets.Count > 0 ? targets[0].def.LabelCap.Resolve() : "crops");
 
-            string severityNote = effect.Severity != SeverityTypes.None ? $" ({effect.Severity.ToString().ToLower()} outbreak)" : "";
+            string severityNote = $" ({effect.Severity.ToString().ToLower()} outbreak)";
             executionSummary = $"A destructive crop blight has struck the fields: {targets.Count} {cropLabel} plant{(targets.Count > 1 ? "s were" : " was")} blighted{severityNote}.";
 
             ModLogger.Message($"CropBlight: Blighted {targets.Count} {cropLabel} plants.");
@@ -114,7 +114,7 @@ namespace RimTelligence.CustomEvents.Handlers.Environment
                 : null;
 
             string cropLabel = cropDef != null ? cropDef.LabelCap.Resolve() : "crops";
-            string sevStr = effect != null && effect.Severity != SeverityTypes.None ? $" ({effect.Severity.ToString().ToLower()} outbreak)" : "";
+            string sevStr = effect != null ? $" ({effect.Severity.ToString().ToLower()} outbreak)" : "";
 
             return $"An agricultural blight outbreak has infected the colony's {cropLabel}{sevStr}. Cut infected plants before it spreads!";
         }

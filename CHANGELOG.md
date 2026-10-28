@@ -10,6 +10,10 @@ semver section when a version is released.
 
 ## [Unreleased]
 
+## [0.20.0] - 2026-10-28
+
+### Added
+
 ## [0.19.0] - 2026-10-28
 
 ### Added
