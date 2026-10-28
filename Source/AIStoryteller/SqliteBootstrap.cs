@@ -9,18 +9,6 @@ namespace RimTelligence
     /// <summary>
     /// Loads the right e_sqlite3 native library for the current OS from the mod folder
     /// and registers it with SQLitePCLRaw. Call Init once, before opening any SqliteConnection.
-    ///
-    /// Expected layout inside the mod folder:
-    ///   Native/win-x64/e_sqlite3.dll
-    ///   Native/win-x86/e_sqlite3.dll          (optional)
-    ///   Native/linux-x64/libe_sqlite3.so
-    ///   Native/linux-arm64/libe_sqlite3.so    (optional)
-    ///   Native/osx-x64/libe_sqlite3.dylib
-    ///   Native/osx-arm64/libe_sqlite3.dylib
-    ///
-    /// Usage (e.g. from your Mod subclass constructor):
-    ///   SqliteBootstrap.Log = Verse.Log.Message;
-    ///   SqliteBootstrap.Init(Content.RootDir);
     /// </summary>
     public static class SqliteBootstrap
     {
