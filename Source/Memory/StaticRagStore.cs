@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Data.SQLite;
+using Microsoft.Data.Sqlite;
 using System.Linq;
 
 namespace RimTelligence.Memory
@@ -149,7 +149,7 @@ namespace RimTelligence.Memory
                     }
         }
 
-        private static void Insert(SQLiteConnection conn, SQLiteTransaction tx, StaticChunk chunk)
+        private static void Insert(SqliteConnection conn, SqliteTransaction tx, StaticChunk chunk)
         {
             using (var cmd = conn.CreateCommand())
             {

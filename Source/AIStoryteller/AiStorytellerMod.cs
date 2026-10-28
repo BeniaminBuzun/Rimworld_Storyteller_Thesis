@@ -19,6 +19,10 @@ namespace RimTelligence.AIStoryteller
         public AIStorytellerMod(ModContentPack content) : base(content)
         {
             ModPaths.Initialize(content.RootDir);
+            SqliteBootstrap.Log = ModLogger.Message;
+            SqliteBootstrap.Init(content.RootDir);
+            RimTelligence.Memory.OnnxBootstrap.Log = ModLogger.Message;
+            RimTelligence.Memory.OnnxBootstrap.Init(content.RootDir);
             Settings = GetSettings<Settings>();
 
             harmony = new Harmony("com.rimtelligence.aistoryteller");

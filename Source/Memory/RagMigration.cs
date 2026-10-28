@@ -1,11 +1,11 @@
 using System;
-using System.Data.SQLite;
+using Microsoft.Data.Sqlite;
 
 namespace RimTelligence.Memory
 {
     public static class RagMigration
     {
-        public static void EnsureSchema(SQLiteConnection conn)
+        public static void EnsureSchema(SqliteConnection conn)
         {
             Exec(conn, @"
                 CREATE TABLE IF NOT EXISTS dynamic_chunks (
@@ -29,7 +29,7 @@ namespace RimTelligence.Memory
             MigrateDynamicChunksForSaveScoping(conn);
         }
 
-        private static void MigrateDynamicChunksForSaveScoping(SQLiteConnection conn)
+        private static void MigrateDynamicChunksForSaveScoping(SqliteConnection conn)
         {
             try
             {
@@ -47,7 +47,7 @@ namespace RimTelligence.Memory
             }
         }
 
-        private static bool HasColumn(SQLiteConnection conn, string tableName, string columnName)
+        private static bool HasColumn(SqliteConnection conn, string tableName, string columnName)
         {
             var cmd = conn.CreateCommand();
             cmd.CommandText = "PRAGMA table_info(" + tableName + ");";
@@ -62,7 +62,7 @@ namespace RimTelligence.Memory
             return false;
         }
 
-        private static void Exec(SQLiteConnection conn, string sql)
+        private static void Exec(SqliteConnection conn, string sql)
         {
             var cmd = conn.CreateCommand();
             cmd.CommandText = sql;

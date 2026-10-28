@@ -10,6 +10,11 @@ semver section when a version is released.
 
 ## [Unreleased]
 
+## [0.19.0] - 2026-10-28
+
+### Added
+- Include Sqlite and ONNX runtime DLLs for linux and macOS compatibility 
+
 ## [0.18.0] - 2026-10-23
 
 ### Changed
