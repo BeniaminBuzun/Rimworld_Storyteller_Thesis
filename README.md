@@ -5,9 +5,6 @@
 RimTelligence (Development Name) is an AI-driven storyteller mod for RimWorld.
 Version history is tracked in [CHANGELOG.md](CHANGELOG.md).
 
-## Things that are currently broken, missing or additional features:
-- Rag is not wired into any relevant logic
-
 ## Benchmarking
 
 Run headless model evaluations and benchmarks using `BenchmarkRunner`:
