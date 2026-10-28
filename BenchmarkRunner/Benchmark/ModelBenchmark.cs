@@ -166,6 +166,7 @@ namespace RimTelligence.Benchmark
                 result.completionTokens = lastResponse.completionTokens;
                 result.reasoningTokens = lastResponse.reasoningTokens;
                 result.rawResponse = lastResponse.responseText;
+                result.outputMode = lastResponse.modeUsed;
 
                 if (!lastResponse.isSuccess)
                     result.error = lastResponse.errorMessage;

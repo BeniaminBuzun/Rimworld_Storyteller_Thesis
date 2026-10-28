@@ -1,10 +1,10 @@
+using SQLitePCL;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
-using SQLitePCL;
 
-namespace RimTelligence
+namespace RimTelligence.Source.Memory.Storage
 {
     /// <summary>
     /// Loads the right e_sqlite3 native library for the current OS from the mod folder
@@ -23,9 +23,6 @@ namespace RimTelligence
 
         static readonly object Gate = new object();
         static bool _initialized;
-
-        /// <summary>Optional logger; defaults to no-op so this works outside RimWorld too.</summary>
-        public static Action<string> Log = delegate { };
 
         public static void Init(string modRootDir)
         {
@@ -51,7 +48,7 @@ namespace RimTelligence
                     handle = Open(os, path, out err);
                     if (handle != IntPtr.Zero)
                     {
-                        Log("SQLite native library loaded: " + path);
+                        ModLogger.Message("SQLite native library loaded: " + path);
                         break;
                     }
                     errors.Add(path + " -> " + err);

@@ -1,8 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 
-namespace RimTelligence.Memory
+namespace RimTelligence.Source.Memory.Storage
 {
     /// <summary>
     /// Single source of truth for which SQLite table a category lives in.
@@ -26,11 +25,6 @@ namespace RimTelligence.Memory
                 foreach (var id in ids)
                     if (!string.IsNullOrEmpty(id)) _itemIds.Add(id);
             }
-        }
-
-        public static string[] ItemCategoryIds
-        {
-            get { lock (_lock) return _itemIds.ToArray(); }
         }
 
         public static bool IsItemCategory(string id)

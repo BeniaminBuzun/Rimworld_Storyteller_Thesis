@@ -65,7 +65,7 @@ namespace RimTelligence.CustomEvents.Handlers.Environment
         {
             GameConditionDef def = ResolveCondition(effect);
             string conditionLabel = def != null ? def.LabelCap.Resolve() : (!string.IsNullOrWhiteSpace(effect.DefNameText) ? effect.DefNameText : "an extreme condition");
-            string sevStr = effect.Severity != SeverityTypes.None ? $" ({effect.Severity.ToString().ToLower()})" : "";
+            string sevStr = $" ({effect.Severity.ToString().ToLower()})";
             return $"{conditionLabel} descends upon the colony{sevStr}.";
         }
 

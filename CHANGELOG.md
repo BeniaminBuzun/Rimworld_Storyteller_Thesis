@@ -10,6 +10,27 @@ semver section when a version is released.
 
 ## [Unreleased]
 
+## [0.20.0] - 2026-10-28
+
+### Added
+- Add RAG-based definition retrieval to improve event generation using event contracts and colony state
+- Add automatic embedding refresh when the embedding model changes
+- Add LLM error classification and output mode reporting
+
+### Changed
+- Run event generation asynchronously to prevent game loop stuttering
+- Improve LLM communication with structured JSON → JSON → text fallback, transient-error retries, exponential backoff, and a 360-second request timeout
+- Improve logging with a thread-safe, queue-based logger
+- Select the embedding provider based on mod settings and pre-warm ONNX embeddings in the background
+- Rebalance self-taming chances to 10% / 20% / 25% / 50% for Low / Medium / High / Extreme
+- Renumber `SeverityTypes` values, removing `None`. Existing effect configurations and prompt templates using the old numeric values must be updated
+- Update benchmark reporting to record the output mode.
+
+### Fixed
+- Handle transient LLM failures with retries instead of immediately failing events
+- Log empty LLM responses and fall back to the next output mode
+- Default missing `TargetPawn` values to `"random"` and handle invalid severity values with a warning and a default mood offset
+
 ## [0.19.0] - 2026-10-28
 
 ### Added

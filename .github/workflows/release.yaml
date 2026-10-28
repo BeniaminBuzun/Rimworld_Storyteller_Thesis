@@ -42,7 +42,7 @@ jobs:
           
           # 3. Copy files
           Copy-Item -Recurse About, Assemblies, Defs, Textures, Native, Data $stage -ErrorAction SilentlyContinue
-          Copy-Item -Recurse "Source\Memory\Models" "$stage\Source\Memory" -ErrorAction SilentlyContinue
+          Copy-Item -Recurse "Source\Memory\Embedding\Models" "$stage\Source\Memory" -ErrorAction SilentlyContinue
           Copy-Item CHANGELOG.md, README.md $stage -ErrorAction SilentlyContinue
           
           # 4. Patch About.xml with the correct version

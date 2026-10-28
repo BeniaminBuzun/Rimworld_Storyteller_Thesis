@@ -71,7 +71,7 @@ namespace RimTelligence.CustomEvents.Handlers.Pawns.Debuffs
         {
             string skillLabel = ResolveSkillLabel(effect);
             string pawn = !string.IsNullOrWhiteSpace(effect.TargetPawn) ? effect.TargetPawn : "A colonist";
-            string sevStr = effect.Severity != SeverityTypes.None ? $" ({effect.Severity.ToString().ToLower()})" : "";
+            string sevStr = $" ({effect.Severity.ToString().ToLower()})";
             return $"{pawn} experiences disorientation, losing XP in {skillLabel}{sevStr}.";
         }
 

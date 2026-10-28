@@ -1,10 +1,15 @@
+﻿using RimTelligence.AIStoryteller;
 using RimTelligence.CustomEvents.Handlers;
 using RimTelligence.DataSnapshots;
+using RimTelligence.Memory;
+using RimTelligence.Source.Memory.Embedding;
+using RimTelligence.Source.Memory.Search;
 using System;
 using System.Collections.Generic;
-using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace RimTelligence.CustomEvents.Prompting
 {
@@ -35,7 +40,31 @@ namespace RimTelligence.CustomEvents.Prompting
             ("Field Medic", "Clipped, clinical, matter-of-fact. You've seen worse. Emotions are diagnoses.", "Triage everything. Mourn nothing."),
             ("Tired Poet", "Lyrical but exhausted. Beauty in collapse. Short sentences. One image that lingers.", "Even ruin has a shape."),
         };
+
         public static string BuildSystemPrompt(List<IEffect> chosenEvents, ColonySnapshot snapshot)
+        {
+            return BuildSystemPrompt(chosenEvents, snapshot, null, null);
+        }
+
+        public static string BuildSystemPrompt(
+            List<IEffect> chosenEvents,
+            ColonySnapshot snapshot,
+            IEmbeddingProvider embeddingProvider,
+            StaticRagStore ragStore)
+        {
+            return BuildSystemPromptAsync(chosenEvents, snapshot, embeddingProvider, ragStore).GetAwaiter().GetResult();
+        }
+
+        public static Task<string> BuildSystemPromptAsync(List<IEffect> chosenEvents, ColonySnapshot snapshot)
+        {
+            return BuildSystemPromptAsync(chosenEvents, snapshot, null, null);
+        }
+
+        public static async Task<string> BuildSystemPromptAsync(
+            List<IEffect> chosenEvents,
+            ColonySnapshot snapshot,
+            IEmbeddingProvider embeddingProvider,
+            StaticRagStore ragStore)
         {
             chosenEvents = chosenEvents ?? new List<IEffect>();
 
@@ -54,8 +83,45 @@ namespace RimTelligence.CustomEvents.Prompting
             sb.AppendLine();
 
             sb.AppendLine("CONSEQUENCES (apply exactly these effectName values):");
+
+            IEmbeddingProvider provider = embeddingProvider;
+            StaticRagStore store = ragStore;
+
+            if (provider == null && store == null)
+            {
+                try
+                {
+                    if (!string.IsNullOrEmpty(RagBootstrap.DbPath) && File.Exists(RagBootstrap.DbPath))
+                    {
+                        store = new StaticRagStore(RagBootstrap.DbPath);
+                        provider = GameObjectsCapturer.GetSharedEmbeddingProvider();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    ModLogger.Warning($"ProperPromptGenerator could not initialize RAG: {ex.Message}");
+                    provider = null;
+                    store = null;
+                }
+            }
+            else if (store == null && !string.IsNullOrEmpty(RagBootstrap.DbPath) && File.Exists(RagBootstrap.DbPath))
+            {
+                try { store = new StaticRagStore(RagBootstrap.DbPath); } catch { /* ignore */ }
+            }
+            else if (provider == null && store != null)
+            {
+                try
+                {
+                    provider = GameObjectsCapturer.GetSharedEmbeddingProvider();
+                }
+                catch { /* ignore */ }
+            }
+
+            var queryCache = new Dictionary<string, float[]>(StringComparer.Ordinal);
+
             foreach (IEffect chosen in chosenEvents)
-                AppendEvent(sb, chosen, snapshot);
+                await AppendEventAsync(sb, chosen, snapshot, provider, store, queryCache);
+
             sb.AppendLine();
 
             sb.AppendLine(SnapshotNarrator.Narrate(snapshot));
@@ -87,7 +153,13 @@ namespace RimTelligence.CustomEvents.Prompting
 
         // ----------------------------------------------------------------- events
 
-        private static void AppendEvent(StringBuilder sb, IEffect effect, ColonySnapshot snapshot)
+        private static async Task AppendEventAsync(
+            StringBuilder sb,
+            IEffect effect,
+            ColonySnapshot snapshot,
+            IEmbeddingProvider provider,
+            StaticRagStore store,
+            Dictionary<string, float[]> queryCache)
         {
             EffectConfig contract = EffectContractProvider.GetContract(effect, snapshot);
 
@@ -104,13 +176,21 @@ namespace RimTelligence.CustomEvents.Prompting
 
             if (contract.DefCount > 1)
             {
+                string query1 = BuildRagQuery(contract, contract.RelatedDefList, snapshot);
+                string query2 = BuildRagQuery(contract, contract.SecondaryRelatedDefList, snapshot);
+
+                string choices1 = await DefChoicesAsync(contract.AllowedDefs, query1, provider, store, queryCache);
+                string choices2 = await DefChoicesAsync(contract.SecondaryAllowedDefs, query2, provider, store, queryCache);
+
                 sb.AppendLine($"    selectedDefName: exactly {contract.DefCount} values, in this order:");
-                sb.AppendLine($"      1) {SlotLabel(contract.RelatedDefList, "defName")}: {DefChoices(contract.AllowedDefs)}");
-                sb.AppendLine($"      2) {SlotLabel(contract.SecondaryRelatedDefList, "defName")}: {DefChoices(contract.SecondaryAllowedDefs)}");
+                sb.AppendLine($"      1) {SlotLabel(contract.RelatedDefList, "defName")}: {choices1}");
+                sb.AppendLine($"      2) {SlotLabel(contract.SecondaryRelatedDefList, "defName")}: {choices2}");
             }
             else
             {
-                sb.AppendLine($"    selectedDefName: exactly 1 value. Choose from: {DefChoices(contract.AllowedDefs)}");
+                string query = BuildRagQuery(contract, contract.RelatedDefList, snapshot);
+                string choices = await DefChoicesAsync(contract.AllowedDefs, query, provider, store, queryCache);
+                sb.AppendLine($"    selectedDefName: exactly 1 value. Choose from: {choices}");
             }
         }
 
@@ -123,13 +203,149 @@ namespace RimTelligence.CustomEvents.Prompting
             return fallback;
         }
 
-        // Shows a random sample so repeated prompts vary; the validator accepts the whole list.
-        private static string DefChoices(List<GameObjectMeta> defs)
+        private static string BuildRagQuery(EffectConfig contract, string slotListId, ColonySnapshot snapshot)
+        {
+            var sb = new StringBuilder();
+
+            if (contract != null)
+            {
+                if (!string.IsNullOrEmpty(contract.NarrativeDescription))
+                    sb.Append(contract.NarrativeDescription).Append(". ");
+                else if (!string.IsNullOrEmpty(contract.EffectName))
+                    sb.Append(contract.EffectName).Append(". ");
+            }
+
+            if (!string.IsNullOrEmpty(slotListId))
+            {
+                sb.Append("Category: ").Append(slotListId).Append(". ");
+            }
+
+            if (snapshot != null)
+            {
+                var contextParts = new List<string>();
+
+                if (!string.IsNullOrEmpty(snapshot.biome))
+                    contextParts.Add("biome: " + snapshot.biome);
+                if (!string.IsNullOrEmpty(snapshot.season))
+                    contextParts.Add("season: " + snapshot.season);
+                if (!string.IsNullOrEmpty(snapshot.currentWeather))
+                    contextParts.Add("weather: " + snapshot.currentWeather);
+
+                contextParts.Add($"temperature: {snapshot.temperature:F0}C");
+
+                if (snapshot.activeConditions != null && snapshot.activeConditions.Count > 0)
+                    contextParts.Add("conditions: " + string.Join(", ", snapshot.activeConditions));
+
+                if (snapshot.colonistCount > 0)
+                {
+                    float daysOfFood = snapshot.totalNutrition / (snapshot.colonistCount * NutritionPerColonistPerDay);
+                    if (daysOfFood < 2f)
+                        contextParts.Add("food shortage");
+                }
+
+                if (contextParts.Count > 0)
+                {
+                    sb.Append("Colony environment: ").Append(string.Join(", ", contextParts)).Append(".");
+                }
+            }
+
+            return sb.ToString().Trim();
+        }
+
+        // Queries RAG asynchronously to get the most relevant items ONLY from the selected list (defs).
+        // Uses ragMaxResultsPerStore and ragMinSimilarity from mod settings.
+        // Backfills remaining slots from defs randomly, and falls back fully to random sampling if RAG is unavailable.
+        private static async Task<string> DefChoicesAsync(
+            List<GameObjectMeta> defs,
+            string queryText = null,
+            IEmbeddingProvider provider = null,
+            StaticRagStore store = null,
+            Dictionary<string, float[]> queryCache = null)
         {
             if (defs == null || defs.Count == 0) return "any valid defName";
-            IEnumerable<GameObjectMeta> sample = defs.Count > MaxListed
-                ? defs.OrderBy(_ => _random.Next()).Take(MaxListed)
-                : defs;
+
+            List<GameObjectMeta> validDefs = defs.Where(d => !string.IsNullOrEmpty(d?.DefName)).ToList();
+            if (validDefs.Count == 0) return "any valid defName";
+
+            Settings settings = AIStorytellerMod.Settings;
+            int maxResults = settings != null ? settings.ragMaxResultsPerStore : MaxListed;
+            float minSimilarity = settings != null ? settings.ragMinSimilarity : 0f;
+
+            if (provider != null && store != null && !string.IsNullOrWhiteSpace(queryText))
+            {
+                try
+                {
+                    float[] queryEmbedding = null;
+                    if (queryCache != null && queryCache.TryGetValue(queryText, out float[] cached))
+                    {
+                        queryEmbedding = cached;
+                    }
+                    else
+                    {
+                        queryEmbedding = await provider.EmbedAsync(queryText);
+                        if (queryCache != null && queryEmbedding != null)
+                            queryCache[queryText] = queryEmbedding;
+                    }
+
+                    if (queryEmbedding != null && queryEmbedding.Length > 0)
+                    {
+                        var defMap = new Dictionary<string, GameObjectMeta>(StringComparer.OrdinalIgnoreCase);
+                        foreach (var d in validDefs)
+                        {
+                            if (!defMap.ContainsKey(d.DefName))
+                                defMap[d.DefName] = d;
+                        }
+
+                        // Ask for maxResults candidates; minSimilarity is applied below as a post-filter.
+                        List<RagResult> results = store.Query(queryEmbedding, topK: maxResults, defNames: defMap.Keys);
+
+                        if (results != null && results.Count > 0)
+                        {
+                            var selected = new List<GameObjectMeta>();
+                            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+                            foreach (var r in results)
+                            {
+                                // Skip results below the minimum similarity threshold.
+                                if (r.Score < minSimilarity) continue;
+
+                                if (r?.DefName != null && defMap.TryGetValue(r.DefName, out var meta) && seen.Add(meta.DefName))
+                                    selected.Add(meta);
+                            }
+
+                            // Backfill remaining slots (up to maxResults) with random items not yet selected.
+                            if (selected.Count < maxResults)
+                            {
+                                var remaining = validDefs
+                                    .Where(d => !seen.Contains(d.DefName))
+                                    .OrderBy(_ => _random.Next());
+
+                                foreach (var d in remaining)
+                                {
+                                    if (seen.Add(d.DefName))
+                                    {
+                                        selected.Add(d);
+                                        if (selected.Count >= maxResults)
+                                            break;
+                                    }
+                                }
+                            }
+
+                            if (selected.Count > 0)
+                                return string.Join(", ", selected.Select(def => def.ToString()));
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    ModLogger.Warning($"RAG def ranking in ProperPromptGenerator failed, using fallback: {ex.Message}");
+                }
+            }
+
+            // Fallback: random sample so repeated prompts vary; the validator accepts the whole list.
+            IEnumerable<GameObjectMeta> sample = validDefs.Count > maxResults
+                ? validDefs.OrderBy(_ => _random.Next()).Take(maxResults)
+                : validDefs;
             return string.Join(", ", sample.Select(def => def.ToString()));
         }
 

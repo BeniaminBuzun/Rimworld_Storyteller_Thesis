@@ -72,7 +72,7 @@ namespace RimTelligence.CustomEvents.Handlers.Animal
         private static string GetDefaultSummary(GameEffect effect)
         {
             string animalLabel = ResolveAnimalLabel(effect);
-            string sevStr = effect.Severity != SeverityTypes.None ? $" ({effect.Severity.ToString().ToLower()})" : "";
+            string sevStr = $" ({effect.Severity.ToString().ToLower()})";
             return $"A group of {animalLabel} wanders into the region{sevStr}.";
         }
 

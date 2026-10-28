@@ -1,6 +1,8 @@
-using RimTelligence.AIStoryteller;
+﻿using RimTelligence.AIStoryteller;
 using RimTelligence.CustomEvents.Execution;
 using RimTelligence.Memory;
+using RimTelligence.Source.Memory.Embedding;
+using RimTelligence.Source.Memory.Storage;
 using RimWorld;
 using System;
 using System.Collections.Generic;
@@ -52,6 +54,15 @@ namespace RimTelligence.DataSnapshots
                 return new LlmEmbeddingProvider();
 
             return new OnnxEmbeddingProvider();
+        }
+
+        public static IEmbeddingProvider GetSharedEmbeddingProvider()
+        {
+            Settings settings = AIStorytellerMod.Settings;
+            if (settings != null && settings.embeddingSource == "Provider")
+                return new LlmEmbeddingProvider();
+
+            return EmbeddingProvider;
         }
 
         private static string CurrentEmbeddingSource()

@@ -12,10 +12,10 @@
                 //"qwen3.5:4b",
                 //"ministral-3:3b",
                 //"gemma4:e4b",
-                "granite4.2:8b",
+                //"granite4.2:8b",
                 //"qwen3.5:9b",
                 //"ministral-3:14b",
-                //"phi4:14b"
+                "phi4:14b"
             ]
         }
     ]

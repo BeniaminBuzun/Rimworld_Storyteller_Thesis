@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 
-namespace RimTelligence.Memory
+namespace RimTelligence.Source.Memory.Embedding
 {
     /// <summary>
     /// Loads the onnxruntime native library for the current OS/architecture from the mod's
@@ -28,8 +28,6 @@ namespace RimTelligence.Memory
 
         static readonly object Gate = new object();
         static bool _initialized;
-
-        public static Action<string> Log = delegate { };
 
         public static void Init(string modRootDir)
         {
@@ -73,7 +71,7 @@ namespace RimTelligence.Memory
                         continue;
                     }
 
-                    Log("ONNX native library loaded: " + mainLibPath);
+                    ModLogger.Message("ONNX native library loaded: " + mainLibPath);
 
                     // Register with Mono's P/Invoke subsystem on non-Windows
                     if (os != Os.Windows)
@@ -103,11 +101,11 @@ namespace RimTelligence.Memory
                 // mono_dllmap_insert(IntPtr.Zero, dll, null, targetPath, null) tells Mono's JIT/PInvoke
                 // resolver globally to route [DllImport("onnxruntime")] directly to targetPath.
                 MonoNative.mono_dllmap_insert(IntPtr.Zero, dll, null, targetPath, null);
-                Log("Registered Mono dllmap: " + dll + " -> " + targetPath);
+                ModLogger.Message("Registered Mono dllmap: " + dll + " -> " + targetPath);
             }
             catch (Exception ex)
             {
-                Log("Failed to call mono_dllmap_insert: " + ex.Message);
+                ModLogger.Error("Failed to call mono_dllmap_insert: " + ex.Message);
             }
         }
 
@@ -169,26 +167,26 @@ namespace RimTelligence.Memory
                 switch (os)
                 {
                     case Os.Windows:
-                    {
-                        IntPtr h = Win32.LoadLibraryW(path);
-                        if (h == IntPtr.Zero)
-                            error = "LoadLibrary failed, Win32 error " + Marshal.GetLastWin32Error();
-                        return h;
-                    }
+                        {
+                            IntPtr h = Win32.LoadLibraryW(path);
+                            if (h == IntPtr.Zero)
+                                error = "LoadLibrary failed, Win32 error " + Marshal.GetLastWin32Error();
+                            return h;
+                        }
                     case Os.Linux:
-                    {
-                        IntPtr h = LibDl.dlopen(path, RTLD_NOW | RTLD_GLOBAL_LINUX);
-                        if (h == IntPtr.Zero)
-                            error = Marshal.PtrToStringAnsi(LibDl.dlerror());
-                        return h;
-                    }
+                        {
+                            IntPtr h = LibDl.dlopen(path, RTLD_NOW | RTLD_GLOBAL_LINUX);
+                            if (h == IntPtr.Zero)
+                                error = Marshal.PtrToStringAnsi(LibDl.dlerror());
+                            return h;
+                        }
                     default:
-                    {
-                        IntPtr h = LibSystem.dlopen(path, RTLD_NOW | RTLD_GLOBAL_MACOS);
-                        if (h == IntPtr.Zero)
-                            error = Marshal.PtrToStringAnsi(LibSystem.dlerror());
-                        return h;
-                    }
+                        {
+                            IntPtr h = LibSystem.dlopen(path, RTLD_NOW | RTLD_GLOBAL_MACOS);
+                            if (h == IntPtr.Zero)
+                                error = Marshal.PtrToStringAnsi(LibSystem.dlerror());
+                            return h;
+                        }
                 }
             }
             catch (Exception ex)

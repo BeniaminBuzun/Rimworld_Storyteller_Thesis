@@ -80,7 +80,7 @@ namespace RimTelligence.Source.CustomEvents.Handlers.Pawns.Buffs
                 ? effect.SelectedDefName[0]
                 : (!string.IsNullOrWhiteSpace(effect.DefNameText) ? effect.DefNameText : "Warm spirit");
             string pawn = !string.IsNullOrWhiteSpace(effect.TargetPawn) ? effect.TargetPawn : "A colonist";
-            string sevStr = effect.Severity != SeverityTypes.None ? $" ({effect.Severity.ToString().ToLower()})" : "";
+            string sevStr = $" ({effect.Severity.ToString().ToLower()})";
             return $"{pawn} experiences an uplifting mood boost: '{label}'{sevStr}.";
         }
     }
