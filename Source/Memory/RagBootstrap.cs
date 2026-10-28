@@ -1,5 +1,4 @@
-﻿using Microsoft.Data.Sqlite;
-using System;
+using Microsoft.Data.Sqlite;
 using System.IO;
 using Verse;
 
