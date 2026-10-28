@@ -18,7 +18,6 @@ namespace RimTelligence.CustomEvents.Execution
         public override void GameComponentTick()
         {
             base.GameComponentTick();
-            //ModLogger.DrainQueue();
 
             // Process up to 5 actions per tick to avoid stuttering if multiple arrive
             int processed = 0;
@@ -34,12 +33,6 @@ namespace RimTelligence.CustomEvents.Execution
                 }
                 processed++;
             }
-        }
-
-        public override void GameComponentUpdate()
-        {
-            base.GameComponentUpdate();
-            //ModLogger.DrainQueue();
         }
     }
 }

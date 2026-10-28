@@ -81,7 +81,7 @@ namespace RimTelligence.Llm
                 return LlmErrorKind.Unsupported;
 
             if (raw.Contains("400") || raw.Contains("422") || raw.Contains("failed to generate json")
-                || raw.Contains("failed to generate json")|| raw.Contains("invalid json schema")
+                || raw.Contains("failed to generate json") || raw.Contains("invalid json schema")
                 || raw.Contains("discriminator_multiple_candidates"))
                 return LlmErrorKind.BadRequest;
 

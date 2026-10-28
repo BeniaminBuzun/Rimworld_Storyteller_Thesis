@@ -13,6 +13,38 @@ semver section when a version is released.
 ## [0.20.0] - 2026-10-28
 
 ### Added
+- RAG/memory layer restructured under `Source/Memory/{Embedding,Search,Storage}`: `StaticRagStore` (two-phase `SyncDefs` → `SetEmbeddings`, embedding source tracked in the DB via `PRAGMA user_version` so the store re-embeds when the model changes), save-scoped `DynamicRagStore` with `PruneOlderThan`, plus `RagSchema`, `RagTables`, `SqlHelper`, `SqliteBootstrap`, `OnnxBootstrap`, and search types `RagBlob`/`RagResult`/`TopKBoard`
+- `RagBootstrap` now pre-warms the ONNX embedding provider on a background thread so the first retrieval is fast
+- `LlmErrorClassifier` / `LlmErrorInfo` — classifies LLM exceptions into `LlmErrorKind`, with `RetryAfter` parsing for transient failures
+- `LlmOutputMode` enum + `LlmConnectionResult.modeUsed` — exposes which request mode (structured-JSON → JSON → text) each response came from
+- `EventJsonSchemaBuilder` (renamed from `EventJsonSchemaProvider`) — builds per-event JSON schemas into the system prompt
+- RAG-driven def selection in system prompts: `ProperPromptGenerator.BuildSystemPromptAsync` ranks defs per event from the event contract + colony snapshot, with settings-driven `ragMaxResultsPerStore`/`ragMinSimilarity`, an embedding cache, and random backfill
+- Thread-safe `ModLogger` (queue-based, drained on the main thread) replacing the previous logging path
+
+### Changed
+- Event execution moved off the main thread: `IncidentWorker_ProceduralEvent` now starts `RunEventAsync` via `Task.Run` so the game loop never stutters during LLM round-trips
+- `LLMCommunicationHandler` reworked: structured-JSON → JSON → text mode ladder (empty responses fall through to the next mode), per-model capability cache, `TornadoApi` cache, transient-error retries with exponential backoff (up to 30s) honouring `RetryAfter`, 360s `RequestTimeout` via `WithTimeout`, and truncation warning logging
+- All effect summaries now always include severity in their text (previously some handlers omitted it)
+- `MoodHelper` — invalid/missing severity now defaults to a Medium mood offset with a warning instead of silently returning 0
+- `ItemEffectsHelper.ResolveQuantity` — dropped the `SeverityTypes.None → 1` special case
+- `LlmEffectValidator` — missing `TargetPawn` now defaults to `"random"` instead of failing validation
+- `RimTelligenceDispatcher` — errors log through `ModLogger.Error`; per-tick `DrainQueue` calls removed
+- `MoodDebuff` letter text: "distressing mood penalty" → "depressing mood debuff"
+- `ItemCategoryRegistry` — reads category def lists from the RAG DB (`StaticRagStore.ReadDefs()`) with an `IsItem` property; `DrawRandomCategory` now only draws categories that have items
+- `GameObjectsCapturer.GetSharedEmbeddingProvider()` picks ONNX vs. a configured LLM embedding provider based on the active mod setting
+- `SelfTame` taming rates rebalanced: Low/Medium/High/Extreme now 10/20/25/50% (was 25/50/75/100%)
+- Benchmark — `BenchmarkResult` records `outputMode` (which LLM output mode was used per run); default config switched to `phi4:14b` (`granite4.2:8b` disabled); debug launch args gain `--ResourcePodCrash`; `release.yaml` model copy path updated to `Source\Memory\Embedding\Models`
+
+### Fixed
+- Transient LLM failures (timeouts, connection errors, 429s with `RetryAfter`) are now classified and retried with backoff instead of hard-failing the event
+- Empty LLM responses no longer fail silently — the handler logs a warning and falls through to the next output mode
+
+### Removed
+- Old `Source/Memory/` root files: `ItemsStore.cs`, `NativeDependencyLoader.cs`, `RagMigration.cs`, `RagTableMigration.cs`, `Helpers.cs`, and the previous `StaticRagStore.cs` / `DynamicRagStore.cs` / `RagStoreBase.cs` — replaced by the restructured `Memory/{Embedding,Search,Storage}` layer
+- "Unknown severity degrades to None" case in `RimTelligenceDebugActions` (severity `None` no longer exists)
+
+### Breaking
+- `SeverityTypes` renumbered: `None` removed; Low/Medium/High/Extreme remapped to 0/1/2/3 — effect configs and prompt templates referencing old numeric severity values must be updated
 
 ## [0.19.0] - 2026-10-28
 

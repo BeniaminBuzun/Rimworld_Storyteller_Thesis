@@ -1,4 +1,5 @@
-﻿using RimTelligence.CustomEvents.EventSelector;
+﻿using Newtonsoft.Json;
+using RimTelligence.CustomEvents.EventSelector;
 using RimTelligence.CustomEvents.Execution;
 using RimTelligence.CustomEvents.Handlers;
 using RimTelligence.CustomEvents.Prompting;
@@ -10,7 +11,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Verse;
-using Newtonsoft.Json;
 
 namespace RimTelligence.CustomEvents.Workers
 {
