@@ -1,4 +1,5 @@
-using Microsoft.Data.Sqlite;
+﻿using Microsoft.Data.Sqlite;
+using System;
 using System.IO;
 using Verse;
 
@@ -30,10 +31,23 @@ namespace RimTelligence.Memory
             {
                 DataSnapshots.GameObjectsCapturer.EnsurePopulatedOnStartup();
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 ModLogger.Error("RAG startup population check failed: " + ex.Message);
             }
+
+            // Pre-warm ONNX embedding model on a background thread so the first incident does not stutter
+            System.Threading.Tasks.Task.Run(() =>
+            {
+                try
+                {
+                    var _ = DataSnapshots.GameObjectsCapturer.EmbeddingProvider;
+                }
+                catch (Exception ex)
+                {
+                    ModLogger.Warning("ONNX embedding pre-warm failed: " + ex.Message);
+                }
+            });
         }
     }
 }

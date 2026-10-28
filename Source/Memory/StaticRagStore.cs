@@ -1,19 +1,13 @@
 using System;
 using System.Collections.Generic;
 using Microsoft.Data.Sqlite;
-using System.Linq;
 
 namespace RimTelligence.Memory
 {
-    public class StaticChunk
-    {
-        public string Category;
-        public string DefName;
-        public string Text;
-        public float[] Embedding;      // null = not embedded yet
-        public string MetadataJson;
-    }
-
+    /// <summary>
+    /// Store for def-derived knowledge (items / others tables). Population is two-phase:
+    /// SyncDefs writes text + metadata, then SetEmbeddings fills in vectors later.
+    /// </summary>
     public class StaticRagStore : RagStoreBase
     {
         public StaticRagStore(string dbPath) : base(dbPath) { }
@@ -41,73 +35,65 @@ namespace RimTelligence.Memory
 
         /// <summary>
         /// Makes the DB match the scanned defs (phase 1 of population). In one transaction:
-        /// removes rows that no longer exist, inserts new ones (no embedding yet), and updates changed ones.
+        /// removes rows that no longer exist (or sit in the wrong table / are duplicates),
+        /// inserts new ones without an embedding, and updates changed ones.
         /// Rows whose text changed, or all rows when resetEmbeddings is true, get their embedding cleared.
+        /// Unchanged rows are not rewritten.
         /// </summary>
         public (int Added, int Updated, int Removed) SyncDefs(IEnumerable<StaticChunk> desired, bool resetEmbeddings)
         {
             var want = new Dictionary<(string, string), StaticChunk>();
             foreach (var d in desired) want[(d.Category, d.DefName)] = d;
 
-            int added = 0, updated = 0, removed = 0;
             var present = new HashSet<(string, string)>();
+            int added = 0, updated = 0, removed = 0;
 
             using (var conn = OpenConnection())
             using (var tx = conn.BeginTransaction())
             {
                 foreach (var table in RagTables.All)
                 {
-                    var rows = new List<(long Id, string Category, string DefName, string Text)>();
-                    using (var cmd = conn.CreateCommand())
-                    {
-                        cmd.Transaction = tx;
-                        cmd.CommandText = "SELECT id, category, def_name, text FROM " + table;
-                        using (var r = cmd.ExecuteReader())
-                            while (r.Read())
-                                rows.Add((r.GetInt64(0), r.GetString(1), r.GetString(2), r.GetString(3)));
-                    }
+                    var rows = SqlHelper.Read(conn,
+                        "SELECT id, category, def_name, text, metadata FROM " + table,
+                        r => (Id: r.GetInt64(0), Category: r.GetString(1), DefName: r.GetString(2),
+                              Text: r.GetString(3), Metadata: SqlHelper.NullableString(r, 4)),
+                        tx);
 
                     foreach (var row in rows)
                     {
                         var key = (row.Category, row.DefName);
 
                         // Keep only if wanted, in the right table, and not a duplicate.
-                        bool keep = want.TryGetValue(key, out var chunk)
+                        StaticChunk chunk;
+                        bool keep = want.TryGetValue(key, out chunk)
                                     && RagTables.For(row.Category) == table
                                     && present.Add(key);
 
                         if (!keep)
                         {
-                            using (var cmd = conn.CreateCommand())
-                            {
-                                cmd.Transaction = tx;
-                                cmd.CommandText = "DELETE FROM " + table + " WHERE id=@id";
-                                cmd.Parameters.AddWithValue("@id", row.Id);
-                                cmd.ExecuteNonQuery();
-                            }
+                            SqlHelper.Exec(conn, "DELETE FROM " + table + " WHERE id=@id", tx, ("@id", row.Id));
                             removed++;
                             continue;
                         }
 
-                        bool clear = resetEmbeddings || chunk.Text != row.Text;
-                        using (var cmd = conn.CreateCommand())
-                        {
-                            cmd.Transaction = tx;
-                            cmd.CommandText = "UPDATE " + table + " SET text=@t, metadata=@m" +
-                                              (clear ? ", embedding=NULL" : "") + " WHERE id=@id";
-                            cmd.Parameters.AddWithValue("@t", chunk.Text);
-                            cmd.Parameters.AddWithValue("@m", (object)chunk.MetadataJson ?? DBNull.Value);
-                            cmd.Parameters.AddWithValue("@id", row.Id);
-                            cmd.ExecuteNonQuery();
-                        }
-                        if (clear) updated++;
+                        bool clearEmbedding = resetEmbeddings || chunk.Text != row.Text;
+                        bool changed = clearEmbedding || chunk.MetadataJson != row.Metadata;
+                        if (!changed) continue;
+
+                        SqlHelper.Exec(conn,
+                            "UPDATE " + table + " SET text=@t, metadata=@m" + (clearEmbedding ? ", embedding=NULL" : "") + " WHERE id=@id",
+                            tx,
+                            ("@t", chunk.Text),
+                            ("@m", chunk.MetadataJson),
+                            ("@id", row.Id));
+                        if (clearEmbedding) updated++;
                     }
                 }
 
-                foreach (var kv in want)
+                foreach (var pair in want)
                 {
-                    if (present.Contains(kv.Key)) continue;
-                    Insert(conn, tx, kv.Value);
+                    if (present.Contains(pair.Key)) continue;
+                    Insert(conn, tx, pair.Value);
                     added++;
                 }
 
@@ -124,16 +110,14 @@ namespace RimTelligence.Memory
             using (var tx = conn.BeginTransaction())
             {
                 foreach (var chunk in chunks)
-                    using (var cmd = conn.CreateCommand())
-                    {
-                        cmd.Transaction = tx;
-                        cmd.CommandText = "UPDATE " + RagTables.For(chunk.Category) +
-                                          " SET embedding=@e WHERE category=@c AND def_name=@d";
-                        cmd.Parameters.AddWithValue("@e", RagBlob.ToBlob(chunk.Embedding));
-                        cmd.Parameters.AddWithValue("@c", chunk.Category);
-                        cmd.Parameters.AddWithValue("@d", chunk.DefName);
-                        cmd.ExecuteNonQuery();
-                    }
+                {
+                    SqlHelper.Exec(conn,
+                        "UPDATE " + RagTables.For(chunk.Category) + " SET embedding=@e WHERE category=@c AND def_name=@d",
+                        tx,
+                        ("@e", SqlHelper.Blob(chunk.Embedding)),
+                        ("@c", chunk.Category),
+                        ("@d", chunk.DefName));
+                }
                 tx.Commit();
             }
         }
@@ -142,27 +126,20 @@ namespace RimTelligence.Memory
         {
             using (var conn = OpenConnection())
                 foreach (var table in RagTables.All)
-                    using (var cmd = conn.CreateCommand())
-                    {
-                        cmd.CommandText = "DELETE FROM " + table;
-                        cmd.ExecuteNonQuery();
-                    }
+                    SqlHelper.Exec(conn, "DELETE FROM " + table);
         }
 
         private static void Insert(SqliteConnection conn, SqliteTransaction tx, StaticChunk chunk)
         {
-            using (var cmd = conn.CreateCommand())
-            {
-                cmd.Transaction = tx;
-                cmd.CommandText = "INSERT INTO " + RagTables.For(chunk.Category) +
-                    " (category, def_name, text, embedding, metadata) VALUES (@c,@d,@t,@e,@m)";
-                cmd.Parameters.AddWithValue("@c", chunk.Category);
-                cmd.Parameters.AddWithValue("@d", chunk.DefName);
-                cmd.Parameters.AddWithValue("@t", chunk.Text);
-                cmd.Parameters.AddWithValue("@e", chunk.Embedding != null ? (object)RagBlob.ToBlob(chunk.Embedding) : DBNull.Value);
-                cmd.Parameters.AddWithValue("@m", (object)chunk.MetadataJson ?? DBNull.Value);
-                cmd.ExecuteNonQuery();
-            }
+            SqlHelper.Exec(conn,
+                "INSERT INTO " + RagTables.For(chunk.Category) +
+                " (category, def_name, text, embedding, metadata) VALUES (@c,@d,@t,@e,@m)",
+                tx,
+                ("@c", chunk.Category),
+                ("@d", chunk.DefName),
+                ("@t", chunk.Text),
+                ("@e", SqlHelper.Blob(chunk.Embedding)),   // NULL until phase 2
+                ("@m", chunk.MetadataJson));
         }
 
         // ---------------------------------------------------------------- reads
@@ -172,11 +149,7 @@ namespace RimTelligence.Memory
             int total = 0;
             using (var conn = OpenConnection())
                 foreach (var table in RagTables.All)
-                    using (var cmd = conn.CreateCommand())
-                    {
-                        cmd.CommandText = "SELECT COUNT(*) FROM " + table;
-                        total += Convert.ToInt32(cmd.ExecuteScalar());
-                    }
+                    total += SqlHelper.Count(conn, "SELECT COUNT(*) FROM " + table);
             return total;
         }
 
@@ -188,97 +161,108 @@ namespace RimTelligence.Memory
         /// <summary>All rows without embeddings: used by the registry to rebuild its lists.</summary>
         public List<StaticChunk> ReadDefs()
         {
-            var list = new List<StaticChunk>();
-            using (var conn = OpenConnection())
-                foreach (var table in RagTables.All)
-                    using (var cmd = conn.CreateCommand())
-                    {
-                        cmd.CommandText = "SELECT category, def_name, text, metadata FROM " + table;
-                        using (var r = cmd.ExecuteReader())
-                            while (r.Read())
-                                list.Add(new StaticChunk
-                                {
-                                    Category = r.GetString(0),
-                                    DefName = r.GetString(1),
-                                    Text = r.GetString(2),
-                                    MetadataJson = r.IsDBNull(3) ? null : r.GetString(3)
-                                });
-                    }
-            return list;
+            return ReadAcrossTables("SELECT category, def_name, text, metadata FROM {0}",
+                r => new StaticChunk
+                {
+                    Category = r.GetString(0),
+                    DefName = r.GetString(1),
+                    Text = r.GetString(2),
+                    MetadataJson = SqlHelper.NullableString(r, 3)
+                });
         }
 
         /// <summary>Rows still waiting for an embedding.</summary>
         public List<StaticChunk> GetPendingEmbeddings()
         {
-            var list = new List<StaticChunk>();
-            using (var conn = OpenConnection())
-                foreach (var table in RagTables.All)
-                    using (var cmd = conn.CreateCommand())
-                    {
-                        cmd.CommandText = "SELECT category, def_name, text FROM " + table + " WHERE embedding IS NULL";
-                        using (var r = cmd.ExecuteReader())
-                            while (r.Read())
-                                list.Add(new StaticChunk
-                                {
-                                    Category = r.GetString(0),
-                                    DefName = r.GetString(1),
-                                    Text = r.GetString(2)
-                                });
-                    }
-            return list;
+            return ReadAcrossTables("SELECT category, def_name, text FROM {0} WHERE embedding IS NULL",
+                r => new StaticChunk
+                {
+                    Category = r.GetString(0),
+                    DefName = r.GetString(1),
+                    Text = r.GetString(2)
+                });
         }
 
         /// <summary>
         /// Similarity search over rows that have an embedding. Searches both tables by default;
         /// pass table = RagTables.Items or RagTables.Others to scope it.
+        /// When defNames is provided, only rows whose def_name is contained in the collection are scored.
         /// </summary>
         public List<RagResult> Query(float[] queryEmbedding, int topK = 5,
-                                     string categoryFilter = null, string table = null)
+                                     string categoryFilter = null, string table = null,
+                                     ICollection<string> defNames = null)
         {
-            string[] tables = table != null ? new[] { table } : RagTables.All;
-            var results = new List<RagResult>();
+            string[] tables = ResolveTables(table);
+            var board = new TopKBoard(topK);
+
+            HashSet<string> defNameSet = defNames != null && defNames.Count > 0
+                ? new HashSet<string>(defNames, StringComparer.Ordinal)
+                : null;
+
+            Func<SqliteDataReader, bool> filter = defNameSet != null
+                ? r => !r.IsDBNull(3) && defNameSet.Contains(r.GetString(3))
+                : (Func<SqliteDataReader, bool>)null;
 
             using (var conn = OpenConnection())
                 foreach (var t in tables)
-                    using (var cmd = conn.CreateCommand())
-                    {
-                        cmd.CommandText = "SELECT text, category, def_name, metadata, embedding FROM " + t +
-                                          " WHERE embedding IS NOT NULL" +
-                                          (categoryFilter == null ? "" : " AND category = @c");
-                        if (categoryFilter != null) cmd.Parameters.AddWithValue("@c", categoryFilter);
+                {
+                    string sql = "SELECT embedding, text, category, def_name, metadata FROM " + t +
+                                 " WHERE embedding IS NOT NULL" +
+                                 (categoryFilter == null ? "" : " AND category = @c");
 
-                        using (var reader = cmd.ExecuteReader())
-                            while (reader.Read())
-                            {
-                                byte[] blob = (byte[])reader["embedding"];
-                                results.Add(new RagResult
-                                {
-                                    Text = reader.GetString(0),
-                                    Source = reader.GetString(1),
-                                    DefName = reader.GetString(2),
-                                    Metadata = reader.IsDBNull(3) ? null : reader.GetString(3),
-                                    Score = RagBlob.CosineSim(queryEmbedding, RagBlob.FromBlob(blob))
-                                });
-                            }
-                    }
+                    if (categoryFilter == null)
+                        ScanSimilarFiltered(conn, sql, queryEmbedding, board, MapResult, filter);
+                    else
+                        ScanSimilarFiltered(conn, sql, queryEmbedding, board, MapResult, filter, ("@c", categoryFilter));
+                }
 
-            return results.OrderByDescending(r => r.Score).Take(topK).ToList();
+            return board.ToList();
+        }
+
+        /// <summary>Maps (embedding, text, category, def_name, metadata) rows to results.</summary>
+        internal static RagResult MapResult(SqliteDataReader r)
+        {
+            return new RagResult
+            {
+                Text = r.GetString(1),
+                Source = r.GetString(2),
+                DefName = r.GetString(3),
+                Metadata = SqlHelper.NullableString(r, 4)
+            };
+        }
+
+        private static string[] ResolveTables(string table)
+        {
+            if (table == null) return RagTables.All;
+            if (Array.IndexOf(RagTables.All, table) < 0)
+                throw new ArgumentException("Unknown RAG table: " + table, nameof(table));
+            return new[] { table };
+        }
+
+        private List<T> ReadAcrossTables<T>(string sqlFormat, Func<SqliteDataReader, T> map)
+        {
+            var list = new List<T>();
+            using (var conn = OpenConnection())
+                foreach (var table in RagTables.All)
+                    list.AddRange(SqlHelper.Read(conn, string.Format(sqlFormat, table), map));
+            return list;
         }
 
         // ---------------------------------------------------------------- embedding source
         // Stored in SQLite's built-in PRAGMA user_version (0 = unknown, 1 = BuiltIn, 2 = Provider),
         // so no extra table is needed.
 
+        private const int SourceBuiltIn = 1;
+        private const int SourceProvider = 2;
+
         public string GetEmbeddingSource()
         {
             using (var conn = OpenConnection())
-            using (var cmd = conn.CreateCommand())
             {
-                cmd.CommandText = "PRAGMA user_version";
-                switch (Convert.ToInt32(cmd.ExecuteScalar()))
+                switch (SqlHelper.Count(conn, "PRAGMA user_version"))
                 {
-                    case 1: return "BuiltIn";
-                    case 2: return "Provider";
+                    case SourceBuiltIn: return "BuiltIn";
+                    case SourceProvider: return "Provider";
                     default: return null;
                 }
             }
@@ -286,13 +270,9 @@ namespace RimTelligence.Memory
 
         public void SetEmbeddingSource(string source)
         {
-            int version = source == "Provider" ? 2 : 1;
+            int version = source == "Provider" ? SourceProvider : SourceBuiltIn;
             using (var conn = OpenConnection())
-            using (var cmd = conn.CreateCommand())
-            {
-                cmd.CommandText = "PRAGMA user_version = " + version;
-                cmd.ExecuteNonQuery();
-            }
+                SqlHelper.Exec(conn, "PRAGMA user_version = " + version);
         }
     }
 }

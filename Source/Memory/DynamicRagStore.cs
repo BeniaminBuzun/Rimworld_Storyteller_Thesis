@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace RimTelligence.Memory
 {
+    /// <summary>Save-scoped store for runtime memories (events, pawn history, ...).</summary>
     public class DynamicRagStore : RagStoreBase
     {
         private readonly string saveId;
@@ -17,59 +17,61 @@ namespace RimTelligence.Memory
 
         public void AddChunk(string category, int gameTick, string pawnName, string text, float[] embedding, string metadataJson = null)
         {
+            if (embedding == null)
+                throw new ArgumentNullException(nameof(embedding));
+
             using (var conn = OpenConnection())
             {
-                var cmd = conn.CreateCommand();
-                cmd.CommandText = "INSERT INTO dynamic_chunks (category, game_tick, pawn_name, text, embedding, metadata, save_id) VALUES (@c,@g,@p,@t,@e,@m,@s)";
-                cmd.Parameters.AddWithValue("@c", category);
-                cmd.Parameters.AddWithValue("@g", gameTick);
-                cmd.Parameters.AddWithValue("@p", (object)pawnName ?? DBNull.Value);
-                cmd.Parameters.AddWithValue("@t", text);
-                cmd.Parameters.AddWithValue("@e", RagBlob.ToBlob(embedding));
-                cmd.Parameters.AddWithValue("@m", (object)metadataJson ?? DBNull.Value);
-                cmd.Parameters.AddWithValue("@s", saveId);
-                cmd.ExecuteNonQuery();
+                SqlHelper.Exec(conn,
+                    "INSERT INTO dynamic_chunks (category, game_tick, pawn_name, text, embedding, metadata, save_id) " +
+                    "VALUES (@c,@g,@p,@t,@e,@m,@s)",
+                    null,
+                    ("@c", category),
+                    ("@g", gameTick),
+                    ("@p", pawnName),
+                    ("@t", text),
+                    ("@e", SqlHelper.Blob(embedding)),
+                    ("@m", metadataJson),
+                    ("@s", saveId));
             }
         }
 
         public List<RagResult> Query(float[] queryEmbedding, int topK = 5, string categoryFilter = null, string pawnFilter = null)
         {
-            var results = new List<RagResult>();
+            var sql = "SELECT embedding, text, category FROM dynamic_chunks WHERE save_id = @s";
+            var parameters = new List<(string Name, object Value)> { ("@s", saveId) };
+
+            if (categoryFilter != null)
+            {
+                sql += " AND category = @c";
+                parameters.Add(("@c", categoryFilter));
+            }
+            if (pawnFilter != null)
+            {
+                sql += " AND pawn_name = @p";
+                parameters.Add(("@p", pawnFilter));
+            }
+
+            var board = new TopKBoard(topK);
             using (var conn = OpenConnection())
             {
-                var cmd = conn.CreateCommand();
-                var where = new List<string> { "save_id = @s" };
-                if (categoryFilter != null) where.Add("category = @c");
-                if (pawnFilter != null) where.Add("pawn_name = @p");
-                string whereClause = " WHERE " + string.Join(" AND ", where);
-                cmd.CommandText = "SELECT text, category, embedding FROM dynamic_chunks" + whereClause;
-                cmd.Parameters.AddWithValue("@s", saveId);
-                if (categoryFilter != null) cmd.Parameters.AddWithValue("@c", categoryFilter);
-                if (pawnFilter != null) cmd.Parameters.AddWithValue("@p", pawnFilter);
-
-                using (var reader = cmd.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
-                        byte[] blob = (byte[])reader["embedding"];
-                        float score = RagBlob.CosineSim(queryEmbedding, RagBlob.FromBlob(blob));
-                        results.Add(new RagResult { Text = reader.GetString(0), Source = reader.GetString(1), Score = score });
-                    }
-                }
+                ScanSimilar(conn, sql, queryEmbedding, board,
+                    reader => new RagResult { Text = reader.GetString(1), Source = reader.GetString(2) },
+                    parameters.ToArray());
             }
-            return results.OrderByDescending(result => result.Score).Take(topK).ToList();
+            return board.ToList();
         }
 
-        // Optional: prune old memories so the table doesn't grow forever
+        /// <summary>Prunes old memories of this save so the table doesn't grow forever.</summary>
         public void PruneOlderThan(int minGameTick)
         {
             using (var conn = OpenConnection())
             {
-                var cmd = conn.CreateCommand();
-                cmd.CommandText = "DELETE FROM dynamic_chunks WHERE save_id = @s AND game_tick < @t";
-                cmd.Parameters.AddWithValue("@s", saveId);
-                cmd.Parameters.AddWithValue("@t", minGameTick);
-                cmd.ExecuteNonQuery();
+                SqlHelper.Exec(conn,
+                    "DELETE FROM dynamic_chunks WHERE save_id = @s AND game_tick < @t",
+                    null,
+                    ("@s", saveId),
+                    ("@t", minGameTick));
             }
         }
     }

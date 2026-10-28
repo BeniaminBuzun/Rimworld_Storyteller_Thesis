@@ -1,4 +1,4 @@
-using RimTelligence.CustomEvents.EventSelector;
+﻿using RimTelligence.CustomEvents.EventSelector;
 using RimTelligence.CustomEvents.Execution;
 using RimTelligence.CustomEvents.Handlers;
 using RimTelligence.CustomEvents.Prompting;
@@ -27,21 +27,24 @@ namespace RimTelligence.CustomEvents.Workers
             }
 
             ModLogger.Message("ProceduralEvent triggered, capturing snapshot...");
-
             ColonySnapshot snapshot = ColonySnapshotCapturer.Capture(map);
-            string prompt = BuildPrompt(snapshot, out List<IEffect> chosenEvents);
-            object schema = EventJsonSchemaBuilder.Build(chosenEvents, snapshot);
 
-            _ = RunEventAsync(prompt, schema, chosenEvents, map, snapshot);   // pass it
+            // Execute completely off the main thread so the RimWorld game loop never stutters.
+            Task.Run(() => RunEventAsync(snapshot, map));
             return true;
         }
 
 
-        private async Task RunEventAsync(
-            string prompt, object schema, List<IEffect> chosenEvents, Map map, ColonySnapshot snapshot)
+        private async Task RunEventAsync(ColonySnapshot snapshot, Map map)
         {
             try
             {
+                // Select events and build prompt asynchronously: embedding & RAG run without blocking game loop.
+                List<IEffect> chosenEvents = HeuristicEventSelector.Select(snapshot);
+                string prompt = await ProperPromptGenerator.BuildSystemPromptAsync(chosenEvents, snapshot);
+                object schema = EventJsonSchemaBuilder.Build(chosenEvents, snapshot);
+                ModLogger.Message($"Prompt: {prompt}");
+
                 LlmCustomEvent finalEvent = await RequestEventAsync(
                     prompt, chosenEvents, jsonSchema: schema, snapshot: snapshot);
                 if (finalEvent != null)

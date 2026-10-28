@@ -7,7 +7,9 @@ namespace RimTelligence.Memory
     {
         public static void EnsureSchema(SqliteConnection conn)
         {
-            Exec(conn, @"
+            // save_id is part of the base schema; databases created before save scoping
+            // get it added by MigrateDynamicChunksForSaveScoping below.
+            SqlHelper.Exec(conn, @"
                 CREATE TABLE IF NOT EXISTS dynamic_chunks (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     category TEXT NOT NULL,
@@ -15,12 +17,13 @@ namespace RimTelligence.Memory
                     pawn_name TEXT,
                     text TEXT NOT NULL,
                     embedding BLOB NOT NULL,
-                    metadata TEXT
+                    metadata TEXT,
+                    save_id TEXT
                 );");
-            Exec(conn, "CREATE INDEX IF NOT EXISTS idx_dynamic_category ON dynamic_chunks(category);");
-            Exec(conn, "CREATE INDEX IF NOT EXISTS idx_dynamic_tick ON dynamic_chunks(game_tick);");
+            SqlHelper.Exec(conn, "CREATE INDEX IF NOT EXISTS idx_dynamic_category ON dynamic_chunks(category);");
+            SqlHelper.Exec(conn, "CREATE INDEX IF NOT EXISTS idx_dynamic_tick ON dynamic_chunks(game_tick);");
 
-            Exec(conn, @"
+            SqlHelper.Exec(conn, @"
                 CREATE TABLE IF NOT EXISTS save_registry (
                     save_id TEXT PRIMARY KEY,
                     last_seen TEXT NOT NULL
@@ -35,11 +38,12 @@ namespace RimTelligence.Memory
             {
                 if (!HasColumn(conn, "dynamic_chunks", "save_id"))
                 {
-                    Exec(conn, "ALTER TABLE dynamic_chunks ADD COLUMN save_id TEXT;");
-                    Exec(conn, "DELETE FROM dynamic_chunks WHERE save_id IS NULL;");
+                    SqlHelper.Exec(conn, "ALTER TABLE dynamic_chunks ADD COLUMN save_id TEXT;");
+                    // Pre-scoping rows can't be attributed to any save.
+                    SqlHelper.Exec(conn, "DELETE FROM dynamic_chunks WHERE save_id IS NULL;");
                 }
 
-                Exec(conn, "CREATE INDEX IF NOT EXISTS idx_dynamic_save ON dynamic_chunks(save_id);");
+                SqlHelper.Exec(conn, "CREATE INDEX IF NOT EXISTS idx_dynamic_save ON dynamic_chunks(save_id);");
             }
             catch (Exception ex)
             {
@@ -49,24 +53,8 @@ namespace RimTelligence.Memory
 
         private static bool HasColumn(SqliteConnection conn, string tableName, string columnName)
         {
-            var cmd = conn.CreateCommand();
-            cmd.CommandText = "PRAGMA table_info(" + tableName + ");";
-            using (var reader = cmd.ExecuteReader())
-            {
-                while (reader.Read())
-                {
-                    if (string.Equals(reader.GetString(1), columnName, StringComparison.OrdinalIgnoreCase))
-                        return true;
-                }
-            }
-            return false;
-        }
-
-        private static void Exec(SqliteConnection conn, string sql)
-        {
-            var cmd = conn.CreateCommand();
-            cmd.CommandText = sql;
-            cmd.ExecuteNonQuery();
+            var columns = SqlHelper.Read(conn, "PRAGMA table_info(" + tableName + ");", r => r.GetString(1));
+            return columns.Exists(name => string.Equals(name, columnName, StringComparison.OrdinalIgnoreCase));
         }
     }
 }

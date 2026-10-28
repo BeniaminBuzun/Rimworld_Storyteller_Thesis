@@ -1,11 +1,13 @@
-using RimTelligence.DataSnapshots;
 using Microsoft.Data.Sqlite;
+using RimTelligence.DataSnapshots;
 using System.Linq;
 
 namespace RimTelligence.Memory
 {
     public static class RagTableMigration
     {
+        private const string LegacyTable = "static_chunks";
+
         /// <summary>
         /// Creates the items/others tables and migrates the legacy static_chunks table.
         /// If legacy rows use category ids that no longer exist (old naming), they are
@@ -13,19 +15,19 @@ namespace RimTelligence.Memory
         /// </summary>
         public static void EnsureSplitTables(SqliteConnection conn)
         {
-            foreach (var t in RagTables.All)
+            foreach (var table in RagTables.All)
             {
-                Exec(conn, "CREATE TABLE IF NOT EXISTS " + t + @" (
+                SqlHelper.Exec(conn, "CREATE TABLE IF NOT EXISTS " + table + @" (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
                         category TEXT NOT NULL,
                         def_name TEXT NOT NULL,
                         text TEXT NOT NULL,
                         embedding BLOB,
                         metadata TEXT)");
-                Exec(conn, "CREATE INDEX IF NOT EXISTS idx_" + t + "_category ON " + t + "(category)");
+                SqlHelper.Exec(conn, "CREATE INDEX IF NOT EXISTS idx_" + table + "_category ON " + table + "(category)");
             }
 
-            if (!TableExists(conn, "static_chunks")) return;
+            if (!TableExists(conn, LegacyTable)) return;
 
             // Touching IsLoaded forces the registry to load item-categories.json (fills RagTables).
             // If loading failed, keep the legacy table and retry on the next start.
@@ -37,10 +39,12 @@ namespace RimTelligence.Memory
 
             using (var tx = conn.BeginTransaction())
             {
-                if (CountWhere(conn, "category NOT IN (" + Marks(knownIds) + ")", knownIds) == 0)
+                int unknownRows = CountLegacy(conn, tx, "category NOT IN (" + Placeholders(knownIds) + ")", knownIds);
+                if (unknownRows == 0)
                 {
-                    Move(conn, RagTables.Items, "category IN (" + Marks(itemIds) + ")", itemIds);
-                    Move(conn, RagTables.Others, "category NOT IN (" + Marks(itemIds) + ")", itemIds);
+                    string inItems = Placeholders(itemIds);
+                    MoveLegacy(conn, tx, RagTables.Items, "category IN (" + inItems + ")", itemIds);
+                    MoveLegacy(conn, tx, RagTables.Others, "category NOT IN (" + inItems + ")", itemIds);
                     ModLogger.Message("Migrated static_chunks into items/others tables.");
                 }
                 else
@@ -48,52 +52,37 @@ namespace RimTelligence.Memory
                     ModLogger.Message("Legacy static_chunks uses outdated category ids; discarding so the store is repopulated.");
                 }
 
-                Exec(conn, "DROP TABLE static_chunks");
+                SqlHelper.Exec(conn, "DROP TABLE " + LegacyTable, tx);
                 tx.Commit();
             }
         }
 
-        private static string Marks(string[] ids) =>
-            string.Join(",", ids.Select((_, i) => "@p" + i));
-
-        private static void Move(SqliteConnection conn, string target, string where, string[] ids)
+        private static string Placeholders(string[] ids)
         {
-            using (var cmd = conn.CreateCommand())
-            {
-                cmd.CommandText = "INSERT INTO " + target + " (category, def_name, text, embedding, metadata) " +
-                                  "SELECT category, def_name, text, embedding, metadata FROM static_chunks WHERE " + where;
-                for (int i = 0; i < ids.Length; i++) cmd.Parameters.AddWithValue("@p" + i, ids[i]);
-                cmd.ExecuteNonQuery();
-            }
+            return string.Join(",", ids.Select((_, i) => "@p" + i));
         }
 
-        private static int CountWhere(SqliteConnection conn, string where, string[] ids)
+        private static (string Name, object Value)[] Params(string[] ids)
         {
-            using (var cmd = conn.CreateCommand())
-            {
-                cmd.CommandText = "SELECT COUNT(*) FROM static_chunks WHERE " + where;
-                for (int i = 0; i < ids.Length; i++) cmd.Parameters.AddWithValue("@p" + i, ids[i]);
-                return System.Convert.ToInt32(cmd.ExecuteScalar());
-            }
+            return ids.Select((id, i) => ("@p" + i, (object)id)).ToArray();
+        }
+
+        private static void MoveLegacy(SqliteConnection conn, SqliteTransaction tx, string target, string where, string[] ids)
+        {
+            SqlHelper.Exec(conn,
+                "INSERT INTO " + target + " (category, def_name, text, embedding, metadata) " +
+                "SELECT category, def_name, text, embedding, metadata FROM " + LegacyTable + " WHERE " + where,
+                tx, Params(ids));
+        }
+
+        private static int CountLegacy(SqliteConnection conn, SqliteTransaction tx, string where, string[] ids)
+        {
+            return SqlHelper.Count(conn, "SELECT COUNT(*) FROM " + LegacyTable + " WHERE " + where, tx, Params(ids));
         }
 
         private static bool TableExists(SqliteConnection conn, string name)
         {
-            using (var cmd = conn.CreateCommand())
-            {
-                cmd.CommandText = "SELECT 1 FROM sqlite_master WHERE type='table' AND name=@n";
-                cmd.Parameters.AddWithValue("@n", name);
-                return cmd.ExecuteScalar() != null;
-            }
-        }
-
-        private static void Exec(SqliteConnection conn, string sql)
-        {
-            using (var cmd = conn.CreateCommand())
-            {
-                cmd.CommandText = sql;
-                cmd.ExecuteNonQuery();
-            }
+            return SqlHelper.Scalar(conn, "SELECT 1 FROM sqlite_master WHERE type='table' AND name=@n", null, ("@n", name)) != null;
         }
     }
 }

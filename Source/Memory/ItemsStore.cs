@@ -1,9 +1,11 @@
-﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace RimTelligence.Memory
 {
+    /// <summary>
+    /// Legacy items-only store. StaticRagStore covers the same table
+    /// (Query(..., table: RagTables.Items)), so this can be deleted once nothing references it.
+    /// </summary>
     public class ItemsStore : RagStoreBase
     {
         public ItemsStore(string dbPath) : base(dbPath) { }
@@ -12,25 +14,21 @@ namespace RimTelligence.Memory
         {
             using (var conn = OpenConnection())
             {
-                var cmd = conn.CreateCommand();
-                cmd.CommandText = "INSERT INTO items (category, def_name, text, embedding, metadata) VALUES (@c,@d,@t,@e,@m)";
-                cmd.Parameters.AddWithValue("@c", category);
-                cmd.Parameters.AddWithValue("@d", defName);
-                cmd.Parameters.AddWithValue("@t", text);
-                cmd.Parameters.AddWithValue("@e", RagBlob.ToBlob(embedding));
-                cmd.Parameters.AddWithValue("@m", (object)metadataJson ?? DBNull.Value);
-                cmd.ExecuteNonQuery();
+                SqlHelper.Exec(conn,
+                    "INSERT INTO " + RagTables.Items + " (category, def_name, text, embedding, metadata) VALUES (@c,@d,@t,@e,@m)",
+                    null,
+                    ("@c", category),
+                    ("@d", defName),
+                    ("@t", text),
+                    ("@e", SqlHelper.Blob(embedding)),
+                    ("@m", metadataJson));
             }
         }
 
         public int Count()
         {
             using (var conn = OpenConnection())
-            {
-                var cmd = conn.CreateCommand();
-                cmd.CommandText = "SELECT COUNT(*) FROM items";
-                return System.Convert.ToInt32(cmd.ExecuteScalar());
-            }
+                return SqlHelper.Count(conn, "SELECT COUNT(*) FROM " + RagTables.Items);
         }
 
         public bool IsEmpty()
@@ -40,33 +38,19 @@ namespace RimTelligence.Memory
 
         public List<RagResult> Query(float[] queryEmbedding, int topK = 5, string categoryFilter = null)
         {
-            var results = new List<RagResult>();
+            var sql = "SELECT embedding, text, category, def_name, metadata FROM " + RagTables.Items +
+                      " WHERE embedding IS NOT NULL";
+            if (categoryFilter != null) sql += " AND category = @c";
+
+            var board = new TopKBoard(topK);
             using (var conn = OpenConnection())
             {
-                var cmd = conn.CreateCommand();
-                cmd.CommandText = categoryFilter == null
-                        ? "SELECT text, category, def_name, metadata, embedding FROM items"
-                        : "SELECT text, category, def_name, metadata, embedding FROM items WHERE category = @c";
-                if (categoryFilter != null) cmd.Parameters.AddWithValue("@c", categoryFilter);
-
-                using (var reader = cmd.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
-                        byte[] blob = (byte[])reader["embedding"];
-                        float score = RagBlob.CosineSim(queryEmbedding, RagBlob.FromBlob(blob));
-                        results.Add(new RagResult
-                        {
-                            Text = reader.GetString(0),
-                            Source = reader.GetString(1),
-                            DefName = reader.GetString(2),
-                            Metadata = reader.IsDBNull(3) ? null : reader.GetString(3),
-                            Score = score
-                        });
-                    }
-                }
+                if (categoryFilter != null)
+                    ScanSimilar(conn, sql, queryEmbedding, board, StaticRagStore.MapResult, ("@c", categoryFilter));
+                else
+                    ScanSimilar(conn, sql, queryEmbedding, board, StaticRagStore.MapResult);
             }
-            return results.OrderByDescending(result => result.Score).Take(topK).ToList();
+            return board.ToList();
         }
     }
 }
