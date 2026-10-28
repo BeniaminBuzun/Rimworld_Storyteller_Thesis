@@ -105,7 +105,7 @@ namespace RimTelligence.CustomEvents.Workers
            bool announceFailure = true,
            Action<LlmConnectionResult> onResponse = null,
            object jsonSchema = null,
-           ColonySnapshot snapshot= null)
+           ColonySnapshot snapshot = null)
         {
             LLMCommunicationHandler communication = new LLMCommunicationHandler();
 

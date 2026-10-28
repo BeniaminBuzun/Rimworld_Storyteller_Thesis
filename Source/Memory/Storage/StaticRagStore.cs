@@ -1,6 +1,8 @@
+using Microsoft.Data.Sqlite;
+using RimTelligence.Source.Memory.Search;
+using RimTelligence.Source.Memory.Storage;
 using System;
 using System.Collections.Generic;
-using Microsoft.Data.Sqlite;
 
 namespace RimTelligence.Memory
 {

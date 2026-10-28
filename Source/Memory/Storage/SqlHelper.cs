@@ -1,8 +1,9 @@
+using Microsoft.Data.Sqlite;
+using RimTelligence.Source.Memory.Search;
 using System;
 using System.Collections.Generic;
-using Microsoft.Data.Sqlite;
 
-namespace RimTelligence.Memory
+namespace RimTelligence.Source.Memory.Storage
 {
     /// <summary>
     /// Small ADO.NET helpers so stores and migrations don't repeat command boilerplate.

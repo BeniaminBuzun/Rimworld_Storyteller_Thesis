@@ -1,6 +1,6 @@
 using System;
 
-namespace RimTelligence.Memory
+namespace RimTelligence.Source.Memory.Search
 {
     /// <summary>Embedding (de)serialization and similarity helpers shared by all stores.</summary>
     public static class RagBlob
@@ -39,13 +39,6 @@ namespace RimTelligence.Memory
 
             score = dot / ((float)Math.Sqrt(magA) * (float)Math.Sqrt(magB) + 1e-8f);
             return true;
-        }
-
-        /// <summary>Cosine similarity; 0 when the vectors are not comparable.</summary>
-        public static float CosineSim(float[] vectorA, float[] vectorB)
-        {
-            float score;
-            return TryCosineSim(vectorA, vectorB, out score) ? score : 0f;
         }
     }
 }

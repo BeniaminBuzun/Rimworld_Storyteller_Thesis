@@ -1,4 +1,6 @@
 using Microsoft.Data.Sqlite;
+using RimTelligence.Source.Memory.Storage;
+using System;
 using System.IO;
 using Verse;
 
@@ -20,8 +22,7 @@ namespace RimTelligence.Memory
             using (var conn = new SqliteConnection("Data Source=" + DbPath))
             {
                 conn.Open();
-                RagMigration.EnsureSchema(conn);
-                RagTableMigration.EnsureSplitTables(conn);
+                RagSchema.Ensure(conn);
             }
 
             ModLogger.Message("SQLite RAG store ready at " + DbPath);

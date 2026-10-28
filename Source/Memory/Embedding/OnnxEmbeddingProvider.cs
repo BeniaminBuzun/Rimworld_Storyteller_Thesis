@@ -5,7 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace RimTelligence.Memory
+namespace RimTelligence.Source.Memory.Embedding
 {
     public class OnnxEmbeddingProvider : IEmbeddingProvider, IDisposable
     {
@@ -17,8 +17,8 @@ namespace RimTelligence.Memory
         {
             OnnxBootstrap.Init(ModPaths.Root);
 
-            string modelPath = ModPaths.Resolve(Path.Combine("Source", "Memory", "Models", "model.onnx"));
-            string vocabPath = ModPaths.Resolve(Path.Combine("Source", "Memory", "Models", "vocab.txt"));
+            string modelPath = ModPaths.Resolve(Path.Combine("Source", "Memory", "Embedding", "Models", "model.onnx"));
+            string vocabPath = ModPaths.Resolve(Path.Combine("Source", "Memory", "Embedding", "Models", "vocab.txt"));
 
             if (!File.Exists(modelPath)) throw new FileNotFoundException("ONNX model not found", modelPath);
             if (!File.Exists(vocabPath)) throw new FileNotFoundException("vocab.txt not found", vocabPath);

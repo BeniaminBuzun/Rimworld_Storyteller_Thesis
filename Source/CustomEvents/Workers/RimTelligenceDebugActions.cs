@@ -5,12 +5,14 @@ using RimTelligence.CustomEvents.Prompting;
 using RimTelligence.DataSnapshots;
 using RimTelligence.Memory;
 using RimTelligence.Source.CustomEvents.Handlers;
+using RimTelligence.Source.Memory.Search;
 using RimWorld;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using Verse;
+using RimTelligence.Source.Memory.Storage;
 
 namespace RimTelligence.CustomEvents.Workers
 {

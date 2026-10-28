@@ -2,9 +2,10 @@
 using RimTelligence.CustomEvents.Handlers;
 using RimTelligence.DataSnapshots;
 using RimTelligence.Memory;
+using RimTelligence.Source.Memory.Embedding;
+using RimTelligence.Source.Memory.Search;
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;

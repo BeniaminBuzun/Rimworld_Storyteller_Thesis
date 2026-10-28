@@ -2,6 +2,7 @@ using HarmonyLib;
 using LlmTornado.Code;
 using RimTelligence.DataSnapshots;
 using RimTelligence.Llm;
+using RimTelligence.Source.Memory.Embedding;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -21,8 +22,8 @@ namespace RimTelligence.AIStoryteller
             ModPaths.Initialize(content.RootDir);
             SqliteBootstrap.Log = ModLogger.Message;
             SqliteBootstrap.Init(content.RootDir);
-            RimTelligence.Memory.OnnxBootstrap.Log = ModLogger.Message;
-            RimTelligence.Memory.OnnxBootstrap.Init(content.RootDir);
+            OnnxBootstrap.Log = ModLogger.Message;
+            OnnxBootstrap.Init(content.RootDir);
             Settings = GetSettings<Settings>();
 
             harmony = new Harmony("com.rimtelligence.aistoryteller");
@@ -209,7 +210,7 @@ namespace RimTelligence.AIStoryteller
                 listing.Gap(4f);
                 DrawModelField(listing, config, ProviderCatalog.ResolveProvider(config.providerId), true);
 
-                string warning = Memory.LlmEmbeddingProvider.ValidateConfig(Settings);
+                string warning = LlmEmbeddingProvider.ValidateConfig(Settings);
                 if (warning != null)
                 {
                     listing.Gap(4f);

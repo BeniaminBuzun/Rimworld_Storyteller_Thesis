@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace RimTelligence.Memory
+namespace RimTelligence.Source.Memory.Search
 {
     /// <summary>
     /// Keeps only the K best-scoring results while scanning, so a query never has to

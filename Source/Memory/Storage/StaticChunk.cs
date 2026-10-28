@@ -1,4 +1,4 @@
-namespace RimTelligence.Memory
+namespace RimTelligence.Source.Memory.Storage
 {
     public class StaticChunk
     {

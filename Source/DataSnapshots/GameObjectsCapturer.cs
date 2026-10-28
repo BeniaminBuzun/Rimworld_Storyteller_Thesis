@@ -1,6 +1,8 @@
 ﻿using RimTelligence.AIStoryteller;
 using RimTelligence.CustomEvents.Execution;
 using RimTelligence.Memory;
+using RimTelligence.Source.Memory.Embedding;
+using RimTelligence.Source.Memory.Storage;
 using RimWorld;
 using System;
 using System.Collections.Generic;

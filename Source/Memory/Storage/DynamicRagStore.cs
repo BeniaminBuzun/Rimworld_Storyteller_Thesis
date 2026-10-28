@@ -1,7 +1,8 @@
+using RimTelligence.Source.Memory.Search;
 using System;
 using System.Collections.Generic;
 
-namespace RimTelligence.Memory
+namespace RimTelligence.Source.Memory.Storage
 {
     /// <summary>Save-scoped store for runtime memories (events, pawn history, ...).</summary>
     public class DynamicRagStore : RagStoreBase

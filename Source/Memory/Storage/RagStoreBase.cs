@@ -1,7 +1,8 @@
-using System;
 using Microsoft.Data.Sqlite;
+using RimTelligence.Source.Memory.Search;
+using System;
 
-namespace RimTelligence.Memory
+namespace RimTelligence.Source.Memory.Storage
 {
     public abstract class RagStoreBase
     {
