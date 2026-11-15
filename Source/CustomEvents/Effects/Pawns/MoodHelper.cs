@@ -89,7 +89,9 @@ namespace RimTelligence.CustomEvents.Handlers.Pawns.Debuffs
                 case SeverityTypes.Medium: return _random.Next(4, 7);
                 case SeverityTypes.High: return _random.Next(7, 12);
                 case SeverityTypes.Extreme: return _random.Next(15, 21);
-                default: return 0;
+                default:
+                    ModLogger.Warning($"[MoodHelper] CalculateMoodOffset called with invalid or None severity ({severity}); defaulting to Medium offset.");
+                    return _random.Next(4, 7);
             }
         }
     }

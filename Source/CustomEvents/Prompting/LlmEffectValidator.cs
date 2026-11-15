@@ -9,9 +9,7 @@ namespace RimTelligence.CustomEvents.Prompting
 {
     public static class LlmEffectValidator
     {
-        public static List<GameEffect> StripInvalid(
-    List<GameEffect> effects,
-    IEnumerable<IEffect> chosenEvents = null)
+        public static List<GameEffect> StripInvalid(List<GameEffect> effects, IEnumerable<IEffect> chosenEvents = null, ColonySnapshot snapshot = null)
         {
             List<GameEffect> valid = new List<GameEffect>();
             if (effects == null) return valid;
@@ -25,7 +23,13 @@ namespace RimTelligence.CustomEvents.Prompting
 
             foreach (GameEffect effect in effects)
             {
-                string reason = GetRejectionReason(effect, allowedCounts);
+                IEffect cue = chosenEvents == null
+                    ? null
+                    : chosenEvents.FirstOrDefault(
+                        e => e != null && e.Config != null &&
+                        string.Equals(e.Config.EffectName, effect.EffectName, StringComparison.OrdinalIgnoreCase));
+
+                string reason = GetRejectionReason(effect, allowedCounts, cue, snapshot);
                 if (reason != null)
                 {
                     ModLogger.Warning($"[Validator] Dropping effect type='{effect.EffectName}' defName='{effect.DefNameText}': {reason}");
@@ -36,13 +40,13 @@ namespace RimTelligence.CustomEvents.Prompting
             return valid;
         }
 
-        private static string GetRejectionReason(GameEffect effect, Dictionary<string, int> allowedCounts)
+        private static string GetRejectionReason(GameEffect effect, Dictionary<string, int> allowedCounts, IEffect cue, ColonySnapshot snapshot)
         {
             if (effect == null) return "effect is null";
             if (string.IsNullOrWhiteSpace(effect.EffectName)) return "type is blank";
 
-            IEffect handler = EffectFactory.Create(effect.EffectName);
-            if (handler == null)
+            IEffect fullEffect = EffectFactory.Create(effect.EffectName);
+            if (fullEffect == null)
                 return $"unknown effect type '{effect.EffectName}'";
 
             if (allowedCounts != null)
@@ -52,31 +56,33 @@ namespace RimTelligence.CustomEvents.Prompting
                 allowedCounts[effect.EffectName] = remaining - 1;
             }
 
-            if (handler.Config.IsDefRequired)
+            if (fullEffect.Config.IsDefRequired)
             {
                 if (effect.SelectedDefName == null || effect.SelectedDefName.Length == 0 ||
                     string.IsNullOrWhiteSpace(effect.SelectedDefName[0]))
                     return $"type '{effect.EffectName}' requires a defName but got empty string";
 
-                var contract = EffectContractProvider.GetContract(handler, null);
+                // Use the chosen effect when available so item-based effects validate
+                // against the drawn category the prompt and schema used.
+                var contract = EffectContractProvider.GetContract(cue ?? fullEffect, snapshot);
 
-                if (handler.Config.DefCount > 1 && effect.SelectedDefName.Length < handler.Config.DefCount)
+                if (fullEffect.Config.DefCount > 1 && effect.SelectedDefName.Length < fullEffect.Config.DefCount)
                 {
                     if (contract.SecondaryAllowedDefs.Count > 0)
                     {
                         string fallbackDef = contract.SecondaryAllowedDefs[0].DefName;
                         List<string> expanded = effect.SelectedDefName.ToList();
                         int originalCount = expanded.Count;
-                        while (expanded.Count < handler.Config.DefCount)
+                        while (expanded.Count < fullEffect.Config.DefCount)
                         {
                             expanded.Add(fallbackDef);
                         }
                         effect.SelectedDefName = expanded.ToArray();
-                        ModLogger.Warning($"[Validator] Effect '{effect.EffectName}' requires {handler.Config.DefCount} defNames but got {originalCount}; filled missing slot with '{fallbackDef}'.");
+                        ModLogger.Warning($"[Validator] Effect '{effect.EffectName}' requires {fullEffect.Config.DefCount} defNames but got {originalCount}; filled missing slot with '{fallbackDef}'.");
                     }
                     else
                     {
-                        return $"type '{effect.EffectName}' requires {handler.Config.DefCount} defNames but got {effect.SelectedDefName.Length}";
+                        return $"type '{effect.EffectName}' requires {fullEffect.Config.DefCount} defNames but got {effect.SelectedDefName.Length}";
                     }
                 }
                 for (int i = 0; i < effect.SelectedDefName.Length; i++)
@@ -104,6 +110,12 @@ namespace RimTelligence.CustomEvents.Prompting
 
                     effect.SelectedDefName[i] = match.DefName;
                 }
+            }
+
+            if (fullEffect.Config.UsesTargetPawn && string.IsNullOrWhiteSpace(effect.TargetPawn))
+            {
+                ModLogger.Warning($"[Validator] Effect '{effect.EffectName}' uses targetPawn but none was provided; defaulting to 'random'.");
+                effect.TargetPawn = "random";
             }
 
             return null;

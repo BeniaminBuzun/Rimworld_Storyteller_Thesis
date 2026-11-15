@@ -8,7 +8,9 @@ namespace RimTelligence.CustomEvents.Handlers.Animal
     public class SpawnAnimals : IEffect
     {
         private static readonly Random _random = new Random();
-        public EffectConfig Config => EffectConfigRegistry.Get("SpawnAnimals");
+        private readonly EffectConfig _config = EffectConfigRegistry.Get("SpawnAnimals");
+
+        public EffectConfig Config => _config;
 
         private string executionSummary;
 
@@ -70,7 +72,7 @@ namespace RimTelligence.CustomEvents.Handlers.Animal
         private static string GetDefaultSummary(GameEffect effect)
         {
             string animalLabel = ResolveAnimalLabel(effect);
-            string sevStr = effect.Severity != SeverityTypes.None ? $" ({effect.Severity.ToString().ToLower()})" : "";
+            string sevStr = $" ({effect.Severity.ToString().ToLower()})";
             return $"A group of {animalLabel} wanders into the region{sevStr}.";
         }
 

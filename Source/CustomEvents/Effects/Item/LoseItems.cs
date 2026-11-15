@@ -2,6 +2,7 @@ using RimTelligence.DataSnapshots;
 using RimWorld;
 using RimWorld.Planet;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Verse;
 
@@ -9,9 +10,11 @@ namespace RimTelligence.CustomEvents.Handlers.Item
 {
     public class LoseItems : IEffect
     {
-        public EffectConfig Config => EffectConfigRegistry.Get("LoseItems");
+        private readonly EffectConfig _config = EffectConfigRegistry.Get("LoseItems");
 
-        public bool CanBeChoosen(ColonySnapshot snapshot) => true;
+        public EffectConfig Config => _config;
+
+        public bool CanBeChoosen(ColonySnapshot snapshot) => snapshot?.colonyResources?.Count > 0;
 
         private string executionSummary;
 
@@ -36,26 +39,21 @@ namespace RimTelligence.CustomEvents.Handlers.Item
             int toRemove = ItemHandlerSupport.ResolveQuantity(def, effect.Severity, map);
             int leftToLose = toRemove;
 
-            foreach (Zone_Stockpile stockpile in map.zoneManager.AllZones.OfType<Zone_Stockpile>())
+            List<Thing> stored = map.listerThings.ThingsOfDef(def)
+                .Where(thing => thing.Spawned && !thing.Destroyed && thing.GetSlotGroup() != null)
+                .InRandomOrder()
+                .ToList();
+
+            foreach (Thing thing in stored)
             {
-                foreach (IntVec3 cell in stockpile.Cells)
-                {
-                    if (leftToLose <= 0) break;
-
-                    foreach (Thing thing in cell.GetThingList(map).ToList())
-                    {
-                        if (leftToLose <= 0) break;
-                        if (!string.Equals(thing.def.defName, effect.SelectedDefName[0],
-                                StringComparison.OrdinalIgnoreCase)) continue;
-
-                        int take = Math.Min(thing.stackCount, leftToLose);
-                        thing.SplitOff(take).Destroy(DestroyMode.Vanish);
-                        leftToLose -= take;
-                    }
-                }
+                if (leftToLose <= 0) break;
+                int take = Math.Min(thing.stackCount, leftToLose);
+                thing.SplitOff(take).Destroy(DestroyMode.Vanish);
+                leftToLose -= take;
             }
 
             int removed = toRemove - leftToLose;
+
             ModLogger.Message($"{Config.EffectName}: removed {removed}x {effect.DefNameText} " +
                               $"(value={effect.Severity}, requested={toRemove})");
 
@@ -82,7 +80,7 @@ namespace RimTelligence.CustomEvents.Handlers.Item
         private static string GetDefaultSummary(GameEffect effect)
         {
             string itemLabel = ResolveItemLabel(effect);
-            string sevStr = effect.Severity != SeverityTypes.None ? $" ({effect.Severity.ToString().ToLower()})" : "";
+            string sevStr = $" ({effect.Severity.ToString().ToLower()})";
             return $"Stockpile loss: supplies of {itemLabel} are spoiled or destroyed{sevStr}.";
         }
 

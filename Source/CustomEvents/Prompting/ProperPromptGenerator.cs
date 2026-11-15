@@ -1,10 +1,15 @@
+﻿using RimTelligence.AIStoryteller;
 using RimTelligence.CustomEvents.Handlers;
 using RimTelligence.DataSnapshots;
+using RimTelligence.Memory;
+using RimTelligence.Source.Memory.Embedding;
+using RimTelligence.Source.Memory.Search;
 using System;
 using System.Collections.Generic;
-using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace RimTelligence.CustomEvents.Prompting
 {
@@ -36,65 +41,35 @@ namespace RimTelligence.CustomEvents.Prompting
             ("Tired Poet", "Lyrical but exhausted. Beauty in collapse. Short sentences. One image that lingers.", "Even ruin has a shape."),
         };
 
-        // ----------------------------------------------------------------- effect name constants
-
-        private const string EffectAnimalInsanity = "AnimalInsanity";
-        private const string EffectSelfTame = "SelfTame";
-        private const string EffectSpawnAnimals = "SpawnAnimals";
-        private const string EffectCropBlight = "CropBlight";
-        private const string EffectResourcePodCrash = "ResourcePodCrash";
-        private const string EffectPawnFoundItems = "PawnFoundItems";
-        private const string EffectLoseItems = "LoseItems";
-        private const string EffectMiracleHealChronicCondition = "MiracleHealChronicCondition";
-        private const string EffectMiracleHealMissingPart = "MiracleHealMissingPart";
-        private const string EffectMiracleHealDisease = "MiracleHealDisease";
-        private const string EffectDamagePawn = "DamagePawn";
-        private const string EffectAddDisease = "AddDisease";
-        private const string EffectMoodBuff = "MoodBuff";
-        private const string EffectMoodDebuff = "MoodDebuff";
-        private const string EffectAddExpPoints = "AddExpPoints";
-        private const string EffectLoseExpPoints = "LoseExpPoints";
-
-        // ------------------------------------------- which snapshot data each effect needs
-
-        [Flags]
-        private enum Focus { None = 0, Animals = 1, Crops = 2, Items = 4 }
-
-        // Pawn data is driven by Config.UsesTargetPawn; this table covers the rest.
-        private static readonly Dictionary<string, Focus> _focus = new Dictionary<string, Focus>
-        {
-            [EffectAnimalInsanity] = Focus.Animals,
-            [EffectSelfTame] = Focus.Animals,
-            [EffectSpawnAnimals] = Focus.Animals,
-            [EffectCropBlight] = Focus.Crops,
-            [EffectResourcePodCrash] = Focus.Items,
-            [EffectPawnFoundItems] = Focus.Items,
-            [EffectLoseItems] = Focus.Items,
-        };
-
-        // Which colonists are the best candidates for a pawn effect (higher = better candidate).
-        private static readonly Dictionary<string, Func<PawnSnapshot, float>> _pawnScore =
-            new Dictionary<string, Func<PawnSnapshot, float>>
-            {
-                [EffectMiracleHealChronicCondition] = p => p.health?.chronic_conditions?.Count ?? 0,
-                [EffectMiracleHealMissingPart] = p => p.health?.missing_body_parts?.Count ?? 0,
-                [EffectMiracleHealDisease] = p => p.health?.diseases?.Count ?? 0,
-                [EffectDamagePawn] = p => p.health?.overall_health ?? 0f,
-                [EffectAddDisease] = p => ((p.health?.diseases?.Count ?? 0) == 0 ? 1f : 0f) + (p.health?.overall_health ?? 0f),
-                [EffectMoodBuff] = p => 1f - Mood(p),
-                [EffectMoodDebuff] = p => Mood(p),
-                [EffectAddExpPoints] = TopSkillLevel,
-                [EffectLoseExpPoints] = TopSkillLevel,
-            };
-
-        // ----------------------------------------------------------------- entry point
-
         public static string BuildSystemPrompt(List<IEffect> chosenEvents, ColonySnapshot snapshot)
+        {
+            return BuildSystemPrompt(chosenEvents, snapshot, null, null);
+        }
+
+        public static string BuildSystemPrompt(
+            List<IEffect> chosenEvents,
+            ColonySnapshot snapshot,
+            IEmbeddingProvider embeddingProvider,
+            StaticRagStore ragStore)
+        {
+            return BuildSystemPromptAsync(chosenEvents, snapshot, embeddingProvider, ragStore).GetAwaiter().GetResult();
+        }
+
+        public static Task<string> BuildSystemPromptAsync(List<IEffect> chosenEvents, ColonySnapshot snapshot)
+        {
+            return BuildSystemPromptAsync(chosenEvents, snapshot, null, null);
+        }
+
+        public static async Task<string> BuildSystemPromptAsync(
+            List<IEffect> chosenEvents,
+            ColonySnapshot snapshot,
+            IEmbeddingProvider embeddingProvider,
+            StaticRagStore ragStore)
         {
             chosenEvents = chosenEvents ?? new List<IEffect>();
 
             var tone = _tones[_random.Next(_tones.Length)];
-            int sentences = Math.Min(chosenEvents.Count + 3, 4);   // 1 event = 2, 2 = 3, 3+ = 4
+            int sentences = Math.Min(chosenEvents.Count + 2, 6);   // 1 event = 2, 2 = 3, 3+ = 4
 
             var sb = new StringBuilder();
 
@@ -108,11 +83,48 @@ namespace RimTelligence.CustomEvents.Prompting
             sb.AppendLine();
 
             sb.AppendLine("CONSEQUENCES (apply exactly these effectName values):");
+
+            IEmbeddingProvider provider = embeddingProvider;
+            StaticRagStore store = ragStore;
+
+            if (provider == null && store == null)
+            {
+                try
+                {
+                    if (!string.IsNullOrEmpty(RagBootstrap.DbPath) && File.Exists(RagBootstrap.DbPath))
+                    {
+                        store = new StaticRagStore(RagBootstrap.DbPath);
+                        provider = GameObjectsCapturer.GetSharedEmbeddingProvider();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    ModLogger.Warning($"ProperPromptGenerator could not initialize RAG: {ex.Message}");
+                    provider = null;
+                    store = null;
+                }
+            }
+            else if (store == null && !string.IsNullOrEmpty(RagBootstrap.DbPath) && File.Exists(RagBootstrap.DbPath))
+            {
+                try { store = new StaticRagStore(RagBootstrap.DbPath); } catch { /* ignore */ }
+            }
+            else if (provider == null && store != null)
+            {
+                try
+                {
+                    provider = GameObjectsCapturer.GetSharedEmbeddingProvider();
+                }
+                catch { /* ignore */ }
+            }
+
+            var queryCache = new Dictionary<string, float[]>(StringComparer.Ordinal);
+
             foreach (IEffect chosen in chosenEvents)
-                AppendEvent(sb, chosen, snapshot);
+                await AppendEventAsync(sb, chosen, snapshot, provider, store, queryCache);
+
             sb.AppendLine();
 
-            AppendFacts(sb, chosenEvents, snapshot);
+            sb.AppendLine(SnapshotNarrator.Narrate(snapshot));
 
             sb.AppendLine("WRITING RULES:");
             sb.AppendLine("- letterTitle: 2-4 words, no punctuation.");
@@ -141,7 +153,13 @@ namespace RimTelligence.CustomEvents.Prompting
 
         // ----------------------------------------------------------------- events
 
-        private static void AppendEvent(StringBuilder sb, IEffect effect, ColonySnapshot snapshot)
+        private static async Task AppendEventAsync(
+            StringBuilder sb,
+            IEffect effect,
+            ColonySnapshot snapshot,
+            IEmbeddingProvider provider,
+            StaticRagStore store,
+            Dictionary<string, float[]> queryCache)
         {
             EffectConfig contract = EffectContractProvider.GetContract(effect, snapshot);
 
@@ -158,13 +176,21 @@ namespace RimTelligence.CustomEvents.Prompting
 
             if (contract.DefCount > 1)
             {
+                string query1 = BuildRagQuery(contract, contract.RelatedDefList, snapshot);
+                string query2 = BuildRagQuery(contract, contract.SecondaryRelatedDefList, snapshot);
+
+                string choices1 = await DefChoicesAsync(contract.AllowedDefs, query1, provider, store, queryCache);
+                string choices2 = await DefChoicesAsync(contract.SecondaryAllowedDefs, query2, provider, store, queryCache);
+
                 sb.AppendLine($"    selectedDefName: exactly {contract.DefCount} values, in this order:");
-                sb.AppendLine($"      1) {SlotLabel(contract.RelatedDefList, "defName")}: {DefChoices(contract.AllowedDefs)}");
-                sb.AppendLine($"      2) {SlotLabel(contract.SecondaryRelatedDefList, "defName")}: {DefChoices(contract.SecondaryAllowedDefs)}");
+                sb.AppendLine($"      1) {SlotLabel(contract.RelatedDefList, "defName")}: {choices1}");
+                sb.AppendLine($"      2) {SlotLabel(contract.SecondaryRelatedDefList, "defName")}: {choices2}");
             }
             else
             {
-                sb.AppendLine($"    selectedDefName: exactly 1 value. Choose from: {DefChoices(contract.AllowedDefs)}");
+                string query = BuildRagQuery(contract, contract.RelatedDefList, snapshot);
+                string choices = await DefChoicesAsync(contract.AllowedDefs, query, provider, store, queryCache);
+                sb.AppendLine($"    selectedDefName: exactly 1 value. Choose from: {choices}");
             }
         }
 
@@ -177,162 +203,150 @@ namespace RimTelligence.CustomEvents.Prompting
             return fallback;
         }
 
-        // Shows a random sample so repeated prompts vary; the validator accepts the whole list.
-        private static string DefChoices(List<GameObjectMeta> defs)
+        private static string BuildRagQuery(EffectConfig contract, string slotListId, ColonySnapshot snapshot)
         {
-            if (defs == null || defs.Count == 0) return "any valid defName";
-            IEnumerable<GameObjectMeta> sample = defs.Count > MaxListed
-                ? defs.OrderBy(_ => _random.Next()).Take(MaxListed)
-                : defs;
-            return string.Join(", ", sample.Select(def => def.ToString()));
-        }
+            var sb = new StringBuilder();
 
-        // ----------------------------------------------------------------- facts
-
-        private static void AppendFacts(StringBuilder sb, List<IEffect> events, ColonySnapshot s)
-        {
-            sb.AppendLine("FACTS (use only what serves the story; never list them):");
-            if (s == null)
+            if (contract != null)
             {
-                sb.AppendLine("Colony details are unavailable.");
-                sb.AppendLine();
-                return;
+                if (!string.IsNullOrEmpty(contract.NarrativeDescription))
+                    sb.Append(contract.NarrativeDescription).Append(". ");
+                else if (!string.IsNullOrEmpty(contract.EffectName))
+                    sb.Append(contract.EffectName).Append(". ");
             }
 
-            // Always: setting and ambient one-liners (each omitted when empty).
-            sb.AppendLine($"Colony \"{s.colonyName}\": day {s.day}, {s.time}:00, {s.season}, {s.biome}. " +
-                          $"Weather: {s.currentWeather}, {Math.Round(s.temperature)} C. Tech level: {s.currentTechLevel}.");
-
-            sb.AppendLine(s.daysSinceLastRaid >= 0
-                ? $"Last major threat: {s.daysSinceLastRaid} days ago."
-                : "No major threat has struck yet.");
-
-            if (s.totalNutrition > 0 && s.colonistCount > 0)
-                sb.AppendLine($"Food stock: about {s.totalNutrition / (s.colonistCount * NutritionPerColonistPerDay):0.#} days for the colony.");
-
-            if (s.activeConditions?.Count > 0)
-                sb.AppendLine("Active conditions: " + string.Join(", ", s.activeConditions) + ".");
-
-            if (s.activeQuests?.Count > 0)
-                sb.AppendLine("Ongoing quests: " + string.Join(", ", s.activeQuests.Take(3)) + ".");
-
-            if (s.factionRelations?.Count > 0)
+            if (!string.IsNullOrEmpty(slotListId))
             {
-                IEnumerable<string> factions = s.factionRelations
-                    .OrderByDescending(kv => Math.Abs(kv.Value)).Take(4)
-                    .Select(kv => $"{kv.Key} ({kv.Value:+0;-0;0})");
-                sb.AppendLine("Factions (goodwill): " + string.Join(", ", factions) + ".");
+                sb.Append("Category: ").Append(slotListId).Append(". ");
             }
 
-            var others = new List<string>();
-            if (s.prisoners?.Count > 0) others.Add(s.prisoners.Count + " prisoners");
-            if (s.slaves?.Count > 0) others.Add(s.slaves.Count + " slaves");
-            if (s.visitors?.Count > 0) others.Add(s.visitors.Count + " visitors");
-            if (others.Count > 0)
-                sb.AppendLine("Also on the map: " + string.Join(", ", others) + ".");
-
-            // Selected by the cued consequences.
-            if (events.Any(e => e.Config.UsesTargetPawn))
-                AppendPawns(sb, events, s);
-
-            Focus focus = events.Aggregate(Focus.None,
-                (acc, e) => _focus.TryGetValue(e.Config.EffectName, out Focus f) ? acc | f : acc);
-
-            if ((focus & Focus.Animals) != 0)
+            if (snapshot != null)
             {
-                if (s.wildAnimals?.Count > 0)
-                    sb.AppendLine("Wild animals nearby: " + string.Join(", ", s.wildAnimals.OrderByDescending(a => a.count).Take(MaxListed).Select(Counted)) + ".");
-                if (s.colonyAnimalCount > 0)
-                    sb.AppendLine($"Colony animals ({s.colonyAnimalCount}): " + (s.colonyAnimals?.Count > 0 ? string.Join(", ", s.colonyAnimals.Select(Label)) : "unrecorded") + ".");
-            }
+                var contextParts = new List<string>();
 
-            if ((focus & Focus.Crops) != 0 && s.cultivatedPlants?.Count > 0)
-                sb.AppendLine("Crops: " + string.Join(", ", s.cultivatedPlants.Select(Counted)) + ".");
+                if (!string.IsNullOrEmpty(snapshot.biome))
+                    contextParts.Add("biome: " + snapshot.biome);
+                if (!string.IsNullOrEmpty(snapshot.season))
+                    contextParts.Add("season: " + snapshot.season);
+                if (!string.IsNullOrEmpty(snapshot.currentWeather))
+                    contextParts.Add("weather: " + snapshot.currentWeather);
 
-            if ((focus & Focus.Items) != 0)
-            {
-                sb.AppendLine($"Wealth: {Num(s.wealthTotal)} (items {Num(s.wealthItems)}, buildings {Num(s.wealthBuildings)}, pawns {Num(s.wealthPawns)}).");
-                if (s.colonyResources?.Count > 0)
-                    sb.AppendLine("Stockpile: " + string.Join(", ", s.colonyResources.OrderByDescending(r => r.count).Take(10).Select(Counted)) + ".");
-            }
+                contextParts.Add($"temperature: {snapshot.temperature:F0}C");
 
-            sb.AppendLine();
-        }
+                if (snapshot.activeConditions != null && snapshot.activeConditions.Count > 0)
+                    contextParts.Add("conditions: " + string.Join(", ", snapshot.activeConditions));
 
-        private static void AppendPawns(StringBuilder sb, List<IEffect> events, ColonySnapshot s)
-        {
-            List<PawnSnapshot> colonists = s.colonists ?? new List<PawnSnapshot>();
-            if (colonists.Count == 0) return;
-
-            sb.AppendLine($"Colonists ({colonists.Count}; valid targetPawn values): " +
-                          string.Join(", ", colonists.Select(p => p.name)) + ".");
-
-            sb.AppendLine("Best candidates for the consequences above:");
-            foreach (PawnSnapshot pawn in PickCandidates(events, colonists))
-                sb.AppendLine("  " + DescribePawn(pawn));
-        }
-
-        private static List<PawnSnapshot> PickCandidates(List<IEffect> events, List<PawnSnapshot> colonists)
-        {
-            var picked = new List<PawnSnapshot>();
-            foreach (IEffect e in events.Where(e => e.Config.UsesTargetPawn))
-            {
-                Func<PawnSnapshot, float> score = _pawnScore.TryGetValue(e.Config.EffectName, out var fn) ? fn : Interest;
-
-                foreach (PawnSnapshot pawn in colonists
-                    .OrderByDescending(score).ThenBy(_ => _random.Next())   // random tie-break keeps prompts varied
-                    .Take(DetailedPawnsPerEffect))
+                if (snapshot.colonistCount > 0)
                 {
-                    if (!picked.Contains(pawn)) picked.Add(pawn);
+                    float daysOfFood = snapshot.totalNutrition / (snapshot.colonistCount * NutritionPerColonistPerDay);
+                    if (daysOfFood < 2f)
+                        contextParts.Add("food shortage");
+                }
+
+                if (contextParts.Count > 0)
+                {
+                    sb.Append("Colony environment: ").Append(string.Join(", ", contextParts)).Append(".");
                 }
             }
-            return picked.Take(MaxDetailedPawns).ToList();
+
+            return sb.ToString().Trim();
         }
 
-        // One line per pawn, only fields that carry information.
-        private static string DescribePawn(PawnSnapshot p)
+        // Queries RAG asynchronously to get the most relevant items ONLY from the selected list (defs).
+        // Uses ragMaxResultsPerStore and ragMinSimilarity from mod settings.
+        // Backfills remaining slots from defs randomly, and falls back fully to random sampling if RAG is unavailable.
+        private static async Task<string> DefChoicesAsync(
+            List<GameObjectMeta> defs,
+            string queryText = null,
+            IEmbeddingProvider provider = null,
+            StaticRagStore store = null,
+            Dictionary<string, float[]> queryCache = null)
         {
-            var parts = new List<string> { $"{p.name}, age {p.age}" };
+            if (defs == null || defs.Count == 0) return "any valid defName";
 
-            if (Has(p.current_action)) parts.Add("doing: " + p.current_action);
-            if (p.queued_actions?.Count > 0) parts.Add("next: " + string.Join(" > ", p.queued_actions));
-            if (Has(p.current_location)) parts.Add("in: " + p.current_location);
-            if (p.is_drafted) parts.Add("drafted");
-            if (Has(p.primary_weapon)) parts.Add("weapon: " + p.primary_weapon);
+            List<GameObjectMeta> validDefs = defs.Where(d => !string.IsNullOrEmpty(d?.DefName)).ToList();
+            if (validDefs.Count == 0) return "any valid defName";
 
-            PawnNeedsSnapshot n = p.needs;
-            if (n != null)
+            Settings settings = AIStorytellerMod.Settings;
+            int maxResults = settings != null ? settings.ragMaxResultsPerStore : MaxListed;
+            float minSimilarity = settings != null ? settings.ragMinSimilarity : 0f;
+
+            if (provider != null && store != null && !string.IsNullOrWhiteSpace(queryText))
             {
-                parts.Add($"mood {Pct(n.mood)}, food {Pct(n.food_level)}, rest {Pct(n.rest_level)}, joy {Pct(n.recreation_level)}");
-                if (Has(n.mental_state)) parts.Add("mental state: " + n.mental_state);
+                try
+                {
+                    float[] queryEmbedding = null;
+                    if (queryCache != null && queryCache.TryGetValue(queryText, out float[] cached))
+                    {
+                        queryEmbedding = cached;
+                    }
+                    else
+                    {
+                        queryEmbedding = await provider.EmbedAsync(queryText);
+                        if (queryCache != null && queryEmbedding != null)
+                            queryCache[queryText] = queryEmbedding;
+                    }
+
+                    if (queryEmbedding != null && queryEmbedding.Length > 0)
+                    {
+                        var defMap = new Dictionary<string, GameObjectMeta>(StringComparer.OrdinalIgnoreCase);
+                        foreach (var d in validDefs)
+                        {
+                            if (!defMap.ContainsKey(d.DefName))
+                                defMap[d.DefName] = d;
+                        }
+
+                        // Ask for maxResults candidates; minSimilarity is applied below as a post-filter.
+                        List<RagResult> results = store.Query(queryEmbedding, topK: maxResults, defNames: defMap.Keys);
+
+                        if (results != null && results.Count > 0)
+                        {
+                            var selected = new List<GameObjectMeta>();
+                            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+                            foreach (var r in results)
+                            {
+                                // Skip results below the minimum similarity threshold.
+                                if (r.Score < minSimilarity) continue;
+
+                                if (r?.DefName != null && defMap.TryGetValue(r.DefName, out var meta) && seen.Add(meta.DefName))
+                                    selected.Add(meta);
+                            }
+
+                            // Backfill remaining slots (up to maxResults) with random items not yet selected.
+                            if (selected.Count < maxResults)
+                            {
+                                var remaining = validDefs
+                                    .Where(d => !seen.Contains(d.DefName))
+                                    .OrderBy(_ => _random.Next());
+
+                                foreach (var d in remaining)
+                                {
+                                    if (seen.Add(d.DefName))
+                                    {
+                                        selected.Add(d);
+                                        if (selected.Count >= maxResults)
+                                            break;
+                                    }
+                                }
+                            }
+
+                            if (selected.Count > 0)
+                                return string.Join(", ", selected.Select(def => def.ToString()));
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    ModLogger.Warning($"RAG def ranking in ProperPromptGenerator failed, using fallback: {ex.Message}");
+                }
             }
 
-            HealthSnapshot h = p.health;
-            if (h != null)
-            {
-                parts.Add($"health {Pct(h.overall_health)}" + (h.is_downed ? " (downed)" : "") + (h.pain_level > 0.3f ? $", pain {Pct(h.pain_level)}" : ""));
-                AddList(parts, "injuries", h.injuries);
-                AddList(parts, "diseases", h.diseases);
-                AddList(parts, "missing", h.missing_body_parts);
-                AddList(parts, "implants", h.implants);
-                AddList(parts, "chronic/scars", h.chronic_conditions);
-            }
-
-            if (p.traits?.Count > 0) parts.Add("traits: " + string.Join(", ", p.traits));
-            if (p.skills?.Count > 0) parts.Add("skills: " + string.Join(", ", p.skills));
-
-            string past = string.Join(" / ", new[] { p.childhood, p.adulthood }.Where(Has));
-            if (past.Length > 0) parts.Add("past: " + past);
-
-            PawnRelationsSnapshot r = p.relations;
-            if (r != null)
-            {
-                if (r.lovers?.Count > 0) parts.Add("lovers: " + string.Join(", ", r.lovers));
-                if (r.rivals?.Count > 0) parts.Add("rivals: " + string.Join(", ", r.rivals));
-                if (Has(r.bonded_animal)) parts.Add("bonded animal: " + r.bonded_animal);
-            }
-
-            return string.Join("; ", parts);
+            // Fallback: random sample so repeated prompts vary; the validator accepts the whole list.
+            IEnumerable<GameObjectMeta> sample = validDefs.Count > maxResults
+                ? validDefs.OrderBy(_ => _random.Next()).Take(maxResults)
+                : validDefs;
+            return string.Join(", ", sample.Select(def => def.ToString()));
         }
 
         private static void AppendTwist(StringBuilder sb)
@@ -341,61 +355,6 @@ namespace RimTelligence.CustomEvents.Prompting
             if (roll < 0.20) sb.AppendLine("- Optional twist: find the irony. One clause only.");
             else if (roll < 0.35) sb.AppendLine("- Optional twist: one detail that doesn't add up. Don't explain it.");
             else if (roll < 0.40) sb.AppendLine("- Optional twist: one image that earns its beauty.");
-        }
-
-        // ----------------------------------------------------------------- scoring
-
-        private static float Mood(PawnSnapshot p) => p.needs?.mood ?? 0.5f;
-
-        private static float Interest(PawnSnapshot p)
-        {
-            float score = 0f;
-            if (p.health?.is_downed == true) score += 10f;
-            if (p.health?.diseases?.Count > 0) score += 5f;
-            if (p.health?.missing_body_parts?.Count > 0) score += 4f;
-            if (p.health?.injuries?.Count > 0) score += 3f;
-            float mood = Mood(p);
-            if (mood < 0.3f) score += 4f; else if (mood < 0.5f) score += 2f;
-            return score;
-        }
-
-        // Skills are captured as "Shooting:12".
-        private static float TopSkillLevel(PawnSnapshot p)
-        {
-            float best = 0f;
-            if (p.skills == null) return best;
-            foreach (string skill in p.skills)
-            {
-                int colon = skill.LastIndexOf(':');
-                if (colon >= 0 &&
-                    float.TryParse(skill.Substring(colon + 1), NumberStyles.Float, CultureInfo.InvariantCulture, out float level) &&
-                    level > best)
-                    best = level;
-            }
-            return best;
-        }
-
-        // ----------------------------------------------------------------- formatting helpers
-
-        // The capturer writes "None"/"Unknown" instead of null, so treat those as empty.
-        private static bool Has(string value) =>
-            !string.IsNullOrWhiteSpace(value) &&
-            !value.Equals("None", StringComparison.OrdinalIgnoreCase) &&
-            !value.Equals("Unknown", StringComparison.OrdinalIgnoreCase);
-
-        // Invariant formatting: P0 / N0 would use the player's culture ("45 %", nbsp separators).
-        private static string Pct(float value) => Math.Round(value * 100f).ToString("0", CultureInfo.InvariantCulture) + "%";
-        private static string Num(float value) => Math.Round(value).ToString("N0", CultureInfo.InvariantCulture);
-
-        private static string Label(GameObjectMeta meta) =>
-            !string.IsNullOrEmpty(meta?.Label) ? meta.Label : meta?.DefName ?? "unknown";
-
-        private static string Counted(CountedMeta entry) => $"{entry.count}x {Label(entry.meta)}";
-
-        private static void AddList(List<string> parts, string title, List<GameObjectMeta> items)
-        {
-            if (items?.Count > 0)
-                parts.Add(title + ": " + string.Join(", ", items.Select(Label)));
         }
     }
 }

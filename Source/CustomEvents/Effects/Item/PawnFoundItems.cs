@@ -8,7 +8,9 @@ namespace RimTelligence.CustomEvents.Handlers.Item
 {
     public class PawnFoundItems : IEffect
     {
-        public EffectConfig Config => EffectConfigRegistry.Get("PawnFoundItems");
+        private readonly EffectConfig _config = EffectConfigRegistry.Get("PawnFoundItems");
+
+        public EffectConfig Config => _config;
 
         public bool CanBeChoosen(ColonySnapshot snapshot) => true;
 
@@ -17,7 +19,7 @@ namespace RimTelligence.CustomEvents.Handlers.Item
         public GlobalTargetInfo Execute(GameEffect effect, Map map)
         {
             ThingDef def = ResolveItemDef(effect);
-            if (def == null)
+            if (def == null || !ItemHandlerSupport.IsSpawnable(def))
             {
                 ModLogger.Warning($"{Config.EffectName}: ThingDef '{effect.DefNameText}' not found.");
                 executionSummary = "A colonist searched the area, but found nothing of value.";
@@ -46,15 +48,22 @@ namespace RimTelligence.CustomEvents.Handlers.Item
 
             int quantity = ItemHandlerSupport.ResolveQuantity(def, effect.Severity, map);
 
-            Thing item = ThingMaker.MakeThing(def);
-            item.stackCount = Math.Min(Math.Max(quantity, 1), def.stackLimit);
+            Thing item = ItemHandlerSupport.MakeItem(def, quantity);
+            int placedCount = item.stackCount;   // read before placing: a merge can zero the stack
 
-            GenPlace.TryPlaceThing(item, pawn.Position, map, ThingPlaceMode.Near);
+            bool placed = GenPlace.TryPlaceThing(item, pawn.Position, map, ThingPlaceMode.Near);
+            if (!placed)
+            {
+                if (!item.Destroyed) item.Destroy();   // don't leak an unspawned Thing
+                ModLogger.Warning($"{Config.EffectName}: no free cell near {pawn.LabelShort} for {def.defName}.");
+                executionSummary = $"{pawn.LabelShort} spotted a cache of {def.LabelCap.Resolve()}, but there was no room to bring it back.";
+                return GlobalTargetInfo.Invalid;
+            }
 
             string itemLabel = def.LabelCap.Resolve();
-            executionSummary = $"{pawn.LabelShort} scavenged the area and recovered {item.stackCount}x {itemLabel}!";
+            executionSummary = $"{pawn.LabelShort} scavenged the area and recovered {placedCount}x {itemLabel}!";
 
-            ModLogger.Message($"{Config.EffectName}: gave {item.stackCount}x {def.defName} " +
+            ModLogger.Message($"{Config.EffectName}: gave {placedCount}x {def.defName} " +
                               $"to {pawn.LabelShort} (value={effect.Severity})");
 
             return new GlobalTargetInfo(pawn.Position, map);
@@ -72,7 +81,7 @@ namespace RimTelligence.CustomEvents.Handlers.Item
         {
             string itemLabel = ResolveItemLabel(effect);
             string pawn = !string.IsNullOrWhiteSpace(effect.TargetPawn) ? effect.TargetPawn : "A colonist";
-            string sevStr = effect.Severity != SeverityTypes.None ? $" ({effect.Severity.ToString().ToLower()})" : "";
+            string sevStr = $" ({effect.Severity.ToString().ToLower()})";
             return $"{pawn} discovers a salvageable cache of {itemLabel}{sevStr}.";
         }
 

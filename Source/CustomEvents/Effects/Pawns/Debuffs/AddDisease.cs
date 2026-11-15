@@ -9,7 +9,9 @@ namespace RimTelligence.CustomEvents.Handlers.Pawns.Debuffs
 {
     public class AddDisease : IEffect
     {
-        public EffectConfig Config => EffectConfigRegistry.Get("AddDisease");
+        private readonly EffectConfig _config = EffectConfigRegistry.Get("AddDisease");
+
+        public EffectConfig Config => _config;
         private string specialSummary;
 
         public bool CanBeChoosen(ColonySnapshot snapshot) => true;
@@ -76,7 +78,7 @@ namespace RimTelligence.CustomEvents.Handlers.Pawns.Debuffs
                 newDisease.Severity = initialSeverity;
                 target.health.AddHediff(newDisease);
 
-                string severityDesc = effect.Severity != SeverityTypes.None ? $" ({effect.Severity.ToString().ToLower()})" : "";
+                string severityDesc = $" ({effect.Severity.ToString().ToLower()})";
                 specialSummary = $"{target.LabelShort} has contracted {diseaseLabel}{severityDesc}. Medical attention is advised.";
             }
 
@@ -126,7 +128,7 @@ namespace RimTelligence.CustomEvents.Handlers.Pawns.Debuffs
             HediffDef def = DefDatabase<HediffDef>.GetNamed(disease, errorOnFail: false);
             string diseaseLabel = def != null ? (!string.IsNullOrEmpty(def.label) ? def.label : def.defName) : disease;
             string pawn = !string.IsNullOrWhiteSpace(effect?.TargetPawn) ? effect.TargetPawn : "A colonist";
-            string sevStr = effect != null && effect.Severity != SeverityTypes.None ? $" ({effect.Severity.ToString().ToLower()})" : "";
+            string sevStr = effect != null ? $" ({effect.Severity.ToString().ToLower()})" : "";
             return $"{pawn} has contracted {diseaseLabel}{sevStr}. Medical treatment is advised.";
         }
     }

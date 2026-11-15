@@ -10,6 +10,57 @@ semver section when a version is released.
 
 ## [Unreleased]
 
+## [0.20.0] - 2026-10-28
+
+### Added
+- Add RAG-based definition retrieval to improve event generation using event contracts and colony state
+- Add automatic embedding refresh when the embedding model changes
+- Add LLM error classification and output mode reporting
+
+### Changed
+- Run event generation asynchronously to prevent game loop stuttering
+- Improve LLM communication with structured JSON → JSON → text fallback, transient-error retries, exponential backoff, and a 360-second request timeout
+- Improve logging with a thread-safe, queue-based logger
+- Select the embedding provider based on mod settings and pre-warm ONNX embeddings in the background
+- Rebalance self-taming chances to 10% / 20% / 25% / 50% for Low / Medium / High / Extreme
+- Renumber `SeverityTypes` values, removing `None`. Existing effect configurations and prompt templates using the old numeric values must be updated
+- Update benchmark reporting to record the output mode.
+
+### Fixed
+- Handle transient LLM failures with retries instead of immediately failing events
+- Log empty LLM responses and fall back to the next output mode
+- Default missing `TargetPawn` values to `"random"` and handle invalid severity values with a warning and a default mood offset
+
+## [0.19.0] - 2026-10-28
+
+### Added
+- Include Sqlite and ONNX runtime DLLs for linux and macOS compatibility 
+
+## [0.18.0] - 2026-10-23
+
+### Changed
+- `Mod settings` - api keys are now hidden behind additional show button
+- Unified effect and category naming across configs and code (`All_Animals`, `Diseases`, `Weapons_*`, `Food_*`, …)
+- Hardened LLM parsing and validation: repairs malformed JSON and validates item effects against the drawn category and current snapshot
+- Item effects spawn safely (valid `stuff`, stack limits) and support an `Extreme` severity tier
+- Benchmark reports reworked into one consistent table layout with per-run results, retention, and summaries
+- `LoseItems` now removes items from any storage, not only stockpile zones
+
+### Added
+- Proper graphics for storyteller and mod main mod thumbnail
+- - `ChoiceLetter_Procedural.Resolve()` — letter type now follows effect alignment (positive / negative / neutral)
+
+### Fixed
+
+- `HeuristicEventSelector` mutated shared `EffectConfig` singletons between events
+- `PawnFoundItems` no longer leaks an item when no cell is free; `ResourcePodCrash` no longer creates more pods than item stacks
+
+### Removed
+
+- Obsolete `HarmonyPatches.cs` storyteller-selection transpiler
+- `static_chunks` table (migrated into `items` / `others`)
+
+
 ## [0.17.0] - 2026-10-17
 
 ### Added

@@ -6,7 +6,9 @@ namespace RimTelligence.CustomEvents.Handlers.Environment
 {
     internal class ChangeWeather : IEffect
     {
-        public EffectConfig Config => EffectConfigRegistry.Get("ChangeWeather");
+        private readonly EffectConfig _config = EffectConfigRegistry.Get("ChangeWeather");
+
+        public EffectConfig Config => _config;
 
         public bool CanBeChoosen(ColonySnapshot snapshot) => true;
 
@@ -22,7 +24,7 @@ namespace RimTelligence.CustomEvents.Handlers.Environment
                 return GlobalTargetInfo.Invalid;
             }
 
-            map.weatherManager.curWeather = def;
+            map.weatherManager.TransitionTo(def);
             string weatherLabel = def.LabelCap.Resolve();
             executionSummary = $"Atmospheric pressure shifted abruptly: the weather turned to {weatherLabel}.";
 

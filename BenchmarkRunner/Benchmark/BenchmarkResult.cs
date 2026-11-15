@@ -4,6 +4,7 @@ namespace RimTelligence.Benchmark
 {
     internal class BenchmarkResult
     {
+        public int run;
         public string providerName;
         public string providerId;
         public string endpoint;
@@ -19,6 +20,7 @@ namespace RimTelligence.Benchmark
         public int promptTokens;
         public int completionTokens;
         public int reasoningTokens;
+        public string outputMode;
         public string letterTitle;
         public string letterText;
         public List<string> effects;

@@ -12,7 +12,9 @@ namespace RimTelligence.Source.CustomEvents.Handlers.Pawns.Debuffs
 {
     internal class MoodDebuff : IEffect
     {
-        public EffectConfig Config => EffectConfigRegistry.Get("MoodDebuff");
+        private readonly EffectConfig _config = EffectConfigRegistry.Get("MoodDebuff");
+
+        public EffectConfig Config => _config;
 
         public bool CanBeChoosen(ColonySnapshot snapshot) => true;
 
@@ -77,8 +79,8 @@ namespace RimTelligence.Source.CustomEvents.Handlers.Pawns.Debuffs
                 ? effect.SelectedDefName[0]
                 : (!string.IsNullOrWhiteSpace(effect.DefNameText) ? effect.DefNameText : "Troubled mind");
             string pawn = !string.IsNullOrWhiteSpace(effect.TargetPawn) ? effect.TargetPawn : "A colonist";
-            string sevStr = effect.Severity != SeverityTypes.None ? $" ({effect.Severity.ToString().ToLower()})" : "";
-            return $"{pawn} suffers a distressing mood penalty: '{label}'{sevStr}.";
+            string sevStr = $" ({effect.Severity.ToString().ToLower()})";
+            return $"{pawn} suffers a depressing mood debuff: '{label}'{sevStr}.";
         }
     }
 }

@@ -157,7 +157,7 @@ namespace RimTelligence.DataSnapshots
             {
                 return new PawnNeedsSnapshot
                 {
-                    mood = pawn.needs?.mood?.CurLevelPercentage ?? 0f,
+                    mood = pawn.needs?.mood?.CurLevelPercentage ?? 1f,
                     mental_state = pawn.MentalStateDef?.defName ?? "None",
                     food_level = pawn.needs?.food?.CurLevelPercentage ?? 0f,
                     rest_level = pawn.needs?.rest?.CurLevelPercentage ?? 0f,

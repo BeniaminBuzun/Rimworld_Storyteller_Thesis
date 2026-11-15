@@ -13,12 +13,10 @@ obj/
 *.userosscache
 *.sln.docstates
 
-/Assemblies/*.dll
-/Assemblies/*.pdb
-/Assemblies/*.xml
+/Assemblies/*
 *.dll
 
-
+/Native/*
 /References/
 /Libs/
 
@@ -28,6 +26,7 @@ Thumbs.db
 *.swp
 .vscode/
 .idea/
+
 
 
 # NuGet

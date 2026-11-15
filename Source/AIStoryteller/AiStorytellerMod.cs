@@ -2,6 +2,8 @@ using HarmonyLib;
 using LlmTornado.Code;
 using RimTelligence.DataSnapshots;
 using RimTelligence.Llm;
+using RimTelligence.Source.Memory.Embedding;
+using RimTelligence.Source.Memory.Storage;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -14,10 +16,13 @@ namespace RimTelligence.AIStoryteller
         public static Settings Settings { get; private set; }
         private static Harmony harmony;
         private Vector2 mainScroll;
+        private float viewHeight = 1000f;
 
         public AIStorytellerMod(ModContentPack content) : base(content)
         {
             ModPaths.Initialize(content.RootDir);
+            SqliteBootstrap.Init(content.RootDir);
+            OnnxBootstrap.Init(content.RootDir);
             Settings = GetSettings<Settings>();
 
             harmony = new Harmony("com.rimtelligence.aistoryteller");
@@ -28,14 +33,17 @@ namespace RimTelligence.AIStoryteller
 
         public override void DoSettingsWindowContents(Rect inRect)
         {
-            Rect outRect = new Rect(0f, 0f, inRect.width, inRect.height);
+            // The box: everything lives inside it
+            Rect boxRect = inRect;
 
-            Rect viewRect = new Rect(0f, 0f, outRect.width, 1000f);
+            // Scrollable area inside the box, with padding
+            Rect outRect = boxRect.ContractedBy(8f);
+            Rect viewRect = new Rect(0f, 0f, outRect.width - 16f, viewHeight); // 16f = scrollbar
 
             Widgets.BeginScrollView(outRect, ref mainScroll, viewRect);
 
             Listing_Standard listing = new Listing_Standard();
-            listing.Begin(inRect);
+            listing.Begin(viewRect);
 
             DrawLlmProviderSection(listing);
 
@@ -69,8 +77,18 @@ namespace RimTelligence.AIStoryteller
             Settings.ragMinSimilarity = listing.SliderLabeled(
                 $"Min similarity: {Settings.ragMinSimilarity:F2}", Settings.ragMinSimilarity, 0f, 1f);
 
+            // Remember the real content height for next frame (read before End())
+            viewHeight = listing.CurHeight + 12f;
+
             listing.End();
             Widgets.EndScrollView();
+        }
+
+        public override void WriteSettings()
+        {
+            // Re-hide all API key fields when the settings window closes
+            Settings.ResetSecretFields();
+            base.WriteSettings();
         }
 
         public override string SettingsCategory() => "AI Storyteller";
@@ -123,12 +141,14 @@ namespace RimTelligence.AIStoryteller
                 config.baseUrl = listing.TextEntry(config.baseUrl);
                 listing.Gap(4f);
                 listing.Label("API key (optional for self-hosted):");
-                config.apiKey = listing.TextEntry(config.apiKey);
+                config.apiKey = Settings.DrawSecretField(
+                    listing.GetRect(30f), config.apiKey, "apiKey_chat_" + config.providerId);
             }
             else
             {
                 listing.Label("API key:");
-                config.apiKey = listing.TextEntry(config.apiKey);
+                config.apiKey = Settings.DrawSecretField(
+                    listing.GetRect(30f), config.apiKey, "apiKey_chat_" + config.providerId);
             }
 
             listing.Gap(4f);
@@ -184,11 +204,12 @@ namespace RimTelligence.AIStoryteller
 
                 ProviderConfig config = Settings.GetOrCreateProviderConfig(Settings.embeddingProviderId);
                 listing.Label("API key:");
-                config.apiKey = listing.TextEntry(config.apiKey);
+                config.apiKey = Settings.DrawSecretField(
+                    listing.GetRect(30f), config.apiKey, "apiKey_embed_" + config.providerId);
                 listing.Gap(4f);
                 DrawModelField(listing, config, ProviderCatalog.ResolveProvider(config.providerId), true);
 
-                string warning = Memory.LlmEmbeddingProvider.ValidateConfig(Settings);
+                string warning = LlmEmbeddingProvider.ValidateConfig(Settings);
                 if (warning != null)
                 {
                     listing.Gap(4f);

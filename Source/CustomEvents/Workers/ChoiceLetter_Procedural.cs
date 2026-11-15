@@ -1,4 +1,8 @@
-﻿using RimWorld.Planet;
+﻿using RimTelligence.CustomEvents.Handlers;
+using RimTelligence.Source.CustomEvents.Handlers;
+using RimWorld;
+using RimWorld.Planet;
+using System;
 using System.Collections.Generic;
 using Verse;
 
@@ -40,6 +44,36 @@ namespace RimTelligence.CustomEvents.Workers
                 if (jumpLabels == null) jumpLabels = new List<string>();
                 if (jumpTargets == null) jumpTargets = new List<GlobalTargetInfo>();
             }
+        }
+        public static LetterDef Resolve(LlmCustomEvent evt)
+        {
+            if (evt?.effects == null || evt.effects.Count == 0)
+                return LetterDefOf.NeutralEvent;
+
+            bool anyGood = false, anyBad = false;
+
+            foreach (GameEffect effect in evt.effects)
+            {
+                if (effect == null || string.IsNullOrWhiteSpace(effect.EffectName))
+                    continue;
+
+                IEffect handler;
+                try { handler = EffectFactory.Create(effect.EffectName); }
+                catch (Exception) { continue; }   // missing config: ignore this effect for styling
+
+                if (handler?.Config == null)
+                    continue;
+
+                switch (handler.Config.Alignment)
+                {
+                    case EventAlignment.Good: anyGood = true; break;
+                    case EventAlignment.Bad: anyBad = true; break;
+                }
+            }
+
+            if (anyGood && !anyBad) return LetterDefOf.PositiveEvent;
+            if (anyBad) return LetterDefOf.NegativeEvent;
+            return LetterDefOf.NeutralEvent;
         }
     }
 }

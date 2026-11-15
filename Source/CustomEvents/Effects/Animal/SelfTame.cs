@@ -10,7 +10,9 @@ namespace RimTelligence.CustomEvents.Handlers.Animal
 {
     public class SelfTame : IEffect
     {
-        public EffectConfig Config => EffectConfigRegistry.Get("SelfTame");
+        private readonly EffectConfig _config = EffectConfigRegistry.Get("SelfTame");
+
+        public EffectConfig Config => _config;
 
         public bool CanBeChoosen(ColonySnapshot snapshot) => snapshot?.wildAnimals != null && snapshot.wildAnimals.Any();
 
@@ -60,11 +62,11 @@ namespace RimTelligence.CustomEvents.Handlers.Animal
         {
             switch (severity)
             {
-                case SeverityTypes.Low: return (int)Math.Ceiling(candidates * 0.25);
-                case SeverityTypes.Medium: return (int)Math.Ceiling(candidates * 0.5);
-                case SeverityTypes.High: return (int)Math.Ceiling(candidates * 0.75);
-                case SeverityTypes.Extreme: return candidates;
-                default: return (int)Math.Ceiling(candidates * 0.25);
+                case SeverityTypes.Low: return (int)Math.Ceiling(candidates * 0.10);
+                case SeverityTypes.Medium: return (int)Math.Ceiling(candidates * 0.20);
+                case SeverityTypes.High: return (int)Math.Ceiling(candidates * 0.25);
+                case SeverityTypes.Extreme: return (int)Math.Ceiling(candidates * 0.50);
+                default: return (int)Math.Ceiling(candidates * 0.10);
             }
         }
 
@@ -79,7 +81,7 @@ namespace RimTelligence.CustomEvents.Handlers.Animal
         private static string GetDefaultSummary(GameEffect effect)
         {
             string animalLabel = ResolveAnimalLabel(effect);
-            string sevStr = effect.Severity != SeverityTypes.None ? $" ({effect.Severity.ToString().ToLower()})" : "";
+            string sevStr = $" ({effect.Severity.ToString().ToLower()})";
             return $"A wild {animalLabel} feels drawn to the settlement and peacefully joins the colony{sevStr}.";
         }
 

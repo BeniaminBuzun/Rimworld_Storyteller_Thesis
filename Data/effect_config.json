@@ -2,8 +2,8 @@
     {
         "effectName": "DamagePawn",
         "narrativeDescription": "An event where a specific colonist takes damage.",
-        "RelatedDefList": "DamageTypeList",
-        "SecondaryRelatedDefList": "BodyPartList",
+        "RelatedDefList": "Damage_Types",
+        "SecondaryRelatedDefList": "Pawn_Body_Parts",
         "defCount": 2,
         "baseWeight": 8,
         "alignment": "Bad",
@@ -14,7 +14,7 @@
     {
         "effectName": "StartExtremeWeather",
         "narrativeDescription": "An event where an extreame weather condition starts.",
-        "RelatedDefList": "GameConditionList",
+        "RelatedDefList": "Extreame_Weathers",
         "SecondaryRelatedDefList": "",
         "defCount": 1,
         "baseWeight": 3,
@@ -26,7 +26,7 @@
     {
         "effectName": "AnimalInsanity",
         "narrativeDescription": "An event where an animal goes manhunter and attacks colonists.",
-        "RelatedDefList": "WildAnimals",
+        "RelatedDefList": "Wild_Animals",
         "SecondaryRelatedDefList": "",
         "defCount": 1,
         "baseWeight": 6,
@@ -38,7 +38,7 @@
     {
         "effectName": "SelfTame",
         "narrativeDescription": "An event where an animal spontaneously tames itself.",
-        "RelatedDefList": "WildAnimals",
+        "RelatedDefList": "Wild_Animals",
         "SecondaryRelatedDefList": "",
         "defCount": 1,
         "baseWeight": 6,
@@ -50,7 +50,7 @@
     {
         "effectName": "SpawnAnimals",
         "narrativeDescription": "An event where an animals are spawned on the map.",
-        "RelatedDefList": "AnimalList",
+        "RelatedDefList": "All_Animals",
         "SecondaryRelatedDefList": "",
         "defCount": 1,
         "baseWeight": 6,
@@ -62,7 +62,7 @@
     {
         "effectName": "AddDisease",
         "narrativeDescription": "An event where a specific colonist contracts a disease.",
-        "RelatedDefList": "DiseaseList",
+        "RelatedDefList": "Diseases",
         "SecondaryRelatedDefList": "",
         "defCount": 1,
         "baseWeight": 3,
@@ -74,7 +74,7 @@
     {
         "effectName": "MiracleHealChronicCondition",
         "narrativeDescription": "A miraculous event where a specific colonist is instantly cured of a permanent or chronic health condition.",
-        "RelatedDefList": "ColonistsChronicConditionList",
+        "RelatedDefList": "Colonists_Chronic_Conditions",
         "SecondaryRelatedDefList": "",
         "defCount": 1,
         "baseWeight": 3,
@@ -86,7 +86,7 @@
     {
         "effectName": "MiracleHealDisease",
         "narrativeDescription": "A miraculous event where a specific colonist is instantly cured of a disease.",
-        "RelatedDefList": "ColonistsDiseaseList",
+        "RelatedDefList": "Colonists_Diseases",
         "SecondaryRelatedDefList": "",
         "defCount": 1,
         "baseWeight": 3,
@@ -98,7 +98,7 @@
     {
         "effectName": "MiracleHealMissingPart",
         "narrativeDescription": "A miraculous event where a specific colonist regrows a missing body part.",
-        "RelatedDefList": "ColonistsMissingBodyPartsList",
+        "RelatedDefList": "Colonists_Missing_Body_Parts",
         "SecondaryRelatedDefList": "",
         "defCount": 1,
         "baseWeight": 3,
@@ -110,7 +110,7 @@
     {
         "effectName": "ChangeWeather",
         "narrativeDescription": "An event where a weather quickly changes.",
-        "RelatedDefList": "AllWeathersList",
+        "RelatedDefList": "Normal_Weathers",
         "SecondaryRelatedDefList": "",
         "defCount": 1,
         "baseWeight": 8,
@@ -134,7 +134,7 @@
     {
         "effectName": "AddExpPoints",
         "narrativeDescription": "An event where a specific colonist receives an experience points bonus.",
-        "RelatedDefList": "AllSkillsList",
+        "RelatedDefList": "All_Skills",
         "SecondaryRelatedDefList": "",
         "defCount": 1,
         "baseWeight": 6,
@@ -146,7 +146,7 @@
     {
         "effectName": "LoseExpPoints",
         "narrativeDescription": "A debuff where a specific colonist loses experience points in a particular skill.",
-        "RelatedDefList": "AllSkillsList",
+        "RelatedDefList": "All_Skills",
         "SecondaryRelatedDefList": "",
         "defCount": 1,
         "baseWeight": 5,
@@ -158,7 +158,7 @@
     {
         "effectName": "CropBlight",
         "narrativeDescription": "An event where colony plants are affected by blight.",
-        "RelatedDefList": "CharvestablePlantsList",
+        "RelatedDefList": "Colony_Charvestable_Crops",
         "SecondaryRelatedDefList": "",
         "defCount": 1,
         "baseWeight": 5,
@@ -172,7 +172,7 @@
         "narrativeDescription": "An event where a specific colonist receives a positive mood effect.",
         "RelatedDefList": "",
         "SecondaryRelatedDefList": "",
-        "defCount": 1,
+        "defCount": 2,
         "baseWeight": 6,
         "alignment": "Good",
         "isDefRequired": true,
@@ -184,7 +184,7 @@
         "narrativeDescription": "An event where a specific colonist receives a negative mood effect.",
         "RelatedDefList": "",
         "SecondaryRelatedDefList": "",
-        "defCount": 1,
+        "defCount": 2,
         "baseWeight": 5,
         "alignment": "Bad",
         "isDefRequired": true,
@@ -218,7 +218,7 @@
     {
         "effectName": "LoseItems",
         "narrativeDescription": "An event where the colony loses some of its stockpiled items.",
-        "RelatedDefList": "ColonyResources",
+        "RelatedDefList": "Colony_Resources",
         "SecondaryRelatedDefList": "",
         "defCount": 1,
         "baseWeight": 6,

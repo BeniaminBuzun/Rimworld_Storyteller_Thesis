@@ -9,7 +9,9 @@ namespace RimTelligence.CustomEvents.Handlers.Item
 {
     public class ResourcePodCrash : IEffect
     {
-        public EffectConfig Config => EffectConfigRegistry.Get("ResourcePodCrash");
+        private readonly EffectConfig _config = EffectConfigRegistry.Get("ResourcePodCrash");
+
+        public EffectConfig Config => _config;
 
         public bool CanBeChoosen(ColonySnapshot snapshot) => true;
 
@@ -18,9 +20,9 @@ namespace RimTelligence.CustomEvents.Handlers.Item
         public GlobalTargetInfo Execute(GameEffect effect, Map map)
         {
             ThingDef def = ResolveItemDef(effect);
-            if (def == null)
+            if (def == null || !ItemHandlerSupport.IsSpawnable(def))
             {
-                ModLogger.Warning($"ResourcePodCrash: ThingDef '{effect.DefNameText}' not found.");
+                ModLogger.Warning($"ResourcePodCrash: '{effect.DefNameText}' is missing or not spawnable.");
                 executionSummary = "Debris from orbit burnt up high in the atmosphere before reaching the surface.";
                 return GlobalTargetInfo.Invalid;
             }
@@ -28,6 +30,7 @@ namespace RimTelligence.CustomEvents.Handlers.Item
             int quantity = ItemHandlerSupport.ResolveQuantity(def, effect.Severity, map);
             int pods = Rand.RangeInclusive(1, 4);
             var items = SplitIntoStacks(def, quantity, pods);
+            pods = Math.Min(pods, items.Count);
 
             IntVec3 cell = DropCellFinder.RandomDropSpot(map);
             DropPodUtility.DropThingsNear(cell, map, items);
@@ -52,7 +55,7 @@ namespace RimTelligence.CustomEvents.Handlers.Item
         private static string GetDefaultSummary(GameEffect effect)
         {
             string itemLabel = ResolveItemLabel(effect);
-            string sevStr = effect.Severity != SeverityTypes.None ? $" ({effect.Severity.ToString().ToLower()})" : "";
+            string sevStr = $" ({effect.Severity.ToString().ToLower()})";
             return $"Cargo pods carrying {itemLabel} hurtle down from orbit{sevStr}.";
         }
 
@@ -80,8 +83,7 @@ namespace RimTelligence.CustomEvents.Handlers.Item
                 int left = baseCount + (index < remainder ? 1 : 0);
                 while (left > 0)
                 {
-                    var thing = ThingMaker.MakeThing(def);
-                    thing.stackCount = Math.Min(left, def.stackLimit);
+                    Thing thing = ItemHandlerSupport.MakeItem(def, left);
                     items.Add(thing);
                     left -= thing.stackCount;
                 }

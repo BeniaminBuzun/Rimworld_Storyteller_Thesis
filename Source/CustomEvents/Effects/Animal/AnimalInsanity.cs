@@ -10,7 +10,9 @@ namespace RimTelligence.CustomEvents.Handlers.Animal
 {
     public class AnimalInsanity : IEffect
     {
-        public EffectConfig Config => EffectConfigRegistry.Get("AnimalInsanity");
+        private readonly EffectConfig _config = EffectConfigRegistry.Get("AnimalInsanity");
+
+        public EffectConfig Config => _config;
 
         public bool CanBeChoosen(ColonySnapshot snapshot) => snapshot?.wildAnimals != null && snapshot.wildAnimals.Any();
 
@@ -77,7 +79,7 @@ namespace RimTelligence.CustomEvents.Handlers.Animal
         private static string GetDefaultSummary(GameEffect effect)
         {
             string animalLabel = ResolveAnimalLabel(effect);
-            string sevStr = effect.Severity != SeverityTypes.None ? $" ({effect.Severity.ToString().ToLower()})" : "";
+            string sevStr = $"({effect.Severity.ToString().ToLower()})";
             return $"A psychic pulse drives local {animalLabel} into an uncontrollable manhunter frenzy{sevStr}.";
         }
 

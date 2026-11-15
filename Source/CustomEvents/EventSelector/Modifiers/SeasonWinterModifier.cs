@@ -13,7 +13,7 @@ namespace RimTelligence.CustomEvents.EventSelector.Modifiers
             float multiplier = 1f;
 
             if (entry.Config.EffectName == "ChangeWeather") multiplier *= 1.8f;
-            if (entry.Config.EffectName == "StartExtremeWeatherEvent") multiplier *= 1.2f;
+            if (entry.Config.EffectName == "StartExtremeWeather") multiplier *= 1.2f;
             return multiplier;
 
         }

@@ -1,3 +1,4 @@
+﻿using Newtonsoft.Json;
 using RimTelligence.CustomEvents.EventSelector;
 using RimTelligence.CustomEvents.Execution;
 using RimTelligence.CustomEvents.Handlers;
@@ -27,22 +28,27 @@ namespace RimTelligence.CustomEvents.Workers
             }
 
             ModLogger.Message("ProceduralEvent triggered, capturing snapshot...");
-
             ColonySnapshot snapshot = ColonySnapshotCapturer.Capture(map);
-            string prompt = BuildPrompt(snapshot, out List<IEffect> chosenEvents);
 
-            // Built on the main thread, from the same cued effects used in the prompt.
-            object schema = EventJsonSchemaBuilder.Build(chosenEvents, snapshot);
-
-            _ = RunEventAsync(prompt, schema, chosenEvents, map);
+            // Execute completely off the main thread so the RimWorld game loop never stutters.
+            Task.Run(() => RunEventAsync(snapshot, map));
             return true;
         }
 
-        private async Task RunEventAsync(string prompt, object schema, List<IEffect> chosenEvents, Map map)
+
+        private async Task RunEventAsync(ColonySnapshot snapshot, Map map)
         {
             try
             {
-                LlmCustomEvent finalEvent = await RequestEventAsync(prompt, chosenEvents, jsonSchema: schema);
+                // Select events and build prompt asynchronously: embedding & RAG run without blocking game loop.
+                List<IEffect> chosenEvents = HeuristicEventSelector.Select(snapshot);
+                string prompt = await ProperPromptGenerator.BuildSystemPromptAsync(chosenEvents, snapshot);
+                object schema = EventJsonSchemaBuilder.Build(chosenEvents, snapshot);
+                ModLogger.Message($"JSON Schema for LLM:\n{JsonConvert.SerializeObject(schema)}");
+                ModLogger.Message($"Prompt: {prompt}");
+
+                LlmCustomEvent finalEvent = await RequestEventAsync(
+                    prompt, chosenEvents, jsonSchema: schema, snapshot: snapshot);
                 if (finalEvent != null)
                     FireLlmEvent(finalEvent, map);
             }
@@ -69,7 +75,7 @@ namespace RimTelligence.CustomEvents.Workers
 
                 var letter = new ChoiceLetter_Procedural
                 {
-                    def = LetterDefOf.ThreatSmall,
+                    def = ChoiceLetter_Procedural.Resolve(finalEvent),
                     ID = Find.UniqueIDsManager.GetNextLetterID(),
                     Label = finalEvent.letterTitle ?? "Strange Event",
                     Text = fullText,
@@ -100,7 +106,8 @@ namespace RimTelligence.CustomEvents.Workers
            int maxAttempts = MaxAttempts,
            bool announceFailure = true,
            Action<LlmConnectionResult> onResponse = null,
-           object jsonSchema = null)
+           object jsonSchema = null,
+           ColonySnapshot snapshot = null)
         {
             LLMCommunicationHandler communication = new LLMCommunicationHandler();
 
@@ -158,7 +165,7 @@ namespace RimTelligence.CustomEvents.Workers
                 LlmParseResult<LlmCustomEvent> parseResult;
                 try
                 {
-                    parseResult = LlmResponseParser.ParseEvent(responseRaw, chosenEvents);
+                    parseResult = LlmResponseParser.ParseEvent(responseRaw, chosenEvents, snapshot);
                 }
                 catch (Exception exception)
                 {

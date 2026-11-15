@@ -10,7 +10,9 @@ namespace RimTelligence.CustomEvents.Handlers.Pawns.Debuffs
 {
     public class DamagePawn : IEffect
     {
-        public EffectConfig Config => EffectConfigRegistry.Get("DamagePawn");
+        private readonly EffectConfig _config = EffectConfigRegistry.Get("DamagePawn");
+
+        public EffectConfig Config => _config;
 
         public bool CanBeChoosen(ColonySnapshot snapshot) => true;
 
@@ -150,7 +152,7 @@ namespace RimTelligence.CustomEvents.Handlers.Pawns.Debuffs
             string partLabel = partDef != null ? partDef.LabelCap.Resolve() : partName;
 
             string pawn = !string.IsNullOrWhiteSpace(effect.TargetPawn) ? effect.TargetPawn : "A colonist";
-            string sevStr = effect.Severity != SeverityTypes.None ? $" ({effect.Severity.ToString().ToLower()})" : "";
+            string sevStr = $" ({effect.Severity.ToString().ToLower()})";
             return $"{pawn} suffers {dmgLabel} trauma to their {partLabel}{sevStr}.";
         }
     }
