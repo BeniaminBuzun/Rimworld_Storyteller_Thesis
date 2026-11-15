@@ -14,6 +14,7 @@ namespace RimTelligence.Memory
         static RagBootstrap()
         {
             SqliteBootstrap.Init(ModPaths.Root);
+            SqliteVecBootstrap.Init(ModPaths.Root);
 
             string dataDir = ModPaths.Resolve("Data");
             Directory.CreateDirectory(dataDir);
@@ -22,6 +23,7 @@ namespace RimTelligence.Memory
             using (var conn = new SqliteConnection("Data Source=" + DbPath))
             {
                 conn.Open();
+                SqliteVecBootstrap.LoadInto(conn);
                 RagSchema.Ensure(conn);
             }
 

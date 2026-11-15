@@ -2,9 +2,10 @@
 
 namespace RimTelligence.Source.Memory.Storage
 {
-    /// <summary>Creates the four tables the RAG store needs: dynamic_chunks, items, others, save_registry.</summary>
     public static class RagSchema
     {
+        public const int DefaultEmbeddingDim = 384;
+
         public static void Ensure(SqliteConnection conn)
         {
             SqlHelper.Exec(conn, @"
@@ -37,6 +38,30 @@ namespace RimTelligence.Source.Memory.Storage
                         metadata TEXT);");
                 SqlHelper.Exec(conn, "CREATE INDEX IF NOT EXISTS idx_" + table + "_category ON " + table + "(category);");
             }
+
+            EnsureVecTables(conn, DefaultEmbeddingDim);
         }
+
+        public static void EnsureVecTables(SqliteConnection conn, int dim)
+        {
+            foreach (var table in RagTables.All)
+            {
+                SqlHelper.Exec(conn,
+                    "CREATE VIRTUAL TABLE IF NOT EXISTS " + VecTableName(table) + " USING vec0(" +
+                    "  rowid INTEGER PRIMARY KEY," +
+                    "  embedding float[" + dim + "] distance_metric=cosine" +
+                    ");");
+            }
+
+            SqlHelper.Exec(conn,
+                "CREATE VIRTUAL TABLE IF NOT EXISTS " + VecDynamicTableName + " USING vec0(" +
+                "  rowid INTEGER PRIMARY KEY," +
+                "  embedding float[" + dim + "] distance_metric=cosine" +
+                ");");
+        }
+
+        public static string VecTableName(string table) => "vec_" + table;
+
+        public const string VecDynamicTableName = "vec_dynamic_chunks";
     }
 }
