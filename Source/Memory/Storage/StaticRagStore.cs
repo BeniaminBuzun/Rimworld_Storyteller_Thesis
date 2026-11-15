@@ -9,6 +9,9 @@ namespace RimTelligence.Memory
     /// <summary>
     /// Store for def-derived knowledge (items / others tables). Population is two-phase:
     /// SyncDefs writes text + metadata, then SetEmbeddings fills in vectors later.
+    /// 
+    /// Queries use sqlite-vec's vec0 virtual tables for hardware-accelerated KNN search
+    /// instead of scanning every row and computing cosine similarity in C#.
     /// </summary>
     public class StaticRagStore : RagStoreBase
     {
@@ -74,6 +77,8 @@ namespace RimTelligence.Memory
                         if (!keep)
                         {
                             SqlHelper.Exec(conn, "DELETE FROM " + table + " WHERE id=@id", tx, ("@id", row.Id));
+                            // Also remove from vec0 shadow table
+                            SqlHelper.Exec(conn, "DELETE FROM " + RagSchema.VecTableName(table) + " WHERE rowid=@id", tx, ("@id", row.Id));
                             removed++;
                             continue;
                         }
@@ -88,7 +93,13 @@ namespace RimTelligence.Memory
                             ("@t", chunk.Text),
                             ("@m", chunk.MetadataJson),
                             ("@id", row.Id));
-                        if (clearEmbedding) updated++;
+
+                        if (clearEmbedding)
+                        {
+                            // Remove stale embedding from vec0
+                            SqlHelper.Exec(conn, "DELETE FROM " + RagSchema.VecTableName(table) + " WHERE rowid=@id", tx, ("@id", row.Id));
+                            updated++;
+                        }
                     }
                 }
 
@@ -113,12 +124,37 @@ namespace RimTelligence.Memory
             {
                 foreach (var chunk in chunks)
                 {
+                    string table = RagTables.For(chunk.Category);
+
+                    // Update the BLOB in the relational table
                     SqlHelper.Exec(conn,
-                        "UPDATE " + RagTables.For(chunk.Category) + " SET embedding=@e WHERE category=@c AND def_name=@d",
+                        "UPDATE " + table + " SET embedding=@e WHERE category=@c AND def_name=@d",
                         tx,
                         ("@e", SqlHelper.Blob(chunk.Embedding)),
                         ("@c", chunk.Category),
                         ("@d", chunk.DefName));
+
+                    // Upsert into the vec0 shadow table.
+                    // First get the row id from the parent table.
+                    var rowId = SqlHelper.Scalar(conn,
+                        "SELECT id FROM " + table + " WHERE category=@c AND def_name=@d",
+                        tx,
+                        ("@c", chunk.Category),
+                        ("@d", chunk.DefName));
+
+                    if (rowId != null && !(rowId is DBNull) && chunk.Embedding != null)
+                    {
+                        string vecTable = RagSchema.VecTableName(table);
+                        byte[] vecBlob = RagBlob.ToBlob(chunk.Embedding);
+
+                        // Delete old entry if exists, then insert new
+                        SqlHelper.Exec(conn, "DELETE FROM " + vecTable + " WHERE rowid=@r", tx, ("@r", rowId));
+                        SqlHelper.Exec(conn,
+                            "INSERT INTO " + vecTable + " (rowid, embedding) VALUES (@r, @e)",
+                            tx,
+                            ("@r", rowId),
+                            ("@e", vecBlob));
+                    }
                 }
                 tx.Commit();
             }
@@ -127,14 +163,21 @@ namespace RimTelligence.Memory
         public void ClearAll()
         {
             using (var conn = OpenConnection())
+            {
                 foreach (var table in RagTables.All)
+                {
                     SqlHelper.Exec(conn, "DELETE FROM " + table);
+                    SqlHelper.Exec(conn, "DELETE FROM " + RagSchema.VecTableName(table));
+                }
+            }
         }
 
         private static void Insert(SqliteConnection conn, SqliteTransaction tx, StaticChunk chunk)
         {
+            string table = RagTables.For(chunk.Category);
+
             SqlHelper.Exec(conn,
-                "INSERT INTO " + RagTables.For(chunk.Category) +
+                "INSERT INTO " + table +
                 " (category, def_name, text, embedding, metadata) VALUES (@c,@d,@t,@e,@m)",
                 tx,
                 ("@c", chunk.Category),
@@ -142,6 +185,19 @@ namespace RimTelligence.Memory
                 ("@t", chunk.Text),
                 ("@e", SqlHelper.Blob(chunk.Embedding)),   // NULL until phase 2
                 ("@m", chunk.MetadataJson));
+
+            // If embedding is provided at insert time, also insert into vec0
+            if (chunk.Embedding != null)
+            {
+                var rowId = SqlHelper.Scalar(conn, "SELECT last_insert_rowid()", tx);
+                string vecTable = RagSchema.VecTableName(table);
+                byte[] vecBlob = RagBlob.ToBlob(chunk.Embedding);
+                SqlHelper.Exec(conn,
+                    "INSERT INTO " + vecTable + " (rowid, embedding) VALUES (@r, @e)",
+                    tx,
+                    ("@r", rowId),
+                    ("@e", vecBlob));
+            }
         }
 
         // ---------------------------------------------------------------- reads
@@ -186,51 +242,93 @@ namespace RimTelligence.Memory
         }
 
         /// <summary>
-        /// Similarity search over rows that have an embedding. Searches both tables by default;
+        /// KNN search using sqlite-vec's vec0 virtual tables. Searches both tables by default;
         /// pass table = RagTables.Items or RagTables.Others to scope it.
         /// When defNames is provided, only rows whose def_name is contained in the collection are scored.
+        /// 
+        /// Unlike the old scan-based approach, this uses vec0's MATCH operator for
+        /// hardware-accelerated approximate nearest neighbor search.
         /// </summary>
         public List<RagResult> Query(float[] queryEmbedding, int topK = 5,
                                      string categoryFilter = null, string table = null,
                                      ICollection<string> defNames = null)
         {
             string[] tables = ResolveTables(table);
-            var board = new TopKBoard(topK);
+            var results = new List<RagResult>();
+
+            byte[] queryBlob = RagBlob.ToBlob(queryEmbedding);
 
             HashSet<string> defNameSet = defNames != null && defNames.Count > 0
                 ? new HashSet<string>(defNames, StringComparer.Ordinal)
                 : null;
 
-            Func<SqliteDataReader, bool> filter = defNameSet != null
-                ? r => !r.IsDBNull(3) && defNameSet.Contains(r.GetString(3))
-                : (Func<SqliteDataReader, bool>)null;
-
             using (var conn = OpenConnection())
+            {
                 foreach (var t in tables)
                 {
-                    string sql = "SELECT embedding, text, category, def_name, metadata FROM " + t +
-                                 " WHERE embedding IS NOT NULL" +
-                                 (categoryFilter == null ? "" : " AND category = @c");
+                    string vecTable = RagSchema.VecTableName(t);
 
-                    if (categoryFilter == null)
-                        ScanSimilarFiltered(conn, sql, queryEmbedding, board, MapResult, filter);
-                    else
-                        ScanSimilarFiltered(conn, sql, queryEmbedding, board, MapResult, filter, ("@c", categoryFilter));
+                    // We ask vec0 for more results than needed, then post-filter by category/defName.
+                    // This is necessary because vec0 metadata columns don't cover our relational filters.
+                    int fetchK = topK;
+                    if (categoryFilter != null || defNameSet != null)
+                        fetchK = topK * 10; // over-fetch to account for filtering
+
+                    // KNN via vec0 MATCH, then JOIN back to the parent table for text + metadata
+                    string sql = @"
+                        WITH knn AS (
+                            SELECT rowid, distance
+                            FROM " + vecTable + @"
+                            WHERE embedding MATCH @query
+                              AND k = @k
+                        )
+                        SELECT t.text, t.category, t.def_name, t.metadata, knn.distance
+                        FROM knn
+                        INNER JOIN " + t + @" t ON t.id = knn.rowid
+                        WHERE 1=1" +
+                        (categoryFilter != null ? " AND t.category = @cat" : "") +
+                        " ORDER BY knn.distance ASC";
+
+                    using (var cmd = conn.CreateCommand())
+                    {
+                        cmd.CommandText = sql;
+                        cmd.Parameters.AddWithValue("@query", queryBlob);
+                        cmd.Parameters.AddWithValue("@k", fetchK);
+                        if (categoryFilter != null)
+                            cmd.Parameters.AddWithValue("@cat", categoryFilter);
+
+                        using (var reader = cmd.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                string defName = reader.GetString(2);
+                                if (defNameSet != null && !defNameSet.Contains(defName))
+                                    continue;
+
+                                // cosine distance -> cosine similarity: sim = 1 - dist
+                                double distance = reader.GetDouble(4);
+                                float score = 1.0f - (float)distance;
+
+                                results.Add(new RagResult
+                                {
+                                    Text = reader.GetString(0),
+                                    Source = reader.GetString(1),
+                                    DefName = defName,
+                                    Metadata = SqlHelper.NullableString(reader, 3),
+                                    Score = score
+                                });
+                            }
+                        }
+                    }
                 }
+            }
 
-            return board.ToList();
-        }
+            // Merge results from multiple tables, sort by score descending, take topK
+            results.Sort((a, b) => b.Score.CompareTo(a.Score));
+            if (results.Count > topK)
+                results.RemoveRange(topK, results.Count - topK);
 
-        /// <summary>Maps (embedding, text, category, def_name, metadata) rows to results.</summary>
-        internal static RagResult MapResult(SqliteDataReader r)
-        {
-            return new RagResult
-            {
-                Text = r.GetString(1),
-                Source = r.GetString(2),
-                DefName = r.GetString(3),
-                Metadata = SqlHelper.NullableString(r, 4)
-            };
+            return results;
         }
 
         private static string[] ResolveTables(string table)

@@ -10,6 +10,11 @@ semver section when a version is released.
 
 ## [Unreleased]
 
+## [0.21.0] - 2026-11-15
+
+### Changed
+- Introduced the sqlite-vec extension to replace custom serch and retrieval logic
+
 ## [0.20.0] - 2026-10-28
 
 ### Added
