@@ -1,5 +1,6 @@
 using LlmTornado;
 using LlmTornado.Chat;
+using LlmTornado.ChatFunctions;
 using LlmTornado.Code;
 using RimTelligence.AIStoryteller;
 using System;
@@ -10,11 +11,17 @@ namespace RimTelligence.Llm
 {
     public class LLMCommunicationHandler
     {
-        TornadoApi api = new TornadoApi("your-api-key");
 
-        public async void StartNewConversation()
+        public async Task<Conversation> StartNewConversation()
         {
-
+            ProviderConfig config = AIStorytellerMod.Settings?.ActiveProvider;
+            LLmProviders provider = ProviderCatalog.ResolveProvider(config.providerId);
+            TornadoApi api = BuildApi(config, provider);
+            Conversation chat = api.Chat.CreateConversation(new ChatRequest
+            {
+                Model = ProviderCatalog.BuildChatModel(config)
+            });
+            return chat;
         }
 
 

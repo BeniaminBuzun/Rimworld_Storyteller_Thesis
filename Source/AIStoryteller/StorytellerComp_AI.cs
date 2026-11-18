@@ -21,19 +21,18 @@ namespace RimTelligence.AIStoryteller
             if (ShouldFireIncidentAt(target))
             {
                 var stateTracker = Current.Game.GetComponent<StorytellerState>();
-
-                //var incidentParms = GenerateParms(Props.category, target);
-                //var incidentDef = DefDatabase<IncidentDef>.GetNamed(INCIDENT_DEFNAME);
-                var incidentToFire = stateTracker.GetNextIncident(target, this);
-                if (incidentToFire != null)
+                if (stateTracker.shouldFireIncident(target))
                 {
-                    ModLogger.Message($"Firing incident: {incidentToFire.def.defName}");
-                    //yield break;
-                    yield return incidentToFire;
-                }
-                else
-                {
-                    ModLogger.Error($"Failed to locate {INCIDENT_DEFNAME} def in the DefDatabase");
+                    var incidentToFire = stateTracker.GetNextIncident(target, this);
+                    if (incidentToFire != null)
+                    {
+                        ModLogger.Message($"Firing incident: {incidentToFire.def.defName}");
+                        yield return incidentToFire;
+                    }
+                    else
+                    {
+                        ModLogger.Error($"Failed to locate {INCIDENT_DEFNAME} def in the DefDatabase");
+                    }
                 }
             }
 

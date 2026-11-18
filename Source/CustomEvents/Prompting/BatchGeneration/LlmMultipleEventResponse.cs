@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace RimTelligence.Source.CustomEvents.Prompting
+namespace RimTelligence.Source.CustomEvents.Prompting.BatchGeneration
 {
     internal class LlmMultipleEventResponse
     {
@@ -9,9 +9,8 @@ namespace RimTelligence.Source.CustomEvents.Prompting
     internal class EventResponse
     {
         public string eventName { get; set; }
-        public string eventTitle { get; set; }
-        public string eventDescription { get; set; }
+        public string message { get; set; }
 
-        public int waitTime { get; set; }
+        public string runAfter { get; set; } 
     }
 }
