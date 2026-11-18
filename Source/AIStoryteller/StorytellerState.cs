@@ -23,6 +23,7 @@ namespace RimTelligence.Source.AIStoryteller
         private Queue<EventResponse> incidentData = new Queue<EventResponse>();
         private int ticksAfterLastIncident = 0;
         private int delayBeforeNextIncident = 0;
+        private bool isGenerating = false;
         public StorytellerState(Game game)
         {
         }
@@ -41,7 +42,24 @@ namespace RimTelligence.Source.AIStoryteller
             ticksAfterLastIncident += 1000;
             if (incidentQueue.Count == 0)
             {
-                generateNewEvents(target, null);
+                if (!isGenerating)
+                {
+                    isGenerating = true;
+                    try
+                    {
+                        generateNewEvents(target, null);
+
+                    }
+                    catch (Exception ex)
+                    {
+                        isGenerating = false;
+                        ModLogger.Error($"Error during LLM call: {ex.Message}");
+                    }
+                }
+                else
+                {
+                    ModLogger.Message($"LLM is still generating events, waiting for next check");
+                }
                 return false;
             }
             if (ticksAfterLastIncident < delayBeforeNextIncident)
@@ -49,20 +67,20 @@ namespace RimTelligence.Source.AIStoryteller
                 ModLogger.Message($"Waiting for delay: {ticksAfterLastIncident} ticks elapsed");
                 return false;
             }
-            if (trigger != null)
-            {
-                if (trigger.RunAfter(target as Map))
-                {
-                    ModLogger.Message($"Trigger condition met, firing incident");
-                    trigger = null;
-                    return true;
-                }
-                else
-                {
-                    ModLogger.Message($"Trigger condition not met, waiting for next check");
-                    return false;
-                }
-            }
+            //if (trigger != null)
+            //{
+            //    if (trigger.RunAfter(target as Map))
+            //    {
+            //        ModLogger.Message($"Trigger condition met, firing incident");
+            //        trigger = null;
+            //        return true;
+            //    }
+            //    else
+            //    {
+            //        ModLogger.Message($"Trigger condition not met, waiting for next check");
+            //        return false;
+            //    }
+            //}
             return true;
         }
 
@@ -116,10 +134,17 @@ namespace RimTelligence.Source.AIStoryteller
             ModLogger.Message($"generating new events");
             if (target is Map map)
             {
-                LlmCall(map);
+                try
+                {
+                    LlmCall(map);
+
+                }
+                catch (Exception ex)
+                {
+                    ModLogger.Error($"Error during LLM call: {ex.Message}");
+                }
 
             }
-
         }
         public async Task<ChatRichResponse> GetResponseWithRetryAsync(Conversation lmcom,
             int maxAttempts = 3,
@@ -197,7 +222,7 @@ namespace RimTelligence.Source.AIStoryteller
             string generationPrompt = "You ara a rimworld storyteller. Create short self-contained story consisting multiple consecutive events. Events should work together as a story connecting one to the other. Story should have a clear beginning, middle, and end. Avoid repetitive content. Avid Resolve all mysteries you create. The world is harsh and unforgiving place, your story should reflect that. Use only available events.\r\n" +
             "Use only available events. Available events: " + string.Join(", ", defLabels);
 
-            string conversionPrompt = "Convert following rimworld events to JSON format: {events:[ {eventName: <name of event>, message:<message displayed when executing event>, runAfter: <how soon should next event occur>: longDelay, shortDelay, or custom trigger. Some events have custom triggers, use them when availible> } ] }\r\n" +
+            string conversionPrompt = "Convert following rimworld events to JSON format: {events:[ {eventName: <name of event>, message:<message displayed when executing event>, runAfter: <how soon should next event occur: longDelay, shortDelay> } ] }\r\n" +
             "Available events: " + string.Join(", ", defNames) + "\r\n";
 
 
@@ -281,7 +306,10 @@ namespace RimTelligence.Source.AIStoryteller
                 {
                     ModLogger.Message($"Unknown event name: {eventData.eventName}");
                 }
+                
             }
+
+            isGenerating = false;
         }
     }
 }
