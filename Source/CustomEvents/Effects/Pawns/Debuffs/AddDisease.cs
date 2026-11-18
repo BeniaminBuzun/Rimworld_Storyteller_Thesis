@@ -78,7 +78,7 @@ namespace RimTelligence.CustomEvents.Handlers.Pawns.Debuffs
                 newDisease.Severity = initialSeverity;
                 target.health.AddHediff(newDisease);
 
-                string severityDesc = effect.Severity != SeverityTypes.None ? $" ({effect.Severity.ToString().ToLower()})" : "";
+                string severityDesc = $" ({effect.Severity.ToString().ToLower()})";
                 specialSummary = $"{target.LabelShort} has contracted {diseaseLabel}{severityDesc}. Medical attention is advised.";
             }
 
@@ -128,7 +128,7 @@ namespace RimTelligence.CustomEvents.Handlers.Pawns.Debuffs
             HediffDef def = DefDatabase<HediffDef>.GetNamed(disease, errorOnFail: false);
             string diseaseLabel = def != null ? (!string.IsNullOrEmpty(def.label) ? def.label : def.defName) : disease;
             string pawn = !string.IsNullOrWhiteSpace(effect?.TargetPawn) ? effect.TargetPawn : "A colonist";
-            string sevStr = effect != null && effect.Severity != SeverityTypes.None ? $" ({effect.Severity.ToString().ToLower()})" : "";
+            string sevStr = effect != null ? $" ({effect.Severity.ToString().ToLower()})" : "";
             return $"{pawn} has contracted {diseaseLabel}{sevStr}. Medical treatment is advised.";
         }
     }

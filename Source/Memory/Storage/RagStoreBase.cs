@@ -1,7 +1,7 @@
+using Microsoft.Data.Sqlite;
 using System;
-using System.Data.SQLite;
 
-namespace RimTelligence.Memory
+namespace RimTelligence.Source.Memory.Storage
 {
     public abstract class RagStoreBase
     {
@@ -12,13 +12,14 @@ namespace RimTelligence.Memory
             if (string.IsNullOrEmpty(dbPath))
                 throw new ArgumentException("dbPath must be non-empty.", nameof(dbPath));
 
-            ConnStr = "Data Source=" + dbPath + ";Version=3;";
+            ConnStr = "Data Source=" + dbPath;
         }
 
-        protected SQLiteConnection OpenConnection()
+        protected SqliteConnection OpenConnection()
         {
-            var conn = new SQLiteConnection(ConnStr);
+            var conn = new SqliteConnection(ConnStr);
             conn.Open();
+            SqliteVecBootstrap.LoadInto(conn);
             return conn;
         }
     }

@@ -18,6 +18,7 @@ namespace RimTelligence.CustomEvents.Execution
         public override void GameComponentTick()
         {
             base.GameComponentTick();
+
             // Process up to 5 actions per tick to avoid stuttering if multiple arrive
             int processed = 0;
             while (processed < 5 && ExecutionQueue.TryDequeue(out Action action))
@@ -28,7 +29,7 @@ namespace RimTelligence.CustomEvents.Execution
                 }
                 catch (Exception ex)
                 {
-                    Log.Error($"[RimTelligence] Error executing queued action: {ex.Message}\n{ex.StackTrace}");
+                    ModLogger.Error($"Error executing queued action: {ex.Message}\n{ex.StackTrace}");
                 }
                 processed++;
             }

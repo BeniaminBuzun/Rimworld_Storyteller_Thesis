@@ -112,6 +112,12 @@ namespace RimTelligence.CustomEvents.Prompting
                 }
             }
 
+            if (fullEffect.Config.UsesTargetPawn && string.IsNullOrWhiteSpace(effect.TargetPawn))
+            {
+                ModLogger.Warning($"[Validator] Effect '{effect.EffectName}' uses targetPawn but none was provided; defaulting to 'random'.");
+                effect.TargetPawn = "random";
+            }
+
             return null;
         }
     }

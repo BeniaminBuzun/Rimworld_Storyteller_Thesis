@@ -55,7 +55,7 @@ namespace RimTelligence.CustomEvents.Handlers.Item
         private static string GetDefaultSummary(GameEffect effect)
         {
             string itemLabel = ResolveItemLabel(effect);
-            string sevStr = effect.Severity != SeverityTypes.None ? $" ({effect.Severity.ToString().ToLower()})" : "";
+            string sevStr = $" ({effect.Severity.ToString().ToLower()})";
             return $"Cargo pods carrying {itemLabel} hurtle down from orbit{sevStr}.";
         }
 

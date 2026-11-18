@@ -2,7 +2,7 @@
   "profiles": {
     "RimTelligence.Benchmark": {
       "commandName": "Project",
-      "commandLineArgs": "--benchmark single-effect "
+      "commandLineArgs": "--benchmark single-effect --ResourcePodCrash"
     },
     "Multi-Effect Benchmark": {
       "commandName": "Project",

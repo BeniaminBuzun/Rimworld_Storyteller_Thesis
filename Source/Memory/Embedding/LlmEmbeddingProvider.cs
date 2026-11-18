@@ -7,7 +7,7 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace RimTelligence.Memory
+namespace RimTelligence.Source.Memory.Embedding
 {
     public class LlmEmbeddingProvider : IEmbeddingProvider, IDisposable
     {

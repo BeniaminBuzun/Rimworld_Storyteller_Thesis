@@ -1,6 +1,6 @@
 using System.Threading.Tasks;
 
-namespace RimTelligence.Memory
+namespace RimTelligence.Source.Memory.Embedding
 {
     public interface IEmbeddingProvider
     {

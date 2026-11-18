@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 
-namespace RimTelligence.Memory
+namespace RimTelligence.Source.Memory.Embedding
 {
     public class BertTokenizer
     {

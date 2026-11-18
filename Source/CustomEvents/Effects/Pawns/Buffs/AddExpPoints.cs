@@ -70,7 +70,7 @@ namespace RimTelligence.CustomEvents.Handlers.Pawns.Buffs
         {
             string skillLabel = ResolveSkillLabel(effect);
             string pawn = !string.IsNullOrWhiteSpace(effect.TargetPawn) ? effect.TargetPawn : "A colonist";
-            string sevStr = effect.Severity != SeverityTypes.None ? $" ({effect.Severity.ToString().ToLower()} boost)" : "";
+            string sevStr = $" ({effect.Severity.ToString().ToLower()} boost)";
             return $"{pawn} experiences a surge of insight, gaining XP in {skillLabel}{sevStr}.";
         }
 

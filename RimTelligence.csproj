@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net472</TargetFramework>
@@ -21,18 +21,61 @@
     <PackageReference Include="Krafs.Rimworld.Ref" Version="1.6.4871" />
     <PackageReference Include="Lib.Harmony" Version="2.4.2" />
     <PackageReference Include="LlmTornado" Version="3.8.71" />
-    <PackageReference Include="System.Data.SQLite.Core" Version="1.0.119" />
+    <PackageReference Include="Microsoft.Data.Sqlite.Core" Version="8.0.*" />
+    <PackageReference Include="SQLitePCLRaw.core" Version="2.1.*" />
+    <PackageReference Include="SQLitePCLRaw.provider.dynamic_cdecl" Version="2.1.*" />
+    <PackageReference Include="SQLitePCLRaw.lib.e_sqlite3" Version="2.1.*" GeneratePathProperty="true" />
     <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.30.0" GeneratePathProperty="true" />
+    <PackageReference Include="HiraokaHyperTools.sqlite-vec" Version="0.1.9" GeneratePathProperty="true" />
   </ItemGroup>
 
-  <Target Name="FlattenNative" AfterTargets="Build">
-    <ItemGroup>
-      <NativeFiles Include="$(OutDir)x64\SQLite.Interop.dll" />
-      <NativeFiles Include="$(PkgMicrosoft_ML_OnnxRuntime)\runtimes\win-x64\native\onnxruntime.dll" />
-      <NativeFiles Include="$(PkgMicrosoft_ML_OnnxRuntime)\runtimes\win-x64\native\onnxruntime_providers_shared.dll" />
-    </ItemGroup>
-    <Copy SourceFiles="@(NativeFiles)" DestinationFolder="$(MSBuildProjectDirectory)\Native" />
-    <RemoveDir Directories="$(OutDir)x64;$(OutDir)x86;$(OutDir)runtimes" />
-  </Target>
+  <!-- Copy all platform-specific natives into Native/<rid>/ so SqliteBootstrap and
+       OnnxBootstrap can load the right one at runtime on Windows, Linux, and macOS. -->
+	<Target Name="FlattenNative" AfterTargets="Build">
+		<ItemGroup>
+			<!-- e_sqlite3 – SQLitePCLRaw native library -->
+			<SqliteWinX64 Include="$(PkgSQLitePCLRaw_lib_e_sqlite3)\runtimes\win-x64\native\e_sqlite3.dll" />
+			<SqliteWinX86 Include="$(PkgSQLitePCLRaw_lib_e_sqlite3)\runtimes\win-x86\native\e_sqlite3.dll" />
+			<SqliteWinArm64 Include="$(PkgSQLitePCLRaw_lib_e_sqlite3)\runtimes\win-arm64\native\e_sqlite3.dll" />
+			<SqliteLinuxX64 Include="$(PkgSQLitePCLRaw_lib_e_sqlite3)\runtimes\linux-x64\native\libe_sqlite3.so" />
+			<SqliteLinuxArm64 Include="$(PkgSQLitePCLRaw_lib_e_sqlite3)\runtimes\linux-arm64\native\libe_sqlite3.so" />
+			<SqliteOsxArm64 Include="$(PkgSQLitePCLRaw_lib_e_sqlite3)\runtimes\osx-arm64\native\libe_sqlite3.dylib" />
+			<SqliteOsxX64 Include="$(PkgSQLitePCLRaw_lib_e_sqlite3)\runtimes\osx-x64\native\libe_sqlite3.dylib" />
+			<!-- onnxruntime – providers_shared must be loaded before main lib -->
+			<OnnxWinX64 Include="$(PkgMicrosoft_ML_OnnxRuntime)\runtimes\win-x64\native\onnxruntime_providers_shared.dll" />
+			<OnnxWinX64 Include="$(PkgMicrosoft_ML_OnnxRuntime)\runtimes\win-x64\native\onnxruntime.dll" />
+			<OnnxWinArm64 Include="$(PkgMicrosoft_ML_OnnxRuntime)\runtimes\win-arm64\native\onnxruntime_providers_shared.dll" />
+			<OnnxWinArm64 Include="$(PkgMicrosoft_ML_OnnxRuntime)\runtimes\win-arm64\native\onnxruntime.dll" />
+			<OnnxLinuxX64 Include="$(PkgMicrosoft_ML_OnnxRuntime)\runtimes\linux-x64\native\libonnxruntime_providers_shared.so" />
+			<OnnxLinuxX64 Include="$(PkgMicrosoft_ML_OnnxRuntime)\runtimes\linux-x64\native\libonnxruntime.so" />
+			<OnnxLinuxArm64 Include="$(PkgMicrosoft_ML_OnnxRuntime)\runtimes\linux-arm64\native\libonnxruntime_providers_shared.so" />
+			<OnnxLinuxArm64 Include="$(PkgMicrosoft_ML_OnnxRuntime)\runtimes\linux-arm64\native\libonnxruntime.so" />
+			<OnnxOsxArm64 Include="$(PkgMicrosoft_ML_OnnxRuntime)\runtimes\osx-arm64\native\libonnxruntime.dylib" />
+			<!-- sqlite-vec – vector search SQLite extension -->
+			<VecWinX64 Include="$(PkgHiraokaHyperTools_sqlite-vec)\runtimes\win-x64\native\vec0.dll" />
+			<VecLinuxX64 Include="$(PkgHiraokaHyperTools_sqlite-vec)\runtimes\linux-x64\native\vec0.so" />
+			<VecLinuxArm64 Include="$(PkgHiraokaHyperTools_sqlite-vec)\runtimes\linux-arm64\native\vec0.so" />
+			<VecOsxArm64 Include="$(PkgHiraokaHyperTools_sqlite-vec)\runtimes\osx-arm64\native\vec0.dylib" />
+			<VecOsxX64 Include="$(PkgHiraokaHyperTools_sqlite-vec)\runtimes\osx-x64\native\vec0.dylib" />
+		</ItemGroup>
+		<Copy SourceFiles="@(SqliteWinX64)" DestinationFolder="$(MSBuildProjectDirectory)\Native\win-x64" SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(SqliteWinX86)" DestinationFolder="$(MSBuildProjectDirectory)\Native\win-x86" SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(SqliteWinArm64)" DestinationFolder="$(MSBuildProjectDirectory)\Native\win-arm64" SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(SqliteLinuxX64)" DestinationFolder="$(MSBuildProjectDirectory)\Native\linux-x64" SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(SqliteLinuxArm64)" DestinationFolder="$(MSBuildProjectDirectory)\Native\linux-arm64" SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(SqliteOsxArm64)" DestinationFolder="$(MSBuildProjectDirectory)\Native\osx-arm64" SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(SqliteOsxX64)" DestinationFolder="$(MSBuildProjectDirectory)\Native\osx-x64" SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(OnnxWinX64)" DestinationFolder="$(MSBuildProjectDirectory)\Native\win-x64" SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(OnnxWinArm64)" DestinationFolder="$(MSBuildProjectDirectory)\Native\win-arm64" SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(OnnxLinuxX64)" DestinationFolder="$(MSBuildProjectDirectory)\Native\linux-x64" SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(OnnxLinuxArm64)" DestinationFolder="$(MSBuildProjectDirectory)\Native\linux-arm64" SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(OnnxOsxArm64)" DestinationFolder="$(MSBuildProjectDirectory)\Native\osx-arm64" SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(VecWinX64)" DestinationFolder="$(MSBuildProjectDirectory)\Native\win-x64" SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(VecLinuxX64)" DestinationFolder="$(MSBuildProjectDirectory)\Native\linux-x64" SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(VecLinuxArm64)" DestinationFolder="$(MSBuildProjectDirectory)\Native\linux-arm64" SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(VecOsxArm64)" DestinationFolder="$(MSBuildProjectDirectory)\Native\osx-arm64" SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(VecOsxX64)" DestinationFolder="$(MSBuildProjectDirectory)\Native\osx-x64" SkipUnchangedFiles="true" />
+		<RemoveDir Directories="$(OutDir)runtimes" />
+	</Target>
 
 </Project>

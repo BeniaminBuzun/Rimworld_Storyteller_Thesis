@@ -5,6 +5,8 @@ using RimTelligence.CustomEvents.Prompting;
 using RimTelligence.DataSnapshots;
 using RimTelligence.Memory;
 using RimTelligence.Source.CustomEvents.Handlers;
+using RimTelligence.Source.Memory.Search;
+using RimTelligence.Source.Memory.Storage;
 using RimWorld;
 using System;
 using System.Collections.Generic;
@@ -67,7 +69,7 @@ namespace RimTelligence.CustomEvents.Workers
             {
                 EffectName = effectName,
                 SelectedDefName = new string[0],
-                Severity = SeverityTypes.None,
+                Severity = SeverityTypes.Low,
                 TargetPawn = colonistName
             };
 
@@ -294,10 +296,10 @@ namespace RimTelligence.CustomEvents.Workers
             Rect valueRow = ui.GetRect(ButtonHeight);
             float btnW = valueRow.width / 4f;
 
-            DrawValueButton(valueRow, 0, btnW, SeverityTypes.None, "None");
-            DrawValueButton(valueRow, 1, btnW, SeverityTypes.Low, "LOW");
-            DrawValueButton(valueRow, 2, btnW, SeverityTypes.Medium, "MEDIUM");
-            DrawValueButton(valueRow, 3, btnW, SeverityTypes.High, "HIGH");
+            DrawValueButton(valueRow, 0, btnW, SeverityTypes.Low, "LOW");
+            DrawValueButton(valueRow, 1, btnW, SeverityTypes.Medium, "MEDIUM");
+            DrawValueButton(valueRow, 2, btnW, SeverityTypes.High, "HIGH");
+            DrawValueButton(valueRow, 3, btnW, SeverityTypes.Extreme, "EXTREME");
 
             ui.GapLine();
 
@@ -492,9 +494,6 @@ namespace RimTelligence.CustomEvents.Workers
             AddUnrecoverable("missing fields (empty effects)",
                 "{\"letterTitle\":\"Quiet\"}");
             AddUnrecoverable("missing all fields (empty effects)", "{}");
-            AddRecoverable("unknown severity degrades to None",
-                "{\"letterTitle\":\"U\",\"letterText\":\"X\",\"effects\":[{\"type\":\"MeteoriteImpact\",\"targetPawn\":\"\",\"defName\":\"\",\"count\":1,\"value\":\"bogus\"}]}",
-                data => data.effects != null && data.effects.Count == 1 && data.effects[0].Severity == SeverityTypes.None);
 
             AddUnrecoverable("pure garbage", "this is not json at all");
             AddUnrecoverable("truncated JSON", "{\"letterTitle\":\"Tru\",\"letterText\":\"");

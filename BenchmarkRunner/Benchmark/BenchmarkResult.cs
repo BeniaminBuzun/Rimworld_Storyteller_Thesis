@@ -20,6 +20,7 @@ namespace RimTelligence.Benchmark
         public int promptTokens;
         public int completionTokens;
         public int reasoningTokens;
+        public string outputMode;
         public string letterTitle;
         public string letterText;
         public List<string> effects;
