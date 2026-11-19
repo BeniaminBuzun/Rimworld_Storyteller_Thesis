@@ -38,12 +38,17 @@ jobs:
           $stage = "staging"
           $outZip = "dist\RimTelligence-$ver.zip"
           if (Test-Path staging) { Remove-Item -Recurse -Force staging }
-          New-Item -ItemType Directory -Force -Path $stage, "dist", "$stage\Source\Memory" | Out-Null
+          New-Item -ItemType Directory -Force -Path $stage, "dist", "$stage\Source\Memory\Embedding" | Out-Null
           
           # 3. Copy files
           Copy-Item -Recurse About, Assemblies, Defs, Textures, Native, Data $stage -ErrorAction SilentlyContinue
-          Copy-Item -Recurse "Source\Memory\Embedding\Models" "$stage\Source\Memory" -ErrorAction SilentlyContinue
+          Copy-Item -Recurse "Source\Memory\Embedding\Models" "$stage\Source\Memory\Embedding" -ErrorAction Stop
           Copy-Item CHANGELOG.md, README.md $stage -ErrorAction SilentlyContinue
+          
+          if (!(Test-Path "$stage\Source\Memory\Embedding\Models\model.onnx") -or
+              !(Test-Path "$stage\Source\Memory\Embedding\Models\vocab.txt")) {
+            throw "Packaging failed: ONNX model or vocab.txt is missing from staging"
+          }
           
           # 4. Patch About.xml with the correct version
           $about = "$stage\About\About.xml"
