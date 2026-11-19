@@ -10,6 +10,11 @@ semver section when a version is released.
 
 ## [Unreleased]
 
+## [0.21.1] - 2026-11-19
+
+### Fixed
+- Release workflow now reflects actual onnx file path
+
 ## [0.21.0] - 2026-11-15
 
 ### Changed
